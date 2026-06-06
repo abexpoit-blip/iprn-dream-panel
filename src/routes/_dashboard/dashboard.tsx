@@ -173,7 +173,7 @@ function DashboardPage() {
                 <TableBody>
                   {recentRanges?.map((range, idx) => (
                     <TableRow key={range.id} className={cn("border-b border-[#f2f4f8] hover:bg-gray-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]")}>
-                      <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{range.name}</TableCell>
+                      <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{(range as any).name || range.memo || range.prefix}</TableCell>
                       <TableCell className="text-[13px] font-medium text-[#69707a] px-6 py-4">{range.prefix || '-'}</TableCell>
                     </TableRow>
                   ))}
