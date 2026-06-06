@@ -3,9 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { 
   Users, 
-  MessageSquare, 
   TrendingUp, 
-  DollarSign 
 } from "lucide-react";
 import { 
   BarChart, 
@@ -30,6 +28,16 @@ import {
 export const Route = createFileRoute("/_dashboard/dashboard")({
   component: DashboardPage,
 });
+
+const chartData = [
+  { name: '2026-05-31', sms: 400, payout: 15 },
+  { name: '2026-06-01', sms: 300, payout: 12 },
+  { name: '2026-06-02', sms: 200, payout: 8 },
+  { name: '2026-06-03', sms: 100, payout: 5 },
+  { name: '2026-06-04', sms: 500, payout: 22 },
+  { name: '2026-06-05', sms: 450, payout: 19 },
+  { name: '2026-06-06', sms: 431, payout: 18 },
+];
 
 function DashboardPage() {
   const { data: statsData } = useQuery({
@@ -58,7 +66,7 @@ function DashboardPage() {
         supabase.from('sms_logs').select('payout').eq('agent_id', user.id).gte('created_at', startOfMonth.toISOString())
       ]);
 
-      const monthPayout = monthData?.reduce((acc, curr) => acc + (Number(curr.payout) || 0), 0) || 0;
+      const monthPayout = monthData?.reduce((acc: number, curr: any) => acc + (Number(curr.payout) || 0), 0) || 0;
 
       return {
         today: todayCount || 0,
@@ -66,6 +74,32 @@ function DashboardPage() {
         last7Days: last7DaysCount || 0,
         monthPayout: monthPayout.toFixed(2)
       };
+    }
+  });
+
+  const { data: recentClients } = useQuery({
+    queryKey: ['recent_clients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: recentRanges } = useQuery({
+    queryKey: ['recent_ranges'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sms_ranges')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) return [];
+      return data;
     }
   });
 
@@ -98,7 +132,6 @@ function DashboardPage() {
               </div>
               <p className="text-[11px] mt-4 opacity-80 font-medium">{stat.footer}</p>
             </div>
-            {/* Decoration icons match IMS dashboard better */}
             <div className="absolute right-2 top-4 opacity-20 group-hover:scale-110 transition-transform duration-500">
                <TrendingUp size={24} />
             </div>
@@ -172,9 +205,9 @@ function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentRanges?.map((range, idx) => (
+                  {recentRanges?.map((range: any, idx: number) => (
                     <TableRow key={range.id} className={cn("border-b border-[#f2f4f8] hover:bg-gray-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]")}>
-                      <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{(range as any).name || range.memo || range.prefix}</TableCell>
+                      <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{range.name || range.memo || range.prefix}</TableCell>
                       <TableCell className="text-[13px] font-medium text-[#69707a] px-6 py-4">{range.prefix || '-'}</TableCell>
                     </TableRow>
                   ))}
@@ -207,7 +240,7 @@ function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentClients?.map((client, idx) => (
+                  {recentClients?.map((client: any, idx: number) => (
                     <TableRow key={client.id} className={cn("border-b border-[#f2f4f8] hover:bg-gray-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]")}>
                       <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{client.username}</TableCell>
                       <TableCell className="text-[13px] font-medium text-[#69707a] px-6 py-4">{client.email || '-'}</TableCell>
@@ -238,4 +271,4 @@ function DashboardPage() {
   );
 }
 
-
+export default DashboardPage;
