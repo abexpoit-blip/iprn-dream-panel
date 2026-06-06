@@ -12,11 +12,13 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 COPY --from=build /app/dist ./dist
-# TanStack Start needs node_modules in the final image to run the server
+# We copy node_modules but for TanStack Start, we might need a production install instead
+# to ensure all native modules match the runtime environment if any exist.
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package*.json ./
 EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-CMD ["node", "dist/server/index.mjs"]
+# Add a check to see if the file exists before running
+CMD ["sh", "-c", "if [ -f dist/server/index.mjs ]; then node dist/server/index.mjs; else echo 'Error: dist/server/index.mjs not found' && ls -R dist && exit 1; fi"]
