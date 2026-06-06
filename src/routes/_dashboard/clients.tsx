@@ -34,6 +34,14 @@ export const Route = createFileRoute("/_dashboard/clients")({
 
 function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newClient, setNewClient] = useState({
+    username: "",
+    email: "",
+    skype_id: "",
+    password: "",
+  });
+
   const { data: clients, isLoading, refetch } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
@@ -45,6 +53,31 @@ function ClientsPage() {
       return data;
     }
   });
+
+  const handleAddClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([{
+          ...newClient,
+          agent_id: user.id,
+          status: 'Active'
+        }]);
+
+      if (error) throw error;
+
+      toast.success("Client added successfully");
+      setIsAddDialogOpen(false);
+      setNewClient({ username: "", email: "", skype_id: "", password: "" });
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add client");
+    }
+  };
 
   const filteredClients = clients?.filter(client => 
     client.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,10 +91,72 @@ function ClientsPage() {
           <h1 className="text-2xl font-bold text-[#2b3a4a] tracking-tight">Clients Management</h1>
           <p className="text-[#69707a] text-[13px] font-medium mt-0.5">Manage your agents and clients accounts</p>
         </div>
-        <Button className="bg-[#0061f2] hover:bg-[#0052ce] text-white font-bold text-sm px-6 shadow-lg shadow-blue-500/20">
-          Add New Client
-        </Button>
+        
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-[#0061f2] hover:bg-[#0052ce] text-white font-bold text-sm px-6 shadow-lg shadow-blue-500/20">
+              <Plus size={16} className="mr-2" />
+              Add New Client
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px] rounded-2xl border-[#e3e6ec] shadow-2xl p-0 overflow-hidden">
+            <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc]">
+              <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest">Create New Client Account</h3>
+            </div>
+            <form onSubmit={handleAddClient} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-[11px] font-black uppercase text-[#69707a]">Username</Label>
+                <Input 
+                  id="username" 
+                  placeholder="Enter username" 
+                  className="rounded-lg h-10 border-[#e3e6ec]"
+                  value={newClient.username}
+                  onChange={(e) => setNewClient({...newClient, username: e.target.value})}
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-[11px] font-black uppercase text-[#69707a]">Email Address</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="name@example.com" 
+                  className="rounded-lg h-10 border-[#e3e6ec]"
+                  value={newClient.email}
+                  onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="skype" className="text-[11px] font-black uppercase text-[#69707a]">Skype ID</Label>
+                <Input 
+                  id="skype" 
+                  placeholder="live:username" 
+                  className="rounded-lg h-10 border-[#e3e6ec]"
+                  value={newClient.skype_id}
+                  onChange={(e) => setNewClient({...newClient, skype_id: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pass" className="text-[11px] font-black uppercase text-[#69707a]">Password</Label>
+                <Input 
+                  id="pass" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  className="rounded-lg h-10 border-[#e3e6ec]"
+                  value={newClient.password}
+                  onChange={(e) => setNewClient({...newClient, password: e.target.value})}
+                  required 
+                />
+              </div>
+              <DialogFooter className="pt-4 gap-2">
+                <Button type="button" variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="text-[#69707a] font-bold text-xs uppercase">Cancel</Button>
+                <Button type="submit" className="bg-[#0061f2] hover:bg-[#0052ce] text-white font-bold text-xs uppercase px-8">Create Account</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
+
 
       <Card className="shadow-lg border-[#e3e6ec] rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc] flex flex-col sm:flex-row justify-between items-center gap-4">
