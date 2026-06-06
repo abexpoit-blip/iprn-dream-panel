@@ -1,6 +1,7 @@
 FROM node:20-alpine as build
 WORKDIR /app
 COPY package*.json ./
+# Clean install to avoid cache issues
 RUN npm install --legacy-peer-deps
 COPY . .
 ARG VITE_SELF_HOSTED=true
@@ -11,12 +12,12 @@ RUN npm run build
 
 FROM node:20-alpine
 WORKDIR /app
-# Build output is in dist/ for this configuration
-COPY --from=build /app/dist ./dist
+# Build output is in .output/ for TanStack Start
+COPY --from=build /app/.output ./.output
 COPY --from=build /app/package*.json ./
 EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-# The server entry point is in dist/server/index.mjs
-CMD ["node", "dist/server/index.mjs"]
+# The server entry point is in .output/server/index.mjs
+CMD ["node", ".output/server/index.mjs"]
