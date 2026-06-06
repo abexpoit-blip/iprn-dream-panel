@@ -34,18 +34,28 @@ services:
     networks:
       - nexus_network
 
-  nginx:
+  frontend:
     build:
       context: ..
       dockerfile: ./deployment/frontend.Dockerfile
-    container_name: nexus_nginx
-    ports:
-      - "80:80"
+    container_name: nexus_frontend
     environment:
       - VITE_SELF_HOSTED=true
       - VITE_API_URL=https://panel.nexus-x.site/api
     depends_on:
       - api
+    networks:
+      - nexus_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nexus_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - frontend
     networks:
       - nexus_network
 
