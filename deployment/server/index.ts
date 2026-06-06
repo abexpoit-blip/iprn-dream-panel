@@ -94,7 +94,8 @@ app.get('/api/bots', async (c) => {
   return c.json(results);
 });
 
-const port = Number(process.env.PORT) || 3000;
-console.log(`🚀 Server running on http://localhost:${port}`);
+const port = 3005;
+console.log(`🚀 API Server starting on port ${port}...`);
 
 serve({ fetch: app.fetch, port });
+
