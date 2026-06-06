@@ -55,14 +55,11 @@ function LoginPage() {
     <div className="min-h-screen grid lg:grid-cols-2">
       <div className="hidden lg:flex flex-col items-center justify-center bg-blue-100 p-12">
         <img 
-          src="https://www.imssms.org/assets/images/auth-img.png" 
+          src="https://img.freepik.com/free-vector/mobile-login-concept-illustration_114360-83.jpg" 
           alt="Illustration" 
-          className="max-w-md w-full mb-8"
-          onError={(e) => {
-            // Fallback if external image is blocked
-            e.currentTarget.src = "https://cdn.gpteng.co/blank-app-v1.svg";
-          }}
+          className="max-w-md w-full mb-8 rounded-lg shadow-xl"
         />
+
       </div>
       <div className="flex flex-col items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
