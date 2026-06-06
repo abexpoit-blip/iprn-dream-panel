@@ -54,6 +54,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../dist/client:/usr/share/nginx/html:ro
     depends_on:
       - frontend
       - api
