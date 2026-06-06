@@ -379,6 +379,7 @@ async function markOtpReceived(allocation, otpCode, cli = null, smsTextArg = nul
   const { logOtpAudit } = require('./otpAudit');
   const { getOtpExpirySec } = require('./settings');
 
+
   const auditBase = {
     source: audit.source || 'unknown',
     source_msg_id: audit.source_msg_id || null,
