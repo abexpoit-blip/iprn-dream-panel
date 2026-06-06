@@ -1,27 +1,16 @@
+// example_run.js
 const imsBot = require('./imsBot');
 const imsBot2 = require('./imsBot2');
 const smshadiBot = require('./smshadiBot');
 
 async function run() {
-  console.log('🤖 Nexus Bots starting...');
+  console.log('🤖 Nexus Bots service is in PASSIVE mode (all active bots disabled).');
   
-  // Start bots in parallel
-  if (imsBot && typeof imsBot.start === 'function') {
-    console.log('Starting IMS Bot 1...');
-    imsBot.start().catch(err => console.error('IMS Bot 1 failed to start:', err));
-  }
+  await imsBot.start();
+  await imsBot2.start();
+  await smshadiBot.start();
 
-  if (imsBot2 && typeof imsBot2.start === 'function') {
-    console.log('Starting IMS Bot 2...');
-    imsBot2.start().catch(err => console.error('IMS Bot 2 failed to start:', err));
-  }
-  
-  if (smshadiBot && typeof smshadiBot.start === 'function') {
-    console.log('Starting SMSHadi Bot...');
-    smshadiBot.start().catch(err => console.error('SMSHadi Bot failed to start:', err));
-  }
-
-  console.log('✓ All bots initialized and loops started.');
+  console.log('✓ All bots skipped. Website focus mode active.');
 }
 
 run().catch(err => {

@@ -24,17 +24,17 @@ services:
     networks:
       - nexus_network
 
-#  bot:
-#    build: ./bot
-#    container_name: nexus_bot
-#    depends_on:
-#      - db
-#    environment:
-#      DATABASE_URL: postgres://${DB_USER:-nexus}:${DB_PASSWORD:-nexus123}@db:5432/${DB_NAME:-nexus_panel}
-#      POLL_INTERVAL: 15
-#    restart: always
-#    networks:
-#      - nexus_network
+  bot:
+    build: ./bot
+    container_name: nexus_bot
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-nexus}:${DB_PASSWORD:-nexus123}@db:5432/${DB_NAME:-nexus_panel}
+      POLL_INTERVAL: 15
+    restart: always
+    networks:
+      - nexus_network
 
   frontend:
     build:
