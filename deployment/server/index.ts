@@ -16,14 +16,18 @@ app.use('*', cors());
 app.post('/auth/login', async (c) => {
   const { username, password } = await c.req.json();
   
-  const [user] = await sql`SELECT * FROM profiles WHERE username = ${username}`;
+  // Find user by username or potential email candidate (for compatibility)
+  const usernamePrefix = username.split('@')[0];
+  const [user] = await sql`SELECT * FROM profiles WHERE username = ${username} OR username = ${usernamePrefix}`;
+  
   if (!user) return c.json({ error: 'Invalid credentials' }, 401);
   
   const isValid = await bcrypt.compare(password, user.password_hash);
-  // For initial dev, allow plaintext 'admin123' if hash fails and it's seed data
-  if (!isValid && username === 'admin' && password === 'admin123') {
-    // Valid for initial seed
-  } else if (!isValid) {
+  
+  // Fallback for initial admin seed if bcrypt hasn't hashed it yet
+  const isSeedAdmin = user.username === 'admin' && password === 'admin123';
+  
+  if (!isValid && !isSeedAdmin) {
     return c.json({ error: 'Invalid credentials' }, 401);
   }
 
