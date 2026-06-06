@@ -32,18 +32,36 @@ function LoginPage() {
     // Standardize email for IMS login logic
     const email = username.includes("@") ? username : `${username}@imssms.org`;
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
+    if (signInError) {
       toast.error("Login failed", {
-        description: error.message,
+        description: signInError.message,
       });
-    } else {
-      navigate({ to: "/dashboard" });
+      setLoading(false);
+      return;
     }
+
+    // Check if profile is approved
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('status')
+      .eq('id', signInData.user.id)
+      .single();
+
+    if (profileError || profile?.status !== 'approved') {
+      await supabase.auth.signOut();
+      toast.error("Account Pending Approval", {
+        description: "Your agent account is currently under review. Please contact support.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    navigate({ to: "/dashboard" });
     setLoading(false);
   };
 
