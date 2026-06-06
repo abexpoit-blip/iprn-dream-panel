@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { createClientAccount } from "@/lib/clients.functions";
 
 
 
@@ -34,8 +36,10 @@ export const Route = createFileRoute("/_dashboard/clients")({
 });
 
 function ClientsPage() {
+  const createClientFn = useServerFn(createClientAccount);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [newClient, setNewClient] = useState({
     username: "",
     email: "",
@@ -61,26 +65,19 @@ function ClientsPage() {
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
-      const userId = await getEffectiveUserId();
-      if (!userId) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase
-        .from('clients')
-        .insert([{
-          ...newClient,
-          agent_id: userId,
-          status: 'Active'
-        }]);
-
-      if (error) throw error;
-
-      toast.success("Client added successfully");
+      await createClientFn({ data: newClient });
+      toast.success("Client account created", {
+        description: `${newClient.username} can now log in with their password.`,
+      });
       setIsAddDialogOpen(false);
       setNewClient({ username: "", email: "", skype_id: "", password: "" });
       refetch();
     } catch (error: any) {
-      toast.error(error.message || "Failed to add client");
+      toast.error(error?.message || "Failed to create client account");
+    } finally {
+      setSubmitting(false);
     }
   };
 
