@@ -137,9 +137,10 @@ function DashboardPage() {
                           "px-2 py-0.5 rounded text-[10px] font-bold",
                           client.status === 'Active' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                         )}>
-                          {client.status.toUpperCase()}
+                          {(client.status || 'Inactive').toUpperCase()}
                         </span>
                       </TableCell>
+
                     </TableRow>
                   ))}
                   {(!recentClients || recentClients.length === 0) && (
