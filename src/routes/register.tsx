@@ -55,8 +55,8 @@ function RegisterPage() {
       if (profileError) {
         toast.error("Profile creation failed", { description: profileError.message });
       } else {
-        toast.success("Account created successfully", { 
-          description: "Please check your email for verification if enabled, or sign in." 
+        toast.success("Registration Successful", { 
+          description: "Your account is pending approval. Please contact an administrator to activate your account." 
         });
         navigate({ to: "/login" });
       }

@@ -86,6 +86,7 @@ export type Database = {
           id: string
           role: string | null
           skype_id: string | null
+          status: string | null
           updated_at: string | null
           username: string | null
         }
@@ -95,6 +96,7 @@ export type Database = {
           id: string
           role?: string | null
           skype_id?: string | null
+          status?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -104,6 +106,7 @@ export type Database = {
           id?: string
           role?: string | null
           skype_id?: string | null
+          status?: string | null
           updated_at?: string | null
           username?: string | null
         }

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { 
@@ -121,7 +121,11 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <div key={stat.label} className={cn("rounded-xl shadow-md overflow-hidden relative group transition-transform hover:-translate-y-1 duration-300", stat.color)}>
+          <Link 
+            key={stat.label} 
+            to={stat.label.includes("MONEY") ? "/credits" : "/stats/cdr"}
+            className={cn("rounded-xl shadow-md overflow-hidden relative group transition-transform hover:-translate-y-1 duration-300 block", stat.color)}
+          >
             <div className="p-6 text-white">
               <p className="text-[10px] font-black opacity-70 tracking-[0.2em] uppercase mb-1">{stat.label}</p>
               <div className="flex items-baseline gap-1">
@@ -135,7 +139,7 @@ function DashboardPage() {
             <div className="absolute right-2 top-4 opacity-20 group-hover:scale-110 transition-transform duration-500">
                <TrendingUp size={24} />
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
