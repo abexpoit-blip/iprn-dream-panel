@@ -33,7 +33,7 @@ function SmsRangesPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-[#2b3a4a]">SMS Ranges</h1>
+        <h1 className="text-2xl font-bold text-[#2b3a4a] tracking-tight">SMS Ranges</h1>
       </div>
 
       <Card className="shadow-sm border-[#e3e6ec]">
