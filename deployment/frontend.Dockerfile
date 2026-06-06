@@ -6,7 +6,7 @@ RUN npm install --legacy-peer-deps
 COPY . .
 # Set build-time env vars
 ARG VITE_SELF_HOSTED=true
-ARG VITE_API_URL=https://ap2.nexus-x.site/api
+ARG VITE_API_URL=https://panel.nexus-x.site/api
 ENV VITE_SELF_HOSTED=$VITE_SELF_HOSTED
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
