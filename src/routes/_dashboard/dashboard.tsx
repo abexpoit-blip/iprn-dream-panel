@@ -71,9 +71,10 @@ function DashboardPage() {
 
       <Card>
         <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold text-gray-700">LAST 7 DAYS SMS & IN/OUT PAYOUTS</h3>
+          <div className="flex justify-between items-center mb-6 border-b pb-4">
+            <h3 className="font-semibold text-[#69707a] uppercase text-xs tracking-wider">LAST 7 DAYS SMS & IN/OUT PAYOUTS</h3>
           </div>
+
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data}>
