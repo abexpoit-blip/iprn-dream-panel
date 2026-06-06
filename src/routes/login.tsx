@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -17,18 +18,17 @@ function LoginPage() {
   const [securityAnswer, setSecurityAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (securityAnswer !== "9") {
-      toast({
-        variant: "destructive",
-        title: "Wrong security answer",
+      toast.error("Wrong security answer", {
         description: "Please check your math.",
       });
       return;
     }
+
 
     setLoading(true);
     // In a real app, username would be an email. 
@@ -41,12 +41,11 @@ function LoginPage() {
     });
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Login failed",
+      toast.error("Login failed", {
         description: error.message,
       });
     } else {
+
       navigate({ to: "/dashboard" });
     }
     setLoading(false);
