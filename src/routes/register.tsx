@@ -66,36 +66,47 @@ function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-white">
-      <div className="hidden lg:flex flex-col items-center justify-center bg-[#f0f4ff] p-12">
-        <div className="max-w-[480px] w-full">
+    <div className="min-h-screen flex flex-col md:flex-row bg-white font-sans">
+      {/* Left side: Illustration */}
+      <div className="hidden md:flex flex-1 items-center justify-center bg-[#f0f3f9] p-4 lg:p-12">
+        <div className="w-full max-w-[80%]">
           <img 
-            src="https://www.imssms.org/assets/images/auth-img.png" 
+            src="https://www.imssms.org/assets/images/5.png" 
             alt="IMS Authentication" 
-            className="w-full h-auto"
-            onError={(e) => {
-              e.currentTarget.src = "https://img.freepik.com/free-vector/mobile-login-concept-illustration_114360-83.jpg";
-            }}
+            className="w-full h-auto object-contain mx-auto"
+            style={{ maxHeight: "80vh" }}
           />
         </div>
       </div>
 
-      <div className="flex flex-col items-center justify-center p-8">
-        <div className="w-full max-w-[400px] space-y-8">
-          <div className="text-center space-y-4">
-            <div className="flex justify-center mb-6">
-              <span className="text-4xl font-bold italic tracking-tighter text-[#2b3a4a]">iMS</span>
+      {/* Right side: Register Form */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 bg-white">
+        <div className="w-full max-w-[450px]">
+          <div className="mb-8">
+            <h2 className="text-[#ef4848] text-[26px] font-semibold leading-tight mb-6">
+              Accounts are free and always will be.
+            </h2>
+            <div className="mb-8">
+              <Link to="/">
+                <img 
+                  src="https://www.imssms.org/assets/images/logo.png" 
+                  alt="logo" 
+                  className="h-20 object-contain"
+                />
+              </Link>
             </div>
-            <h1 className="text-2xl font-bold text-[#0061f2]">Create Agent Account</h1>
-            <p className="text-[#69707a] text-sm">Join the iMS network today.</p>
+            <div className="space-y-1">
+              <h3 className="text-[28px] font-bold text-[#1f2937]">Create Agent Account</h3>
+              <p className="text-[#4d5875] text-[17px] mb-6">Join the iMS network today.</p>
+            </div>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-5">
+          <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-[#69707a] font-normal">Username</Label>
+              <Label htmlFor="username" className="text-[#4d5875] font-semibold text-sm">Username</Label>
               <Input
                 id="username"
-                className="h-12 border-[#c5ccd6]"
+                className="h-[46px] border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] rounded-md"
                 placeholder="Choose a Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -103,10 +114,10 @@ function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-[#69707a] font-normal">Full Name</Label>
+              <Label htmlFor="fullName" className="text-[#4d5875] font-semibold text-sm">Full Name</Label>
               <Input
                 id="fullName"
-                className="h-12 border-[#c5ccd6]"
+                className="h-[46px] border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] rounded-md"
                 placeholder="Your Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -114,28 +125,29 @@ function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-[#69707a] font-normal">Password</Label>
+              <Label htmlFor="password" className="text-[#4d5875] font-semibold text-sm">Password</Label>
               <Input
                 id="password"
                 type="password"
-                className="h-12 border-[#c5ccd6]"
+                className="h-[46px] border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] rounded-md"
                 placeholder="Create a Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
+            
             <Button 
               type="submit" 
-              className="w-full h-12 bg-[#0061f2] hover:bg-[#0052ce] text-white font-medium text-lg rounded transition-colors mt-2"
+              className="w-full h-[46px] bg-[#0061f2] hover:bg-[#0052ce] text-white font-semibold text-base rounded-md transition-all shadow-sm mt-4"
               disabled={loading}
             >
               {loading ? "Creating..." : "Create Account"}
             </Button>
           </form>
 
-          <div className="text-center mt-6">
-            <Link to="/login" className="text-[#0061f2] text-sm hover:underline">
+          <div className="mt-12 text-center border-t pt-6">
+            <Link to="/login" className="text-[#0061f2] text-[15px] font-medium hover:underline">
               Already have an account? Sign In
             </Link>
           </div>
