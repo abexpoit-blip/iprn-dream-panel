@@ -97,6 +97,7 @@ export type Database = {
           id: string
           skype_id: string | null
           status: string | null
+          user_id: string | null
           username: string
         }
         Insert: {
@@ -106,6 +107,7 @@ export type Database = {
           id?: string
           skype_id?: string | null
           status?: string | null
+          user_id?: string | null
           username: string
         }
         Update: {
@@ -115,6 +117,7 @@ export type Database = {
           id?: string
           skype_id?: string | null
           status?: string | null
+          user_id?: string | null
           username?: string
         }
         Relationships: [
@@ -394,7 +397,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_client_id: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

@@ -61,6 +61,11 @@ function DashboardLayout() {
       .eq('id', session.user.id)
       .single();
     
+    if (profile?.role === 'client') {
+      navigate({ to: "/client/dashboard" });
+      return;
+    }
+
     setProfile(profile);
 
     // Impersonation check

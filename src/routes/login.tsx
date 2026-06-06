@@ -29,30 +29,53 @@ function LoginPage() {
     }
 
     setLoading(true);
-    // Standardize email for IMS login logic
-    const email = username.includes("@") ? username : `${username}@imssms.org`;
+    const raw = username.trim();
 
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // If user typed an email, try it directly. Otherwise try agent then client domains.
+    const candidates = raw.includes("@")
+      ? [raw]
+      : [`${raw.toLowerCase()}@imssms.org`, `${raw.toLowerCase()}@client.imssms.org`];
 
-    if (signInError) {
-      toast.error("Login failed", {
-        description: signInError.message,
-      });
+    let signedInUserId: string | null = null;
+    let lastError: string | null = null;
+
+    for (const email of candidates) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (!error && data.user) {
+        signedInUserId = data.user.id;
+        break;
+      }
+      lastError = error?.message || lastError;
+    }
+
+    if (!signedInUserId) {
+      toast.error("Login failed", { description: lastError || "Invalid credentials." });
       setLoading(false);
       return;
     }
 
-    // Check if profile is approved
+    // Read profile to determine role / approval
     const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('status')
-      .eq('id', signInData.user.id)
+      .from("profiles")
+      .select("status, role, is_admin")
+      .eq("id", signedInUserId)
       .single();
 
-    if (profileError || profile?.status !== 'approved') {
+    if (profileError || !profile) {
+      await supabase.auth.signOut();
+      toast.error("Account not found", { description: "Profile missing. Contact support." });
+      setLoading(false);
+      return;
+    }
+
+    if (profile.role === "client") {
+      navigate({ to: "/client/dashboard" });
+      setLoading(false);
+      return;
+    }
+
+    // Agent / admin require approved status
+    if (profile.status !== "approved") {
       await supabase.auth.signOut();
       toast.error("Account Pending Approval", {
         description: "Your agent account is currently under review. Please contact support.",
