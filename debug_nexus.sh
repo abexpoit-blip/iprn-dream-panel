@@ -1,24 +1,27 @@
 #!/bin/bash
-echo "--- SYSTEM INFO ---"
+
+echo "--- 1. SYSTEM STATUS ---"
 uname -a
+free -m
+df -h
+
+echo -e "\n--- 2. DOCKER STATUS ---"
 docker --version
 docker-compose --version
-
-echo -e "\n--- DIRECTORY STRUCTURE ---"
-pwd
-ls -R /opt/nexus/deployment
-
-echo -e "\n--- DOCKER STATUS ---"
 docker ps -a
 
-echo -e "\n--- RECENT CONTAINER LOGS ---"
-docker-compose logs --tail=20 frontend
-docker-compose logs --tail=20 nginx
-docker-compose logs --tail=20 api
+echo -e "\n--- 3. CONTAINER LOGS (Last 50 lines) ---"
+cd /opt/nexus/deployment
+docker-compose logs --tail=50
 
-echo -e "\n--- NETWORK CONNECTIVITY (inside network) ---"
-docker exec nexus_nginx ping -c 2 frontend || echo "Nginx cannot reach Frontend"
-docker exec nexus_nginx ping -c 2 api || echo "Nginx cannot reach API"
+echo -e "\n--- 4. NETWORK CHECKS ---"
+curl -I http://localhost:3000 || echo "Frontend unreachable on port 3000"
+curl -I http://localhost:3005/health || echo "API unreachable on port 3005"
+netstat -tulpn | grep -E '80|443|3000|3005'
 
-echo -e "\n--- BUILD ARTIFACT CHECK ---"
-docker exec nexus_frontend ls -la /app/.output/server/index.mjs || echo "Frontend server binary missing"
+echo -e "\n--- 5. SSL / NGINX CHECKS ---"
+ls -l /etc/letsencrypt/live/panel.nexus-x.site/
+nginx -t 2>&1 || echo "Nginx config test failed (if running locally)"
+
+echo -e "\n--- 6. DATABASE CONNECTIVITY ---"
+docker exec nexus_db pg_isready -U nexus
