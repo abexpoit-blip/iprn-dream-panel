@@ -32,13 +32,13 @@ export const Route = createFileRoute("/_dashboard/dashboard")({
 });
 
 const chartData = [
-  { name: '2026-05-31', sms: 400, yesterday: 0 },
-  { name: '2026-06-01', sms: 300, yesterday: 402 },
-  { name: '2026-06-02', sms: 200, yesterday: 300 },
-  { name: '2026-06-03', sms: 100, yesterday: 200 },
-  { name: '2026-06-04', sms: 500, yesterday: 100 },
-  { name: '2026-06-05', sms: 450, yesterday: 500 },
-  { name: '2026-06-06', sms: 431, yesterday: 450 },
+  { name: '2026-05-31', sms: 400, payout: 15 },
+  { name: '2026-06-01', sms: 300, payout: 12 },
+  { name: '2026-06-02', sms: 200, payout: 8 },
+  { name: '2026-06-03', sms: 100, payout: 5 },
+  { name: '2026-06-04', sms: 500, payout: 22 },
+  { name: '2026-06-05', sms: 450, payout: 19 },
+  { name: '2026-06-06', sms: 431, payout: 18 },
 ];
 
 function DashboardPage() {
@@ -49,103 +49,180 @@ function DashboardPage() {
         .from('clients')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
       if (error) throw error;
       return data;
     }
   });
 
+  const { data: recentRanges } = useQuery({
+    queryKey: ['recent_ranges'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sms_ranges')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) return [];
+      return data;
+    }
+  });
+
   const stats = [
-    { label: "TODAY SMS", value: "431", color: "bg-[#0061f2]" },
-    { label: "YESTERDAY SMS", value: "402", color: "bg-[#e81500]" },
-    { label: "Last 7 Days", value: "3091", color: "bg-[#00ac69]" },
-    { label: "Money This Month", value: "54.45", color: "bg-[#f4a100]", prefix: "$" },
+    { label: "TODAY SMS", value: "434", color: "bg-[#0061f2]", footer: "SMS Received Today" },
+    { label: "YESTERDAY SMS", value: "402", color: "bg-[#e81500]", footer: "These received yesterday" },
+    { label: "Last 7 Days", value: "3091", color: "bg-[#00ac69]", footer: "Received in last 7 days" },
+    { label: "Money This Month", value: "54.5", color: "bg-[#f4a100]", footer: "Payout in this month", prefix: "" },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-[#2b3a4a]">Dashboard</h1>
-        <span className="text-[#69707a] text-sm font-medium">Summarized Stats & Reports</span>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-[#2b3a4a] tracking-tight">SMS Dashboard</h1>
+          <p className="text-[#69707a] text-[13px] font-medium mt-0.5">View Summarized Stats & Reports</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <Card key={stat.label} className={cn("border-none shadow-sm overflow-hidden", stat.color)}>
-            <CardContent className="p-6 text-white relative">
-              <div className="flex justify-between items-start z-10 relative">
-                <div>
-                  <p className="text-xs font-bold opacity-80 tracking-wider uppercase">{stat.label}</p>
-                  <h3 className="text-3xl font-bold mt-1">
-                    {stat.prefix}{stat.value}
-                  </h3>
-                </div>
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <TrendingUp size={24} />
-                </div>
+          <div key={stat.label} className={cn("rounded-xl shadow-md overflow-hidden relative group transition-transform hover:-translate-y-1 duration-300", stat.color)}>
+            <div className="p-6 text-white">
+              <p className="text-[10px] font-black opacity-70 tracking-[0.2em] uppercase mb-1">{stat.label}</p>
+              <div className="flex items-baseline gap-1">
+                <h3 className="text-4xl font-black">
+                  {stat.value}
+                </h3>
+                {stat.prefix && <span className="text-xl font-bold opacity-80">{stat.prefix}</span>}
               </div>
-              <div className="absolute right-[-10px] bottom-[-10px] opacity-10">
-                <TrendingUp size={100} />
-              </div>
-            </CardContent>
-          </Card>
+              <p className="text-[11px] mt-4 opacity-80 font-medium">{stat.footer}</p>
+            </div>
+            {/* Decoration icons match IMS dashboard better */}
+            <div className="absolute right-2 top-4 opacity-20 group-hover:scale-110 transition-transform duration-500">
+               <TrendingUp size={24} />
+            </div>
+          </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-sm border-[#e3e6ec]">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-center mb-6 border-b border-[#e3e6ec] pb-4">
-              <h3 className="font-bold text-[#69707a] uppercase text-xs tracking-wider">LAST 7 DAYS SMS & IN/OUT PAYOUTS</h3>
+      <Card className="shadow-lg border-[#e3e6ec] rounded-xl overflow-hidden">
+        <CardContent className="p-0">
+          <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc]">
+            <h3 className="font-black text-[#69707a] uppercase text-[11px] tracking-widest">LAST 7 DAYS SMS & IN/OUT PAYOUTS</h3>
+            <p className="text-[10px] text-[#69707a] opacity-60 mt-0.5">Here you can see each day sms for last 7 days and their payouts.</p>
+          </div>
+          <div className="p-6">
+            <div className="flex gap-6 mb-8">
+               <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#0061f2]"></div>
+                  <span className="text-[11px] font-bold text-[#2b3a4a]">Today SMS</span>
+               </div>
+               <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#e81500]"></div>
+                  <span className="text-[11px] font-bold text-[#2b3a4a]">Yesterday</span>
+               </div>
+               <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#f4a100]"></div>
+                  <span className="text-[11px] font-bold text-[#2b3a4a]">Last 7 Day</span>
+               </div>
             </div>
-            <div className="h-[300px]">
+            <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#69707a' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#69707a' }} />
-                  <Tooltip />
-                  <Bar dataKey="sms" fill="#0061f2" radius={[2, 2, 0, 0]} barSize={20} />
-                  <Bar dataKey="yesterday" fill="#e81500" radius={[2, 2, 0, 0]} barSize={20} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e3e6ec" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fill: '#69707a', fontWeight: 600 }} 
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fill: '#69707a', fontWeight: 600 }} 
+                  />
+                  <Tooltip 
+                    cursor={{fill: '#f2f4f8'}}
+                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}}
+                  />
+                  <Bar dataKey="sms" fill="#0061f2" radius={[4, 4, 0, 0]} barSize={35} />
+                  <Bar dataKey="payout" fill="#e81500" radius={[4, 4, 0, 0]} barSize={35} />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="shadow-lg border-[#e3e6ec] rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc]">
+            <h3 className="font-black text-[#69707a] uppercase text-[11px] tracking-widest">RECENT BILLING GROUPS/RANGES</h3>
+            <p className="text-[10px] text-[#69707a] opacity-60 mt-0.5">Here you can see the recently added ranges.</p>
+          </div>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-none bg-[#f8f9fc] hover:bg-[#f8f9fc]">
+                    <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Range Name</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Prefix</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentRanges?.map((range, idx) => (
+                    <TableRow key={range.id} className={cn("border-b border-[#f2f4f8] hover:bg-gray-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]")}>
+                      <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{range.name}</TableCell>
+                      <TableCell className="text-[13px] font-medium text-[#69707a] px-6 py-4">{range.prefix || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!recentRanges || recentRanges.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center py-12 text-[#69707a] text-[13px] italic font-medium">
+                        No recent billing ranges found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-[#e3e6ec]">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-center mb-6 border-b border-[#e3e6ec] pb-4">
-              <h3 className="font-bold text-[#69707a] uppercase text-xs tracking-wider">RECENT CLIENTS</h3>
-            </div>
+        <Card className="shadow-lg border-[#e3e6ec] rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc]">
+            <h3 className="font-black text-[#69707a] uppercase text-[11px] tracking-widest">RECENT CLIENTS</h3>
+            <p className="text-[10px] text-[#69707a] opacity-60 mt-0.5">Here you can see the agents you added recently.</p>
+          </div>
+          <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-none bg-gray-50 hover:bg-gray-50">
-                    <TableHead className="text-[10px] font-bold uppercase text-[#69707a]">Username</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-[#69707a]">Email</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-[#69707a]">Status</TableHead>
+                  <TableRow className="border-none bg-[#f8f9fc] hover:bg-[#f8f9fc]">
+                    <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Username</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Email</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentClients?.map((client) => (
-                    <TableRow key={client.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
-                      <TableCell className="text-sm font-medium text-[#2b3a4a] py-3">{client.username}</TableCell>
-                      <TableCell className="text-sm text-[#69707a] py-3">{client.email || '-'}</TableCell>
-                      <TableCell className="py-3">
+                  {recentClients?.map((client, idx) => (
+                    <TableRow key={client.id} className={cn("border-b border-[#f2f4f8] hover:bg-gray-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]")}>
+                      <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{client.username}</TableCell>
+                      <TableCell className="text-[13px] font-medium text-[#69707a] px-6 py-4">{client.email || '-'}</TableCell>
+                      <TableCell className="px-6 py-4">
                         <span className={cn(
-                          "px-2 py-0.5 rounded text-[10px] font-bold",
-                          client.status === 'Active' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                          "px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase shadow-sm",
+                          client.status === 'Active' ? "bg-green-500 text-white" : "bg-red-500 text-white"
                         )}>
-                          {(client.status || 'Inactive').toUpperCase()}
+                          {(client.status || 'Active')}
                         </span>
                       </TableCell>
-
                     </TableRow>
                   ))}
                   {(!recentClients || recentClients.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-10 text-[#69707a] text-sm italic">
+                      <TableCell colSpan={3} className="text-center py-12 text-[#69707a] text-[13px] italic font-medium">
                         No recent clients found
                       </TableCell>
                     </TableRow>
@@ -159,4 +236,5 @@ function DashboardPage() {
     </div>
   );
 }
+
 
