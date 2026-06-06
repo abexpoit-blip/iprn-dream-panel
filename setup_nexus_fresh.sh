@@ -5,11 +5,55 @@ DOMAIN="X.nexus-x.site"
 PROJECT_DIR="/opt/nexus"
 EMAIL="admin@nexus-x.site"
 
+# Ensure script is run as root
+if [ "$EUID" -ne 0 ]; then 
+  echo "Please run as root"
+  exit
+fi
+
 echo "--- 1. Creating Project Structure ---"
 mkdir -p $PROJECT_DIR/deployment/nginx/conf.d
 mkdir -p $PROJECT_DIR/deployment/certbot/www
 
 echo "--- 2. Setting Up Nginx Config ---"
+# Create temporary HTTP-only config for SSL challenge
+cat << NGINX_EOF > $PROJECT_DIR/deployment/nginx/conf.d/default.conf
+server {
+    listen 80;
+    server_name $DOMAIN;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+    }
+}
+NGINX_EOF
+
+echo "--- 3. Starting Nginx for SSL Challenge ---"
+# Use a temporary nginx container to serve the challenge
+docker run -d --name temp_nginx \
+  -v "$PROJECT_DIR/deployment/nginx/conf.d:/etc/nginx/conf.d" \
+  -v "$PROJECT_DIR/deployment/certbot/www:/var/www/certbot" \
+  -p 80:80 \
+  nginx:alpine
+
+echo "--- 4. Obtaining SSL Certificate ---"
+docker run -it --rm --name certbot \
+  -v "/etc/letsencrypt:/etc/letsencrypt" \
+  -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+  -v "$PROJECT_DIR/deployment/certbot/www:/var/www/certbot" \
+  certbot/certbot certonly --webroot -w /var/www/certbot \
+  -d $DOMAIN --email $EMAIL --agree-tos --no-eff-email --non-interactive
+
+# Stop temporary nginx
+docker stop temp_nginx
+docker rm temp_nginx
+
+echo "--- 5. Setting Up Final Nginx Config ---"
 cat << 'NGINX_EOF' > $PROJECT_DIR/deployment/nginx/conf.d/default.conf
 server {
     listen 80;
@@ -59,20 +103,8 @@ server {
 }
 NGINX_EOF
 
-echo "--- 3. Obtaining SSL Certificate ---"
-# Check if docker is installed
-if ! command -v docker &> /dev/null; then
-    echo "Error: docker is not installed. Please install docker and docker-compose first."
-    exit 1
-fi
-
-docker run -it --rm --name certbot \
-  -v "/etc/letsencrypt:/etc/letsencrypt" \
-  -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-  -v "$PROJECT_DIR/deployment/certbot/www:/var/www/certbot" \
-  certbot/certbot certonly --webroot -w /var/www/certbot \
-  -d $DOMAIN --email $EMAIL --agree-tos --no-eff-email
-
 echo "--- Setup Complete ---"
-echo "The VPS is now prepared for the new domain: $DOMAIN"
-echo "Please upload the project files to $PROJECT_DIR and run 'cd $PROJECT_DIR/deployment && docker-compose up -d --build'"
+echo "Next steps:"
+echo "1. Pull your latest code into $PROJECT_DIR"
+echo "2. Copy deployment/.env.example to deployment/.env and update secrets"
+echo "3. Run: cd $PROJECT_DIR/deployment && docker-compose up -d --build"
