@@ -44,8 +44,8 @@ function DashboardPage() {
   const { data: statsData } = useQuery({
     queryKey: ['dashboard_stats'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      const userId = await getEffectiveUserId();
+      if (!userId) return null;
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
