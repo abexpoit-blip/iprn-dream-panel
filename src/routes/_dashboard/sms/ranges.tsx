@@ -32,7 +32,7 @@ function SmsRangesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div>
         <h1 className="text-2xl font-bold text-[#2b3a4a] tracking-tight">SMS Ranges</h1>
         <p className="text-[#69707a] text-[13px] font-medium mt-0.5">View and manage SMS prefixes and payouts</p>
       </div>
