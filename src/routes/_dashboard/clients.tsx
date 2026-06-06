@@ -46,13 +46,13 @@ function ClientsPage() {
   const { data: clients, isLoading, refetch } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      const userId = await getEffectiveUserId();
+      if (!userId) return [];
 
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('agent_id', user.id)
+        .eq('agent_id', userId)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
