@@ -47,8 +47,9 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <Card key={stat.label} className={stat.color}>
+          <Card key={stat.label} className={cn("border-none shadow-sm", stat.color)}>
             <CardContent className="p-6 text-white">
+
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm font-medium opacity-90">{stat.label}</p>
