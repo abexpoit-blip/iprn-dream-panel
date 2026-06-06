@@ -18,7 +18,8 @@ export const Route = createFileRoute("/_dashboard/clients")({
 });
 
 function ClientsPage() {
-  const { data: clients, isLoading } = useQuery({
+  const [searchTerm, setSearchTerm] = useState("");
+  const { data: clients, isLoading, refetch } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -30,63 +31,115 @@ function ClientsPage() {
     }
   });
 
+  const filteredClients = clients?.filter(client => 
+    client.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-gray-800">Clients</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#2b3a4a] tracking-tight">Clients Management</h1>
+          <p className="text-[#69707a] text-[13px] font-medium mt-0.5">Manage your agents and clients accounts</p>
+        </div>
+        <Button className="bg-[#0061f2] hover:bg-[#0052ce] text-white font-bold text-sm px-6 shadow-lg shadow-blue-500/20">
+          Add New Client
+        </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex gap-2">
-              <Button className="bg-[#0061f2] hover:bg-[#0052ce]">Add Client</Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Search:</span>
-              <Input className="w-48 h-8" />
+      <Card className="shadow-lg border-[#e3e6ec] rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc] flex flex-col sm:flex-row justify-between items-center gap-4">
+          <h3 className="font-black text-[#69707a] uppercase text-[11px] tracking-widest">Client List</h3>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <span className="text-[11px] font-black text-[#69707a] uppercase whitespace-nowrap">Search:</span>
+            <div className="relative w-full sm:w-64">
+              <Input 
+                className="h-9 bg-white border-[#e3e6ec] text-[13px] pl-3 pr-10 focus:ring-[#0061f2] rounded-lg"
+                placeholder="Type to search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a7aeb8]">
+                <Users size={14} />
+              </div>
             </div>
           </div>
-
-          <div className="border rounded-lg overflow-hidden">
+        </div>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-gray-50">
-                <TableRow>
-                  <TableHead className="font-bold">USERNAME</TableHead>
-                  <TableHead className="font-bold">EMAIL</TableHead>
-                  <TableHead className="font-bold">SKYPE</TableHead>
-                  <TableHead className="font-bold">STATUS</TableHead>
-                  <TableHead className="font-bold">ACTION</TableHead>
+              <TableHeader>
+                <TableRow className="border-none bg-[#f8f9fc] hover:bg-[#f8f9fc]">
+                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Username</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Email</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Skype</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Status</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4 text-center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">Loading clients...</TableCell>
+                    <TableCell colSpan={5} className="text-center py-20">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-8 h-8 border-4 border-[#0061f2] border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm text-[#69707a] font-medium">Loading clients data...</span>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                ) : clients?.length === 0 ? (
+                ) : filteredClients?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">No clients found</TableCell>
+                    <TableCell colSpan={5} className="text-center py-20 text-[#69707a] text-[13px] italic font-medium">
+                      {searchTerm ? "No clients match your search" : "No clients found in the database"}
+                    </TableCell>
                   </TableRow>
                 ) : (
-                  clients?.map((client) => (
-                    <TableRow key={client.id}>
-                      <TableCell className="font-medium">{client.username}</TableCell>
-                      <TableCell>{client.email || '-'}</TableCell>
-                      <TableCell>{client.skype_id || '-'}</TableCell>
-                      <TableCell>
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                          {client.status}
+                  filteredClients?.map((client, idx) => (
+                    <TableRow key={client.id} className={cn("border-b border-[#f2f4f8] hover:bg-gray-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]")}>
+                      <TableCell className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#f2f4f8] text-[#0061f2] flex items-center justify-center font-bold text-xs">
+                            {client.username[0].toUpperCase()}
+                          </div>
+                          <span className="text-[13px] font-bold text-[#2b3a4a]">{client.username}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-[13px] font-medium text-[#69707a] px-6 py-4">{client.email || '-'}</TableCell>
+                      <TableCell className="text-[13px] font-medium text-[#69707a] px-6 py-4">{client.skype_id || '-'}</TableCell>
+                      <TableCell className="px-6 py-4">
+                        <span className={cn(
+                          "px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase shadow-sm",
+                          client.status === 'Active' ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                        )}>
+                          {(client.status || 'Active')}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" className="text-blue-600">Edit</Button>
+                      <TableCell className="px-6 py-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#0061f2] hover:bg-blue-50">
+                            <Settings size={14} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#e81500] hover:bg-red-50">
+                            <FileText size={14} />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
+          </div>
+          <div className="px-6 py-4 border-t border-[#e3e6ec] bg-[#f8f9fc] flex flex-col sm:flex-row justify-between items-center gap-4">
+             <p className="text-[11px] font-bold text-[#69707a] uppercase tracking-wider">Showing {filteredClients?.length || 0} Clients</p>
+             <div className="flex gap-1">
+                <Button variant="outline" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase border-[#e3e6ec] text-[#69707a] hover:bg-white">First</Button>
+                <Button variant="outline" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase border-[#e3e6ec] text-[#69707a] hover:bg-white">Previous</Button>
+                <Button variant="solid" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase bg-[#0061f2] text-white">1</Button>
+                <Button variant="outline" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase border-[#e3e6ec] text-[#69707a] hover:bg-white">Next</Button>
+                <Button variant="outline" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase border-[#e3e6ec] text-[#69707a] hover:bg-white">Last</Button>
+             </div>
           </div>
         </CardContent>
       </Card>
