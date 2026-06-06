@@ -14,7 +14,161 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          agent_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          skype_id: string | null
+          status: string | null
+          username: string
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          skype_id?: string | null
+          status?: string | null
+          username: string
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          skype_id?: string | null
+          status?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string
+          role: string | null
+          skype_id: string | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          role?: string | null
+          skype_id?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          skype_id?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      sms_logs: {
+        Row: {
+          agent_id: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string
+          number: string
+          otp_code: string | null
+          payout: number | null
+          status: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          number: string
+          otp_code?: string | null
+          payout?: number | null
+          status?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          number?: string
+          otp_code?: string | null
+          payout?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_ranges: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          id: string
+          memo: string | null
+          payout_1_1: number | null
+          payout_30_45: number | null
+          payout_7_1: number | null
+          payout_7_7: number | null
+          prefix: string
+          test_number: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          memo?: string | null
+          payout_1_1?: number | null
+          payout_30_45?: number | null
+          payout_7_1?: number | null
+          payout_7_7?: number | null
+          prefix: string
+          test_number?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          memo?: string | null
+          payout_1_1?: number | null
+          payout_30_45?: number | null
+          payout_7_1?: number | null
+          payout_7_7?: number | null
+          prefix?: string
+          test_number?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
