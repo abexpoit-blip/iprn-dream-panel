@@ -36,12 +36,12 @@ export const Route = createFileRoute("/_dashboard")({
 function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSmsModuleOpen, setIsSmsModuleOpen] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [activeRates, setActiveRates] = useState<any[]>([]);
 
   const navigate = useNavigate();
   const location = useLocation();
-
 
   useEffect(() => {
     const checkUser = async () => {
@@ -58,6 +58,13 @@ function DashboardLayout() {
         .single();
       
       setProfile(profile);
+
+      // Fetch active rates
+      const { data: rates } = await supabase
+        .from('active_rates')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (rates) setActiveRates(rates);
     };
     checkUser();
   }, [navigate]);
@@ -84,9 +91,11 @@ function DashboardLayout() {
       isOpen: isStatsOpen,
       toggle: () => setIsStatsOpen(!isStatsOpen),
       subItems: [
-        { label: "Daily Stats", href: "/stats/daily" },
-        { label: "Number Stats", href: "/stats/number" },
+        { label: "SMS CDR", href: "/stats/cdr" },
+        { label: "SMS Stats", href: "/stats/sms" },
+        { label: "Client Stats", href: "/stats/client" },
         { label: "Range Stats", href: "/stats/range" },
+        { label: "Number Stats", href: "/stats/number" },
       ]
     },
     { label: "Credit Notes", icon: FileText, href: "/credits" },
@@ -94,132 +103,184 @@ function DashboardLayout() {
     { label: "SMS Test Panel", icon: Settings, href: "/test-panel" },
   ];
 
-
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-[#f2f4f8] flex font-sans">
       {/* Sidebar */}
       <aside className={cn(
-        "bg-white border-r transition-all duration-300 flex flex-col",
-        isSidebarOpen ? "w-64" : "w-20"
+        "bg-white border-r border-[#e3e6ec] transition-all duration-300 flex flex-col z-20 sticky top-0 h-screen shadow-sm",
+        isSidebarOpen ? "w-[240px]" : "w-[70px]"
       )}>
-        <div className="p-4 flex items-center gap-2 border-b">
-          <span className="text-3xl font-bold italic tracking-tighter text-[#2b3a4a] ml-4">iMS</span>
+        <div className="h-16 flex items-center justify-center border-b border-[#e3e6ec]">
+          <span className={cn(
+            "font-black italic tracking-tighter text-[#2b3a4a] transition-all duration-300",
+            isSidebarOpen ? "text-3xl" : "text-xl"
+          )}>iMS</span>
         </div>
         
-        <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar">
-          <div className="px-4 mb-2">
-            <p className="text-[10px] font-bold text-[#69707a] uppercase tracking-wider">Navigation Menu</p>
+        <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar overflow-x-hidden">
+          {isSidebarOpen && (
+            <div className="px-6 mb-4">
+              <p className="text-[10px] font-bold text-[#69707a] uppercase tracking-wider opacity-60">Navigation Menu</p>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            {menuItems.map((item) => (
+              <div key={item.label}>
+                {item.hasSubmenu ? (
+                  <div>
+                    <button
+                      onClick={item.toggle}
+                      className={cn(
+                        "w-full flex items-center px-6 py-3 text-[#2b3a4a] hover:bg-[#f2f4f8] transition-all duration-200 font-medium text-[13px]",
+                        item.isOpen && isSidebarOpen && "bg-[#f2f4f8]"
+                      )}
+                    >
+                      <item.icon size={18} className="text-[#a7aeb8]" />
+                      {isSidebarOpen && (
+                        <>
+                          <span className="ml-4 flex-1 text-left">{item.label}</span>
+                          <ChevronDown className={cn("transition-transform duration-200 opacity-50", item.isOpen && "rotate-180")} size={14} />
+                        </>
+                      )}
+                    </button>
+                    {item.isOpen && isSidebarOpen && (
+                      <div className="bg-[#f8f9fc] py-1 border-y border-[#e3e6ec]/50">
+                        {item.subItems.map((sub) => (
+                          <Link
+                            key={sub.label}
+                            to={sub.href}
+                            className={cn(
+                              "flex items-center pl-14 pr-6 py-2 text-[12px] text-[#69707a] hover:text-[#0061f2] hover:translate-x-1 transition-all",
+                              location.pathname === sub.href && "text-[#0061f2] font-semibold"
+                            )}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-current mr-3 opacity-30" />
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    className={cn(
+                      "flex items-center px-6 py-3 transition-all duration-200 font-medium text-[13px] border-l-[3px]",
+                      location.pathname === item.href 
+                        ? "bg-[#f2f4f8] text-[#0061f2] border-[#0061f2]" 
+                        : "text-[#2b3a4a] border-transparent hover:bg-[#f2f4f8] hover:border-[#e3e6ec]"
+                    )}
+                  >
+                    <item.icon size={18} className={cn(location.pathname === item.href ? "text-[#0061f2]" : "text-[#a7aeb8]")} />
+                    {isSidebarOpen && <span className="ml-4">{item.label}</span>}
+                  </Link>
+                )}
+              </div>
+            ))}
           </div>
 
-          {menuItems.map((item) => (
-            <div key={item.label}>
-              {item.hasSubmenu ? (
-                <div>
-                  <button
-                    onClick={item.toggle}
-                    className="w-full flex items-center px-6 py-3 text-[#2b3a4a] hover:bg-[#f2f4f8] transition-colors font-medium text-sm border-l-4 border-transparent hover:border-[#0061f2]"
-                  >
-                    <item.icon size={20} />
-                    {isSidebarOpen && (
-                      <>
-                        <span className="ml-4 flex-1 text-left">{item.label}</span>
-                        <ChevronDown className={cn("transition-transform", item.isOpen && "rotate-180")} size={16} />
-                      </>
-                    )}
-                  </button>
-                  {item.isOpen && isSidebarOpen && (
-                    <div className="bg-gray-50 py-2">
-                      {item.subItems.map((sub) => (
-                        <Link
-                          key={sub.label}
-                          to={sub.href}
-                          className="flex items-center pl-14 pr-6 py-2 text-sm text-gray-500 hover:text-blue-600"
-                        >
-                          {sub.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  key={item.label}
-                  to={item.href}
-                  className={cn(
-                    "flex items-center px-6 py-3 transition-colors font-medium text-sm border-l-4",
-                    location.pathname === item.href 
-                      ? "bg-[#f2f4f8] text-[#0061f2] border-[#0061f2]" 
-                      : "text-[#2b3a4a] border-transparent hover:bg-[#f2f4f8] hover:border-[#0061f2]"
-                  )}
+          {/* Active Rates Section in Sidebar */}
+          {isSidebarOpen && activeRates.length > 0 && (
+            <div className="mt-8 px-2 space-y-1">
+              {activeRates.map((rate, idx) => (
+                <div 
+                  key={idx}
+                  className="bg-[#e81500] text-white text-[11px] font-bold py-1.5 px-3 rounded-md shadow-sm mb-1 hover:brightness-110 transition-all cursor-default"
                 >
-                  <item.icon size={18} className={cn(location.pathname === item.href ? "text-[#0061f2]" : "text-[#a7aeb8]")} />
-                  {isSidebarOpen && <span className="ml-4">{item.label}</span>}
-                </Link>
-
-              )}
+                  {rate.country} {rate.provider} {rate.type} ( {rate.rate}$ )
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </nav>
+
+        {/* User Info Bar at bottom of sidebar when closed */}
+        {!isSidebarOpen && (
+          <div className="p-4 border-t border-[#e3e6ec] flex justify-center">
+            <div className="w-8 h-8 rounded-full bg-[#0061f2] flex items-center justify-center text-[10px] font-bold text-white uppercase shadow-sm">
+              {profile?.username?.[0] || 'U'}
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 h-screen">
         {/* Header */}
-        <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+        <header className="h-16 bg-white border-b border-[#e3e6ec] flex items-center justify-between px-6 shrink-0 z-10">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-              <Menu size={20} />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="text-[#69707a] hover:bg-[#f2f4f8] transition-colors"
+            >
+              <Menu size={18} />
             </Button>
-            <span className="text-gray-500 text-sm">{new Date().toLocaleDateString('en-GB', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}</span>
+            <span className="text-[#69707a] text-[13px] font-medium hidden sm:inline-block">
+              {new Date().toLocaleDateString('en-GB', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
+            </span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon"><Moon size={18} /></Button>
-            <Button variant="ghost" size="icon" className="relative">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" size="icon" className="text-[#69707a] hover:bg-[#f2f4f8]"><Moon size={18} /></Button>
+            <Button variant="ghost" size="icon" className="text-[#69707a] hover:bg-[#f2f4f8] relative">
               <Bell size={18} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></span>
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#00ac69] rounded-full border-2 border-white"></span>
             </Button>
-            <Button variant="ghost" size="icon"><Maximize size={18} /></Button>
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 p-1 px-2 hover:bg-gray-100 h-10">
-                    <div className="w-8 h-8 rounded-full bg-[#0061f2] flex items-center justify-center text-xs font-bold text-white shadow-sm">
-                      {profile?.username?.[0]?.toUpperCase() || 'U'}
-                    </div>
-                    <div className="hidden md:flex flex-col items-start mr-1">
-                      <span className="text-[11px] font-bold text-[#2b3a4a] leading-none uppercase">{profile?.username || 'User'}</span>
-                      <span className="text-[9px] text-[#69707a] leading-none mt-1 uppercase font-bold">{profile?.role || 'Agent'}</span>
-                    </div>
-                    <ChevronDown size={12} className="text-[#69707a]" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 mt-1 border-[#e3e6ec] shadow-lg">
-                  <DropdownMenuLabel className="text-[10px] uppercase text-[#69707a] font-bold tracking-wider">Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-sm py-2 cursor-pointer hover:bg-[#f2f4f8]">
-                    <Settings className="mr-2 h-4 w-4 text-[#69707a]" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="text-sm py-2 cursor-pointer text-red-600 hover:bg-red-50"
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                      navigate({ to: "/login" });
-                    }}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <Button variant="ghost" size="icon" className="text-[#69707a] hover:bg-[#f2f4f8] hidden xs:flex"><Maximize size={18} /></Button>
+            
+            <div className="h-8 w-px bg-[#e3e6ec] mx-2 hidden sm:block"></div>
 
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 py-1 px-2 hover:bg-[#f2f4f8] rounded-lg transition-all">
+                  <div className="w-8 h-8 rounded-full bg-[#0061f2] flex items-center justify-center text-[11px] font-bold text-white shadow-md border-2 border-white uppercase">
+                    {profile?.username?.[0] || 'U'}
+                  </div>
+                  <div className="hidden md:flex flex-col items-start leading-tight">
+                    <span className="text-[11px] font-bold text-[#2b3a4a] uppercase tracking-tighter">{profile?.username || 'User'}</span>
+                    <span className="text-[9px] text-[#0061f2] font-bold uppercase mt-0.5">{profile?.role || 'Agent'}</span>
+                  </div>
+                  <ChevronDown size={12} className="text-[#69707a] ml-1 opacity-50" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 mt-2 border-[#e3e6ec] shadow-xl p-2 rounded-xl animate-in fade-in zoom-in duration-200">
+                <div className="px-3 py-2 border-b border-[#f2f4f8] mb-1">
+                  <p className="text-[10px] uppercase text-[#69707a] font-bold tracking-wider opacity-60">Account Settings</p>
+                </div>
+                <DropdownMenuItem className="text-[13px] py-2.5 cursor-pointer hover:bg-[#f2f4f8] rounded-lg font-medium text-[#2b3a4a] group">
+                  <Settings className="mr-3 h-4 w-4 text-[#a7aeb8] group-hover:text-[#0061f2]" />
+                  <span>Profile Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-[#f2f4f8]" />
+                <DropdownMenuItem 
+                  className="text-[13px] py-2.5 cursor-pointer text-[#e81500] hover:bg-[#fee2e2] rounded-lg font-bold group"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    navigate({ to: "/login" });
+                  }}
+                >
+                  <LogOut className="mr-3 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto bg-[#f2f4f8]">
+          <div className="p-4 sm:p-8 max-w-[1600px] mx-auto">
+            <Outlet />
+          </div>
+          
+          <footer className="py-6 px-8 border-t border-[#e3e6ec] bg-white flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p className="text-[12px] text-[#69707a] font-medium italic">
+              Copyright © {new Date().getFullYear()} <span className="font-bold text-[#2b3a4a] not-italic tracking-tighter">IMS SMS</span>. Designed with ❤️ by <a href="#" className="text-[#0061f2] font-bold">IMS SMS</a> All rights reserved
+            </p>
+          </footer>
         </main>
       </div>
     </div>
