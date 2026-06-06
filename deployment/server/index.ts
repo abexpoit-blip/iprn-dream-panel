@@ -40,7 +40,8 @@ app.post('/auth/login', async (c) => {
       role: user.role,
       is_admin: user.is_admin,
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 // 24h
-    }, JWT_SECRET, 'HS256');
+    }, JWT_SECRET);
+
 
     return c.json({ user: { id: user.id, username: user.username, role: user.role, is_admin: user.is_admin }, token });
   } catch (error) {
