@@ -35,10 +35,10 @@ function LoginPage() {
     setLoading(true);
     const raw = username.trim();
 
-    // Support admin account directly if detected
+    // Use simple username for self-hosted, or email candidates for Supabase
     const candidates = raw.includes("@")
       ? [raw]
-      : [`${raw.toLowerCase()}@imssms.org`, `${raw.toLowerCase()}@client.imssms.org`, `${raw.toLowerCase()}@admin.com`];
+      : [`${raw.toLowerCase()}@imssms.org`, `${raw.toLowerCase()}@client.imssms.org`, `${raw.toLowerCase()}@admin.com`, raw];
 
     let signedInUserId: string | null = null;
     let lastError: string | null = null;
