@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getEffectiveUserId } from "@/lib/auth-helpers";
 import { useState } from "react";
 import {
   Table,
