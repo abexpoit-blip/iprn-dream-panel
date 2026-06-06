@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
-import { jwt, sign, verify } from 'hono/jwt';
+import { jwt, sign } from 'hono/jwt';
 import postgres from 'postgres';
 import bcrypt from 'bcryptjs';
 import 'dotenv/config';
@@ -40,7 +40,9 @@ app.post('/auth/login', async (c) => {
       role: user.role,
       is_admin: user.is_admin,
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 // 24h
-    }, JWT_SECRET);
+    }, JWT_SECRET, 'HS256');
+
+    return c.json({ user: { id: user.id, username: user.username, role: user.role, is_admin: user.is_admin }, token });
 
     return c.json({ user: { id: user.id, username: user.username, role: user.role, is_admin: user.is_admin }, token });
   } catch (error) {
@@ -50,7 +52,7 @@ app.post('/auth/login', async (c) => {
 });
 
 // Protected Data Proxy
-app.use('/api/*', jwt({ secret: JWT_SECRET }));
+app.use('/api/*', jwt({ secret: JWT_SECRET, alg: 'HS256' }));
 
 app.get('/api/data/:table', async (c) => {
   const table = c.req.param('table');
