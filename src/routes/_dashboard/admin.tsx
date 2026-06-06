@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PayoutsTab } from "@/components/admin/PayoutsTab";
+import { BotsTab } from "@/components/admin/BotsTab";
+import { BannedWatchTab } from "@/components/admin/BannedWatchTab";
 
 export const Route = createFileRoute("/_dashboard/admin")({
   component: AdminDashboard,
