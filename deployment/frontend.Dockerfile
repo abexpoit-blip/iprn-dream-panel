@@ -7,7 +7,7 @@ ENV NODE_ENV=production
 
 COPY package*.json ./
 # Use npm install to generate local binaries
-RUN npm install --legacy-peer-deps && npm install -g vite
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
@@ -20,7 +20,7 @@ ENV VITE_SELF_HOSTED=$VITE_SELF_HOSTED
 ENV VITE_API_URL=$VITE_API_URL
 
 # Run build and verify output
-RUN npm run build && ls -la .output || (echo "Build failed to create .output directory" && ls -la && exit 1)
+RUN ./node_modules/.bin/vite build && ls -la .output || (echo "Build failed to create .output directory" && ls -la && exit 1)
 
 FROM node:22-alpine
 WORKDIR /app
