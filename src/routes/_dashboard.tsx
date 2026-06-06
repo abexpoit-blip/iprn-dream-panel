@@ -40,6 +40,8 @@ function DashboardLayout() {
   const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
 
   useEffect(() => {
     const checkUser = async () => {
