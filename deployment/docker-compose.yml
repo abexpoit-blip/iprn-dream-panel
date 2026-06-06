@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: nexus_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-nexus}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nexus123}
+      POSTGRES_DB: ${DB_NAME:-nexus_panel}
+    volumes:
+      - nexus_db_data:/var/lib/postgresql/data
+    networks:
+      - nexus_network
+
+  api:
+    build: ./server
+    container_name: nexus_api
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-nexus}:${DB_PASSWORD:-nexus123}@db:5432/${DB_NAME:-nexus_panel}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-key}
+      PORT: 3000
+    networks:
+      - nexus_network
+
+  bot:
+    build: ./bot
+    container_name: nexus_bot
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-nexus}:${DB_PASSWORD:-nexus123}@db:5432/${DB_NAME:-nexus_panel}
+      POLL_INTERVAL: 15
+    networks:
+      - nexus_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nexus_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ../dist:/usr/share/nginx/html
+    depends_on:
+      - api
+    networks:
+      - nexus_network
+
+networks:
+  nexus_network:
+    driver: bridge
+
+volumes:
+  nexus_db_data:

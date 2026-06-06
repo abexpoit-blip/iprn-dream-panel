@@ -65,7 +65,7 @@ function StatsCDRPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  logs?.map((log, idx) => (
+                  logs?.map((log: any, idx: number) => (
                     <TableRow key={log.id} className={cn("border-b border-[#f2f4f8] hover:bg-gray-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]")}>
                       <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{log.number}</TableCell>
                       <TableCell className="text-[13px] font-medium text-[#69707a] px-6 py-4">{log.prefix}</TableCell>

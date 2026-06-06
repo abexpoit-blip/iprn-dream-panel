@@ -14,22 +14,18 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Users, Settings, FileText, Plus, X } from "lucide-react";
+import { Users, Settings, FileText, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { createClientAccount } from "@/lib/clients.functions";
-
-
 
 export const Route = createFileRoute("/_dashboard/clients")({
   component: ClientsPage,
@@ -81,7 +77,7 @@ function ClientsPage() {
     }
   };
 
-  const filteredClients = clients?.filter(client => 
+  const filteredClients = clients?.filter((client: any) => 
     client.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -159,7 +155,6 @@ function ClientsPage() {
         </Dialog>
       </div>
 
-
       <Card className="shadow-lg border-[#e3e6ec] rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc] flex flex-col sm:flex-row justify-between items-center gap-4">
           <h3 className="font-black text-[#69707a] uppercase text-[11px] tracking-widest">Client List</h3>
@@ -207,7 +202,7 @@ function ClientsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredClients?.map((client, idx) => (
+                  filteredClients?.map((client: any, idx: number) => (
                     <TableRow key={client.id} className={cn("border-b border-[#f2f4f8] hover:bg-gray-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]")}>
                       <TableCell className="px-6 py-4">
                         <div className="flex items-center gap-3">
