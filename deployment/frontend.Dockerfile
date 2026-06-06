@@ -13,6 +13,12 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 COPY --from=build /app/dist ./dist
+# We also copy dist/ to a predictable place so the host can access it via volume if needed
+# but since docker-compose build context is "..", we should make sure the build 
+# actually places files in a way that Nginx can see them if we used a shared volume.
+# However, a cleaner way is to just let Nginx proxy everything to the frontend service
+# if SSR is handling static assets too, or use a shared volume.
+
 COPY --from=build /app/package*.json ./
 # Install only production dependencies if needed for the server
 RUN npm install --production --legacy-peer-deps
