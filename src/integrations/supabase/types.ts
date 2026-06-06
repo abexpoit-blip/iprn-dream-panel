@@ -62,27 +62,68 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_settings: {
+        Row: {
+          bot_id: string | null
+          id: string
+          is_secret: boolean | null
+          setting_key: string
+          setting_value: string
+          updated_at: string | null
+        }
+        Insert: {
+          bot_id?: string | null
+          id?: string
+          is_secret?: boolean | null
+          setting_key: string
+          setting_value: string
+          updated_at?: string | null
+        }
+        Update: {
+          bot_id?: string | null
+          id?: string
+          is_secret?: boolean | null
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_settings_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bots: {
         Row: {
+          bot_type: string | null
           config: Json | null
           created_at: string | null
           id: string
+          last_error: string | null
           last_seen: string | null
           name: string
           status: string
         }
         Insert: {
+          bot_type?: string | null
           config?: Json | null
           created_at?: string | null
           id?: string
+          last_error?: string | null
           last_seen?: string | null
           name: string
           status?: string
         }
         Update: {
+          bot_type?: string | null
           config?: Json | null
           created_at?: string | null
           id?: string
+          last_error?: string | null
           last_seen?: string | null
           name?: string
           status?: string
@@ -132,31 +173,43 @@ export type Database = {
       }
       number_pool: {
         Row: {
+          allocation_id: string | null
           bot_id: string | null
           created_at: string | null
+          expires_at: string | null
           id: string
           number: string
           payout_rate: number | null
+          service_tag: string | null
           status: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
+          allocation_id?: string | null
           bot_id?: string | null
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           number: string
           payout_rate?: number | null
+          service_tag?: string | null
           status?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
+          allocation_id?: string | null
           bot_id?: string | null
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           number?: string
           payout_rate?: number | null
+          service_tag?: string | null
           status?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -168,32 +221,88 @@ export type Database = {
           },
         ]
       }
+      otp_audit_log: {
+        Row: {
+          amount_earned: number | null
+          bot_id: string | null
+          cli: string | null
+          created_at: string | null
+          id: string
+          otp_code: string | null
+          outcome: string
+          phone_number: string | null
+          sms_text: string | null
+          source: string
+          source_msg_id: string | null
+        }
+        Insert: {
+          amount_earned?: number | null
+          bot_id?: string | null
+          cli?: string | null
+          created_at?: string | null
+          id?: string
+          otp_code?: string | null
+          outcome: string
+          phone_number?: string | null
+          sms_text?: string | null
+          source: string
+          source_msg_id?: string | null
+        }
+        Update: {
+          amount_earned?: number | null
+          bot_id?: string | null
+          cli?: string | null
+          created_at?: string | null
+          id?: string
+          otp_code?: string | null
+          outcome?: string
+          phone_number?: string | null
+          sms_text?: string | null
+          source?: string
+          source_msg_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "otp_audit_log_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payouts: {
         Row: {
+          account_details: string | null
           agent_id: string
           amount: number
           created_at: string | null
           id: string
+          method: string | null
           payment_method: string | null
           status: string
           transaction_id: string | null
           updated_at: string | null
         }
         Insert: {
+          account_details?: string | null
           agent_id: string
           amount: number
           created_at?: string | null
           id?: string
+          method?: string | null
           payment_method?: string | null
           status?: string
           transaction_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          account_details?: string | null
           agent_id?: string
           amount?: number
           created_at?: string | null
           id?: string
+          method?: string | null
           payment_method?: string | null
           status?: string
           transaction_id?: string | null
