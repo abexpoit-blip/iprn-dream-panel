@@ -250,7 +250,26 @@ function DashboardLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen">
+      <div className="flex-1 flex flex-col min-w-0 h-screen relative">
+        {/* Impersonation Banner */}
+        {impersonatedAgent && (
+          <div className="bg-[#e81500] text-white px-6 py-2 flex items-center justify-between z-30 animate-pulse">
+            <div className="flex items-center gap-3">
+              <UserCheck size={18} />
+              <div className="text-[12px] font-black uppercase tracking-wider">
+                IMPERSONATING AGENT: <span className="underline underline-offset-4">{impersonatedAgent.username}</span>
+              </div>
+            </div>
+            <Button 
+              onClick={handleExitImpersonation}
+              variant="outline" 
+              className="h-7 px-4 bg-white/10 border-white/30 text-white hover:bg-white hover:text-[#e81500] text-[10px] font-black uppercase"
+            >
+              EXIT PANEL
+            </Button>
+          </div>
+        )}
+
         {/* Header */}
         <header className="h-16 bg-white border-b border-[#e3e6ec] flex items-center justify-between px-6 shrink-0 z-10">
           <div className="flex items-center gap-4">
