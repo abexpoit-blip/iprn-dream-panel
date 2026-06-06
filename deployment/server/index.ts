@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 import 'dotenv/config';
 
 const app = new Hono();
-const sql = postgres(process.env.DATABASE_URL || 'postgres://nexus:nexus123@localhost:5432/nexus_panel');
+const sql = postgres(process.env.DATABASE_URL || 'postgres://nexus:nexus123@db:5432/nexus_panel');
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
 app.use('*', cors());
