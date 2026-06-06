@@ -105,6 +105,6 @@ NGINX_EOF
 
 echo "--- Setup Complete ---"
 echo "Next steps:"
-echo "1. Pull your latest code into $PROJECT_DIR"
-echo "2. Copy deployment/.env.example to deployment/.env and update secrets"
-echo "3. Run: cd $PROJECT_DIR/deployment && docker-compose up -d --build"
+echo "1. git clone https://github.com/abexpoit-blip/my-awesome-panel /opt/nexus"
+echo "2. cp $PROJECT_DIR/deployment/.env.example $PROJECT_DIR/deployment/.env"
+echo "3. cd $PROJECT_DIR/deployment && docker-compose up -d --build"
