@@ -80,9 +80,13 @@ function DashboardPage() {
   const { data: recentClients } = useQuery({
     queryKey: ['recent_clients'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
       const { data, error } = await supabase
         .from('clients')
         .select('*')
+        .eq('agent_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
       if (error) throw error;

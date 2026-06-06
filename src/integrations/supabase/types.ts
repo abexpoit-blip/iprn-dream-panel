@@ -84,6 +84,7 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string
+          is_admin: boolean | null
           role: string | null
           skype_id: string | null
           status: string | null
@@ -94,6 +95,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id: string
+          is_admin?: boolean | null
           role?: string | null
           skype_id?: string | null
           status?: string | null
@@ -104,6 +106,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
           role?: string | null
           skype_id?: string | null
           status?: string | null
