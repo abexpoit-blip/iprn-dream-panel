@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export const Route = createFileRoute("/_client")({
+export const Route = createFileRoute("/client")({
   component: ClientLayout,
 });
 
