@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 echo "--- 1. SYSTEM STATUS ---"
 uname -a
@@ -10,18 +11,20 @@ docker --version
 docker-compose --version
 docker ps -a
 
-echo -e "\n--- 3. CONTAINER LOGS (Last 50 lines) ---"
+echo -e "\n--- 3. CLEANING OLD BUILDS ---"
 cd /opt/nexus/deployment
+docker-compose down --remove-orphans
+docker system prune -f
+
+echo -e "\n--- 4. ATTEMPTING DEPLOYMENT ---"
+docker-compose up -d --build --force-recreate
+
+echo -e "\n--- 5. CHECKING SERVICE HEALTH ---"
+sleep 10
+docker-compose ps
 docker-compose logs --tail=50
 
-echo -e "\n--- 4. NETWORK CHECKS ---"
-curl -I http://localhost:3000 || echo "Frontend unreachable on port 3000"
-curl -I http://localhost:3005/health || echo "API unreachable on port 3005"
-netstat -tulpn | grep -E '80|443|3000|3005'
-
-echo -e "\n--- 5. SSL / NGINX CHECKS ---"
-ls -l /etc/letsencrypt/live/panel.nexus-x.site/
-nginx -t 2>&1 || echo "Nginx config test failed (if running locally)"
-
-echo -e "\n--- 6. DATABASE CONNECTIVITY ---"
-docker exec nexus_db pg_isready -U nexus
+echo -e "\n--- 6. NETWORK CHECKS ---"
+# Check if services are listening inside the network
+docker exec nexus_api wget -qO- http://localhost:3005/health || echo "API Internal Health Check Failed"
+docker exec nexus_frontend wget -qO- http://localhost:3000/ || echo "Frontend Internal Health Check Failed"
