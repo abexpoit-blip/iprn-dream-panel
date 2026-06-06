@@ -154,7 +154,7 @@ export function BotsTab() {
                               <Trash2 size={14} />
                            </Button>
                         </td>
-                     </tr>
+                     </TableRow>
                    ))}
                 </TableBody>
              </Table>
