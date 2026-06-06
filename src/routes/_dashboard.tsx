@@ -143,12 +143,19 @@ function DashboardLayout() {
                 </div>
               ) : (
                 <Link
+                  key={item.label}
                   to={item.href}
-                  className="flex items-center px-6 py-3 text-[#2b3a4a] hover:bg-[#f2f4f8] transition-colors font-medium text-sm border-l-4 border-transparent hover:border-[#0061f2]"
+                  className={cn(
+                    "flex items-center px-6 py-3 transition-colors font-medium text-sm border-l-4",
+                    location.pathname === item.href 
+                      ? "bg-[#f2f4f8] text-[#0061f2] border-[#0061f2]" 
+                      : "text-[#2b3a4a] border-transparent hover:bg-[#f2f4f8] hover:border-[#0061f2]"
+                  )}
                 >
-                  <item.icon size={20} />
+                  <item.icon size={18} className={cn(location.pathname === item.href ? "text-[#0061f2]" : "text-[#a7aeb8]")} />
                   {isSidebarOpen && <span className="ml-4">{item.label}</span>}
                 </Link>
+
               )}
             </div>
           ))}
