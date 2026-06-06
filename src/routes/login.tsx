@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
-
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -19,7 +17,8 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-
+  // IMS Login page often has a random math question. 
+  // For the replica, we'll use 4 + 5 = 9 as fixed for now to match the UI screenshot.
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (securityAnswer !== "9") {
@@ -29,10 +28,8 @@ function LoginPage() {
       return;
     }
 
-
     setLoading(true);
-    // In a real app, username would be an email. 
-    // For this replica, we'll assume email = username@ims.com for auth purposes if they sign up.
+    // Standardize email for IMS login logic
     const email = username.includes("@") ? username : `${username}@imssms.org`;
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -45,38 +42,47 @@ function LoginPage() {
         description: error.message,
       });
     } else {
-
       navigate({ to: "/dashboard" });
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col items-center justify-center bg-blue-100 p-12">
-        <img 
-          src="https://img.freepik.com/free-vector/mobile-login-concept-illustration_114360-83.jpg" 
-          alt="Illustration" 
-          className="max-w-md w-full mb-8 rounded-lg shadow-xl"
-        />
-
+    <div className="min-h-screen grid lg:grid-cols-2 bg-white">
+      {/* Left side: Illustration */}
+      <div className="hidden lg:flex flex-col items-center justify-center bg-[#f0f4ff] p-12">
+        <div className="max-w-[480px] w-full">
+          <img 
+            src="https://www.imssms.org/assets/images/auth-img.png" 
+            alt="IMS Authentication" 
+            className="w-full h-auto"
+            onError={(e) => {
+              e.currentTarget.src = "https://img.freepik.com/free-vector/mobile-login-concept-illustration_114360-83.jpg";
+            }}
+          />
+        </div>
       </div>
-      <div className="flex flex-col items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-md space-y-8">
-          <div className="flex flex-col items-center">
-            <h1 className="text-red-500 font-medium mb-4">Accounts are free and always will be.</h1>
-            <div className="flex items-center gap-2 mb-8">
-              <span className="text-3xl font-bold italic text-[#2b2b2b]">iMS</span>
+
+      {/* Right side: Login Form */}
+      <div className="flex flex-col items-center justify-center p-8">
+        <div className="w-full max-w-[400px] space-y-8">
+          <div className="text-center space-y-4">
+            <h2 className="text-[#ef4444] text-lg font-medium">Accounts are free and always will be.</h2>
+            <div className="flex justify-center mb-6">
+              <div className="flex items-center gap-1">
+                <span className="text-4xl font-bold italic tracking-tighter text-[#2b3a4a]">iMS</span>
+              </div>
             </div>
-            <h2 className="text-2xl font-semibold text-blue-600">Welcome back!</h2>
-            <p className="text-gray-500">Please sign in to continue.</p>
+            <h1 className="text-2xl font-bold text-[#0061f2]">Welcome back!</h1>
+            <p className="text-[#69707a] text-sm">Please sign in to continue.</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="text-[#69707a] font-normal">Username</Label>
               <Input
                 id="username"
+                className="h-12 border-[#c5ccd6] focus:border-[#0061f2] focus:ring-0"
                 placeholder="Enter Your Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -84,10 +90,11 @@ function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-[#69707a] font-normal">Password</Label>
               <Input
                 id="password"
                 type="password"
+                className="h-12 border-[#c5ccd6] focus:border-[#0061f2] focus:ring-0"
                 placeholder="Enter Your Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -95,24 +102,29 @@ function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>What is 4 + 5 = ? :</Label>
-              <div className="flex gap-4 items-center">
-                <Input
-                  placeholder="Answer"
-                  value={securityAnswer}
-                  onChange={(e) => setSecurityAnswer(e.target.value)}
-                  required
-                />
-              </div>
+              <Label className="text-[#69707a] font-normal block mb-1">What is 4 + 5 = ? :</Label>
+              <Input
+                className="h-12 border-[#c5ccd6] focus:border-[#0061f2] focus:ring-0"
+                placeholder="Answer"
+                value={securityAnswer}
+                onChange={(e) => setSecurityAnswer(e.target.value)}
+                required
+              />
             </div>
             <Button 
               type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full h-12 bg-[#0061f2] hover:bg-[#0052ce] text-white font-medium text-lg rounded transition-colors mt-2"
               disabled={loading}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
+
+          <div className="text-center mt-6">
+            <Link to="/register" className="text-[#0061f2] text-sm hover:underline">
+              Don't have an account? Create Agent Account
+            </Link>
+          </div>
         </div>
       </div>
     </div>
