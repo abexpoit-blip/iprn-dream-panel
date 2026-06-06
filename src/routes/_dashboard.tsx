@@ -66,11 +66,23 @@ function DashboardLayout() {
       ]
     },
     { label: "Clients", icon: Users, href: "/clients" },
-    { label: "Stats & Reports", icon: BarChart3, href: "/stats" },
+    { 
+      label: "Stats & Reports", 
+      icon: BarChart3, 
+      hasSubmenu: true, 
+      isOpen: isStatsOpen,
+      toggle: () => setIsStatsOpen(!isStatsOpen),
+      subItems: [
+        { label: "Daily Stats", href: "/stats/daily" },
+        { label: "Number Stats", href: "/stats/number" },
+        { label: "Range Stats", href: "/stats/range" },
+      ]
+    },
     { label: "Credit Notes", icon: FileText, href: "/credits" },
     { label: "News", icon: Newspaper, href: "/news" },
     { label: "SMS Test Panel", icon: Settings, href: "/test-panel" },
   ];
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
