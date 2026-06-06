@@ -133,7 +133,7 @@ function DashboardLayout() {
               ) : (
                 <Link
                   to={item.href}
-                  className="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="flex items-center px-6 py-3 text-[#2b3a4a] hover:bg-[#f2f4f8] transition-colors font-medium text-sm border-l-4 border-transparent hover:border-[#0061f2]"
                 >
                   <item.icon size={20} />
                   {isSidebarOpen && <span className="ml-4">{item.label}</span>}
