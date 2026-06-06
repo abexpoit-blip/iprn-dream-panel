@@ -43,8 +43,6 @@ app.post('/auth/login', async (c) => {
     }, JWT_SECRET, 'HS256');
 
     return c.json({ user: { id: user.id, username: user.username, role: user.role, is_admin: user.is_admin }, token });
-
-    return c.json({ user: { id: user.id, username: user.username, role: user.role, is_admin: user.is_admin }, token });
   } catch (error) {
     console.error('Login error:', error);
     return c.json({ error: 'Server error' }, 500);
