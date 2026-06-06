@@ -3,7 +3,7 @@ import type { Database } from './types';
 
 // Detect if we are in self-hosted mode
 const IS_SELF_HOSTED = import.meta.env.VITE_SELF_HOSTED === 'true';
-const API_URL = import.meta.env.VITE_API_URL || 'https://ap2.nexus-x.site/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://X.nexus-x.site/api';
 
 function createSupabaseClient() {
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
