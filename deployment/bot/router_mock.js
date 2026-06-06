@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('./db');
-const { authRequired } = require('../middleware/auth') || { authRequired: (req, res, next) => next() };
+const authRequired = (req, res, next) => next(); // Bot-internal router doesn't need external auth middleware
 const { agentPayout } = require('./commission');
 
 const { getOtpExpirySec, getRecentOtpHours } = require('./settings');
