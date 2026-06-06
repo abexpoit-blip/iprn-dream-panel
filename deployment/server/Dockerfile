@@ -5,4 +5,5 @@ RUN npm install
 COPY . .
 RUN npm install -g ts-node typescript @types/node
 EXPOSE 3005
-CMD ["ts-node", "--commonjs", "index.ts"]
+# Use ts-node but we need to check if we can just run it without --commonjs if it's not actually ESM
+CMD ["ts-node", "index.ts"]
