@@ -1,8 +1,8 @@
 const express = require('express');
-const db = require('../lib/db');
+const db = require('./db');
 const { authRequired } = require('../middleware/auth');
-const { agentPayout } = require('../lib/commission');
-const { getOtpExpirySec, getRecentOtpHours } = require('../lib/settings');
+const { agentPayout } = require('./commission');
+const { getOtpExpirySec, getRecentOtpHours } = require('./settings');
 
 const router = express.Router();
 
@@ -376,7 +376,7 @@ async function markOtpReceived(allocation, otpCode, cli = null, smsTextArg = nul
   //   { source: 'ims'|'xisora'|..., source_msg_id: 'dedup_key' }
   const smsText = (typeof smsTextArg === 'string') ? smsTextArg : null;
   const audit = (auditCtx && typeof auditCtx === 'object') ? auditCtx : {};
-  const { logOtpAudit } = require('../lib/otpAudit');
+  const { logOtpAudit } = require('./otpAudit');
   const auditBase = {
     source: audit.source || 'unknown',
     source_msg_id: audit.source_msg_id || null,
@@ -481,7 +481,7 @@ async function markOtpReceived(allocation, otpCode, cli = null, smsTextArg = nul
     logOtpAudit({ ...auditBase, outcome: 'billed', amount_bdt: agent_amount });
     // Fire-and-forget Telegram push for VIP agents who configured a bot.
     try {
-      const { pushOtpToUser } = require('../lib/telegramDelivery');
+      const { pushOtpToUser } = require('./telegramDelivery');
       pushOtpToUser(allocation.user_id, {
         phone_number: allocation.phone_number,
         otp: otpCode,

@@ -15,11 +15,11 @@
 const axios = require('axios');
 const tough = require('tough-cookie');
 const { wrapper } = require('axios-cookiejar-support');
-const db = require('../lib/db');
+const db = require('./db');
 const { markOtpReceived } = require('../routes/numbers');
-const { logOtpAudit } = require('../lib/otpAudit');
-const { getOtpExpirySec } = require('../lib/settings');
-const { findMatchingAllocation, hasSeenSourceMessage } = require('../lib/allocationMatcher');
+const { logOtpAudit } = require('./otpAudit');
+const { getOtpExpirySec } = require('./settings');
+const { findMatchingAllocation, hasSeenSourceMessage } = require('./allocationMatcher');
 const { Telemetry } = require('./_botTelemetry');
 const tel = new Telemetry();
 
