@@ -101,27 +101,15 @@ function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="payouts">
-          <Card className="p-8 text-center text-[#69707a] shadow-lg border-[#e3e6ec] rounded-xl">
-            <DollarSign size={48} className="mx-auto text-[#0061f2] mb-4" />
-            <h3 className="font-bold text-[#2b3a4a]">Payout Management</h3>
-            <p className="text-[13px] mt-2">Manage and approve agent payouts here once linked.</p>
-          </Card>
+          <PayoutsTab />
         </TabsContent>
 
         <TabsContent value="bots">
-          <Card className="p-8 text-center text-[#69707a] shadow-lg border-[#e3e6ec] rounded-xl">
-            <Bot size={48} className="mx-auto text-[#0061f2] mb-4" />
-            <h3 className="font-bold text-[#2b3a4a]">Bot & Number Pool</h3>
-            <p className="text-[13px] mt-2">Configure bot instances and number pools for OTP scraping.</p>
-          </Card>
+          <BotsTab />
         </TabsContent>
 
         <TabsContent value="banned">
-          <Card className="p-8 text-center text-[#69707a] shadow-lg border-[#e3e6ec] rounded-xl">
-            <Ban size={48} className="mx-auto text-[#0061f2] mb-4" />
-            <h3 className="font-bold text-[#2b3a4a]">Banned Watch</h3>
-            <p className="text-[13px] mt-2">Manage keywords and numbers banned from the system.</p>
-          </Card>
+          <BannedWatchTab />
         </TabsContent>
       </Tabs>
     </div>
