@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_client/stats/cdr")({
+export const Route = createFileRoute("/client/stats/cdr")({
   component: ClientCdrPage,
 });
 

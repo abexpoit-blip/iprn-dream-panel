@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_client/sms/numbers")({
+export const Route = createFileRoute("/client/sms/numbers")({
   component: ClientSmsNumbersPage,
 });
 

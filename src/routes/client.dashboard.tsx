@@ -14,7 +14,7 @@ import {
 import { TrendingUp, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_client/dashboard")({
+export const Route = createFileRoute("/client/dashboard")({
   component: ClientDashboardPage,
 });
 

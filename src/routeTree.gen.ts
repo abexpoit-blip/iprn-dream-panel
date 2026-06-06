@@ -11,15 +11,21 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ClientRouteImport } from './routes/client'
 import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ClientNewsRouteImport } from './routes/client.news'
+import { Route as ClientDashboardRouteImport } from './routes/client.dashboard'
 import { Route as DashboardTestPanelRouteImport } from './routes/_dashboard/test-panel'
 import { Route as DashboardNewsRouteImport } from './routes/_dashboard/news'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
 import { Route as DashboardCreditsRouteImport } from './routes/_dashboard/credits'
 import { Route as DashboardClientsRouteImport } from './routes/_dashboard/clients'
 import { Route as DashboardAdminRouteImport } from './routes/_dashboard/admin'
+import { Route as ClientStatsSmsRouteImport } from './routes/client.stats.sms'
+import { Route as ClientStatsCdrRouteImport } from './routes/client.stats.cdr'
+import { Route as ClientSmsNumbersRouteImport } from './routes/client.sms.numbers'
 import { Route as DashboardStatsSmsRouteImport } from './routes/_dashboard/stats/sms'
 import { Route as DashboardStatsRangeRouteImport } from './routes/_dashboard/stats/range'
 import { Route as DashboardStatsNumberRouteImport } from './routes/_dashboard/stats/number'
@@ -39,6 +45,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientRoute = ClientRouteImport.update({
+  id: '/client',
+  path: '/client',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin-login',
   path: '/admin-login',
@@ -52,6 +63,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ClientNewsRoute = ClientNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => ClientRoute,
+} as any)
+const ClientDashboardRoute = ClientDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => ClientRoute,
 } as any)
 const DashboardTestPanelRoute = DashboardTestPanelRouteImport.update({
   id: '/test-panel',
@@ -82,6 +103,21 @@ const DashboardAdminRoute = DashboardAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => DashboardRoute,
+} as any)
+const ClientStatsSmsRoute = ClientStatsSmsRouteImport.update({
+  id: '/stats/sms',
+  path: '/stats/sms',
+  getParentRoute: () => ClientRoute,
+} as any)
+const ClientStatsCdrRoute = ClientStatsCdrRouteImport.update({
+  id: '/stats/cdr',
+  path: '/stats/cdr',
+  getParentRoute: () => ClientRoute,
+} as any)
+const ClientSmsNumbersRoute = ClientSmsNumbersRouteImport.update({
+  id: '/sms/numbers',
+  path: '/sms/numbers',
+  getParentRoute: () => ClientRoute,
 } as any)
 const DashboardStatsSmsRoute = DashboardStatsSmsRouteImport.update({
   id: '/stats/sms',
@@ -127,6 +163,7 @@ const DashboardSmsNumbersRoute = DashboardSmsNumbersRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin-login': typeof AdminLoginRoute
+  '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin': typeof DashboardAdminRoute
@@ -135,6 +172,8 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardDashboardRoute
   '/news': typeof DashboardNewsRoute
   '/test-panel': typeof DashboardTestPanelRoute
+  '/client/dashboard': typeof ClientDashboardRoute
+  '/client/news': typeof ClientNewsRoute
   '/sms/numbers': typeof DashboardSmsNumbersRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
   '/sms/ratecard': typeof DashboardSmsRatecardRoute
@@ -143,10 +182,14 @@ export interface FileRoutesByFullPath {
   '/stats/number': typeof DashboardStatsNumberRoute
   '/stats/range': typeof DashboardStatsRangeRoute
   '/stats/sms': typeof DashboardStatsSmsRoute
+  '/client/sms/numbers': typeof ClientSmsNumbersRoute
+  '/client/stats/cdr': typeof ClientStatsCdrRoute
+  '/client/stats/sms': typeof ClientStatsSmsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin-login': typeof AdminLoginRoute
+  '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin': typeof DashboardAdminRoute
@@ -155,6 +198,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardDashboardRoute
   '/news': typeof DashboardNewsRoute
   '/test-panel': typeof DashboardTestPanelRoute
+  '/client/dashboard': typeof ClientDashboardRoute
+  '/client/news': typeof ClientNewsRoute
   '/sms/numbers': typeof DashboardSmsNumbersRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
   '/sms/ratecard': typeof DashboardSmsRatecardRoute
@@ -163,12 +208,16 @@ export interface FileRoutesByTo {
   '/stats/number': typeof DashboardStatsNumberRoute
   '/stats/range': typeof DashboardStatsRangeRoute
   '/stats/sms': typeof DashboardStatsSmsRoute
+  '/client/sms/numbers': typeof ClientSmsNumbersRoute
+  '/client/stats/cdr': typeof ClientStatsCdrRoute
+  '/client/stats/sms': typeof ClientStatsSmsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
+  '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_dashboard/admin': typeof DashboardAdminRoute
@@ -177,6 +226,8 @@ export interface FileRoutesById {
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_dashboard/news': typeof DashboardNewsRoute
   '/_dashboard/test-panel': typeof DashboardTestPanelRoute
+  '/client/dashboard': typeof ClientDashboardRoute
+  '/client/news': typeof ClientNewsRoute
   '/_dashboard/sms/numbers': typeof DashboardSmsNumbersRoute
   '/_dashboard/sms/ranges': typeof DashboardSmsRangesRoute
   '/_dashboard/sms/ratecard': typeof DashboardSmsRatecardRoute
@@ -185,12 +236,16 @@ export interface FileRoutesById {
   '/_dashboard/stats/number': typeof DashboardStatsNumberRoute
   '/_dashboard/stats/range': typeof DashboardStatsRangeRoute
   '/_dashboard/stats/sms': typeof DashboardStatsSmsRoute
+  '/client/sms/numbers': typeof ClientSmsNumbersRoute
+  '/client/stats/cdr': typeof ClientStatsCdrRoute
+  '/client/stats/sms': typeof ClientStatsSmsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin-login'
+    | '/client'
     | '/login'
     | '/register'
     | '/admin'
@@ -199,6 +254,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/news'
     | '/test-panel'
+    | '/client/dashboard'
+    | '/client/news'
     | '/sms/numbers'
     | '/sms/ranges'
     | '/sms/ratecard'
@@ -207,10 +264,14 @@ export interface FileRouteTypes {
     | '/stats/number'
     | '/stats/range'
     | '/stats/sms'
+    | '/client/sms/numbers'
+    | '/client/stats/cdr'
+    | '/client/stats/sms'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin-login'
+    | '/client'
     | '/login'
     | '/register'
     | '/admin'
@@ -219,6 +280,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/news'
     | '/test-panel'
+    | '/client/dashboard'
+    | '/client/news'
     | '/sms/numbers'
     | '/sms/ranges'
     | '/sms/ratecard'
@@ -227,11 +290,15 @@ export interface FileRouteTypes {
     | '/stats/number'
     | '/stats/range'
     | '/stats/sms'
+    | '/client/sms/numbers'
+    | '/client/stats/cdr'
+    | '/client/stats/sms'
   id:
     | '__root__'
     | '/'
     | '/_dashboard'
     | '/admin-login'
+    | '/client'
     | '/login'
     | '/register'
     | '/_dashboard/admin'
@@ -240,6 +307,8 @@ export interface FileRouteTypes {
     | '/_dashboard/dashboard'
     | '/_dashboard/news'
     | '/_dashboard/test-panel'
+    | '/client/dashboard'
+    | '/client/news'
     | '/_dashboard/sms/numbers'
     | '/_dashboard/sms/ranges'
     | '/_dashboard/sms/ratecard'
@@ -248,12 +317,16 @@ export interface FileRouteTypes {
     | '/_dashboard/stats/number'
     | '/_dashboard/stats/range'
     | '/_dashboard/stats/sms'
+    | '/client/sms/numbers'
+    | '/client/stats/cdr'
+    | '/client/stats/sms'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
+  ClientRoute: typeof ClientRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
 }
@@ -272,6 +345,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/client': {
+      id: '/client'
+      path: '/client'
+      fullPath: '/client'
+      preLoaderRoute: typeof ClientRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin-login': {
@@ -294,6 +374,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/client/news': {
+      id: '/client/news'
+      path: '/news'
+      fullPath: '/client/news'
+      preLoaderRoute: typeof ClientNewsRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/client/dashboard': {
+      id: '/client/dashboard'
+      path: '/dashboard'
+      fullPath: '/client/dashboard'
+      preLoaderRoute: typeof ClientDashboardRouteImport
+      parentRoute: typeof ClientRoute
     }
     '/_dashboard/test-panel': {
       id: '/_dashboard/test-panel'
@@ -336,6 +430,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin'
       preLoaderRoute: typeof DashboardAdminRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/client/stats/sms': {
+      id: '/client/stats/sms'
+      path: '/stats/sms'
+      fullPath: '/client/stats/sms'
+      preLoaderRoute: typeof ClientStatsSmsRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/client/stats/cdr': {
+      id: '/client/stats/cdr'
+      path: '/stats/cdr'
+      fullPath: '/client/stats/cdr'
+      preLoaderRoute: typeof ClientStatsCdrRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/client/sms/numbers': {
+      id: '/client/sms/numbers'
+      path: '/sms/numbers'
+      fullPath: '/client/sms/numbers'
+      preLoaderRoute: typeof ClientSmsNumbersRouteImport
+      parentRoute: typeof ClientRoute
     }
     '/_dashboard/stats/sms': {
       id: '/_dashboard/stats/sms'
@@ -434,13 +549,43 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
   DashboardRouteChildren,
 )
 
+interface ClientRouteChildren {
+  ClientDashboardRoute: typeof ClientDashboardRoute
+  ClientNewsRoute: typeof ClientNewsRoute
+  ClientSmsNumbersRoute: typeof ClientSmsNumbersRoute
+  ClientStatsCdrRoute: typeof ClientStatsCdrRoute
+  ClientStatsSmsRoute: typeof ClientStatsSmsRoute
+}
+
+const ClientRouteChildren: ClientRouteChildren = {
+  ClientDashboardRoute: ClientDashboardRoute,
+  ClientNewsRoute: ClientNewsRoute,
+  ClientSmsNumbersRoute: ClientSmsNumbersRoute,
+  ClientStatsCdrRoute: ClientStatsCdrRoute,
+  ClientStatsSmsRoute: ClientStatsSmsRoute,
+}
+
+const ClientRouteWithChildren =
+  ClientRoute._addFileChildren(ClientRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
+  ClientRoute: ClientRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
