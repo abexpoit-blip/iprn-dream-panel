@@ -1,46 +1,35 @@
-// Centralized OTP audit logger. Every scraped OTP — whether billed,
-// duplicate, mismatched, or errored — is recorded here for end-to-end
-// traceability. Writes are best-effort; failures never break the bot.
 const db = require('./db');
-
-const stmt = db.prepare(`
-  INSERT INTO otp_audit_log
-    (source, source_msg_id, phone_number, cli, otp_code, sms_text,
-     allocation_id, user_id, outcome, miss_reason, amount_bdt, is_fake)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  ON CONFLICT(source, source_msg_id) DO UPDATE SET
-    phone_number = COALESCE(excluded.phone_number, otp_audit_log.phone_number),
-    cli = COALESCE(excluded.cli, otp_audit_log.cli),
-    otp_code = COALESCE(excluded.otp_code, otp_audit_log.otp_code),
-    sms_text = COALESCE(excluded.sms_text, otp_audit_log.sms_text),
-    allocation_id = COALESCE(excluded.allocation_id, otp_audit_log.allocation_id),
-    user_id = COALESCE(excluded.user_id, otp_audit_log.user_id),
-    outcome = excluded.outcome,
-    miss_reason = excluded.miss_reason,
-    amount_bdt = COALESCE(excluded.amount_bdt, otp_audit_log.amount_bdt),
-    is_fake = excluded.is_fake
-  WHERE otp_audit_log.outcome IN ('mismatch', 'error')
-    AND excluded.outcome IN ('billed', 'duplicate', 'resend')
-`);
 
 /**
  * outcome ∈ 'billed' | 'duplicate' | 'resend' | 'mismatch' | 'error'
  */
-function logOtpAudit({
+async function logOtpAudit({
   source, source_msg_id = null, phone_number = null, cli = null,
   otp_code = null, sms_text = null, allocation_id = null, user_id = null,
   outcome, miss_reason = null, amount_bdt = null, is_fake = 0,
 }) {
   try {
-    const info = stmt.run(
-      String(source), source_msg_id ? String(source_msg_id) : null,
-      phone_number, cli, otp_code,
+    // Note: The table schema found in PSQL (otp_audit_log) has different column names:
+    // id, bot_id, source, source_msg_id, phone_number, cli, otp_code, sms_text, outcome, amount_earned, created_at
+    // We map amount_bdt to amount_earned and skip missing columns like allocation_id/user_id for now if they don't exist.
+    
+    const query = `
+      INSERT INTO otp_audit_log 
+        (source, source_msg_id, phone_number, cli, otp_code, sms_text, outcome, amount_earned)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const info = await db.prepare(query).run(
+      String(source), 
+      source_msg_id ? String(source_msg_id) : null,
+      phone_number, 
+      cli, 
+      otp_code,
       sms_text ? String(sms_text).slice(0, 1000) : null,
-      allocation_id, user_id,
-      String(outcome), miss_reason ? String(miss_reason).slice(0, 300) : null,
-      amount_bdt,
-      is_fake ? 1 : 0,
+      String(outcome),
+      amount_bdt || 0
     );
+    
     return info.lastInsertRowid || null;
   } catch (e) {
     console.error('[otp-audit] write failed:', e.message);
