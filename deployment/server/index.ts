@@ -37,13 +37,13 @@ app.post('/auth/login', async (c) => {
     role: user.role,
     is_admin: user.is_admin,
     exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 // 24h
-  }, JWT_SECRET);
+  }, JWT_SECRET, 'HS256');
 
   return c.json({ user: { id: user.id, username: user.username, role: user.role, is_admin: user.is_admin }, token });
 });
 
 // Protected Data Proxy (Supabase-like CRUD)
-app.use('/api/*', jwt({ secret: JWT_SECRET }));
+app.use('/api/*', jwt({ secret: JWT_SECRET, alg: 'HS256' }));
 
 app.get('/api/data/:table', async (c) => {
   const table = c.req.param('table');
