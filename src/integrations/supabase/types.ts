@@ -106,6 +106,7 @@ export type Database = {
           last_error: string | null
           last_seen: string | null
           name: string
+          number_panel_type: string | null
           status: string
         }
         Insert: {
@@ -116,6 +117,7 @@ export type Database = {
           last_error?: string | null
           last_seen?: string | null
           name: string
+          number_panel_type?: string | null
           status?: string
         }
         Update: {
@@ -126,6 +128,7 @@ export type Database = {
           last_error?: string | null
           last_seen?: string | null
           name?: string
+          number_panel_type?: string | null
           status?: string
         }
         Relationships: []
@@ -171,6 +174,39 @@ export type Database = {
           },
         ]
       }
+      number_panels: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_login: string | null
+          name: string
+          panel_url: string
+          password: string | null
+          status: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_login?: string | null
+          name: string
+          panel_url: string
+          password?: string | null
+          status?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_login?: string | null
+          name?: string
+          panel_url?: string
+          password?: string | null
+          status?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       number_pool: {
         Row: {
           allocation_id: string | null
@@ -179,6 +215,7 @@ export type Database = {
           expires_at: string | null
           id: string
           number: string
+          number_panel_id: string | null
           payout_rate: number | null
           service_tag: string | null
           status: string
@@ -192,6 +229,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           number: string
+          number_panel_id?: string | null
           payout_rate?: number | null
           service_tag?: string | null
           status?: string
@@ -205,6 +243,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           number?: string
+          number_panel_id?: string | null
           payout_rate?: number | null
           service_tag?: string | null
           status?: string
@@ -217,6 +256,13 @@ export type Database = {
             columns: ["bot_id"]
             isOneToOne: false
             referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "number_pool_number_panel_id_fkey"
+            columns: ["number_panel_id"]
+            isOneToOne: false
+            referencedRelation: "number_panels"
             referencedColumns: ["id"]
           },
         ]
