@@ -64,23 +64,23 @@ function num(v, fb) {
 function readCooldownCfg() {
   const minInterval = Math.max(
     MIN_INTERVAL_FLOOR,
-    num(readSetting('ims_cdr_min_interval_sec'), DEFAULT_CDR_MIN_INTERVAL)
+    num(await readSetting('ims_cdr_min_interval_sec'), DEFAULT_CDR_MIN_INTERVAL)
   );
-  const penaltyBase = Math.max(1, num(readSetting('ims_rl_penalty_base_sec'), DEFAULT_RL_PENALTY_BASE));
-  const penaltyMax  = Math.max(penaltyBase, num(readSetting('ims_rl_penalty_max_sec'), DEFAULT_RL_PENALTY_MAX));
-  const penaltySteps = Math.max(1, Math.floor(num(readSetting('ims_rl_penalty_steps'), DEFAULT_RL_PENALTY_STEPS)));
-  const reloginThreshold = Math.max(2, Math.floor(num(readSetting('ims_rl_relogin_threshold'), DEFAULT_RL_RELOGIN_THRESHOLD)));
-  const reloginStaleSec = Math.max(60, Math.floor(num(readSetting('ims_rl_relogin_stale_sec'), DEFAULT_RL_RELOGIN_STALE_SEC)));
+  const penaltyBase = Math.max(1, num(await readSetting('ims_rl_penalty_base_sec'), DEFAULT_RL_PENALTY_BASE));
+  const penaltyMax  = Math.max(penaltyBase, num(await readSetting('ims_rl_penalty_max_sec'), DEFAULT_RL_PENALTY_MAX));
+  const penaltySteps = Math.max(1, Math.floor(num(await readSetting('ims_rl_penalty_steps'), DEFAULT_RL_PENALTY_STEPS)));
+  const reloginThreshold = Math.max(2, Math.floor(num(await readSetting('ims_rl_relogin_threshold'), DEFAULT_RL_RELOGIN_THRESHOLD)));
+  const reloginStaleSec = Math.max(60, Math.floor(num(await readSetting('ims_rl_relogin_stale_sec'), DEFAULT_RL_RELOGIN_STALE_SEC)));
   return { minInterval, penaltyBase, penaltyMax, penaltySteps, reloginThreshold, reloginStaleSec };
 }
 
-function readSetting(k) {
-  try { return db.prepare('SELECT value FROM settings WHERE key=?').get(k)?.value || null; }
+function await readSetting(k) {
+  try { return await db.prepare('SELECT value FROM settings WHERE key=?').get(k)?.value || null; }
   catch (_) { return null; }
 }
 function writeSetting(k, v) {
   try {
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO settings (key, value, updated_at) VALUES (?, ?, strftime('%s','now'))
       ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=strftime('%s','now')
     `).run(k, String(v));
@@ -97,15 +97,15 @@ function normalizeBase(raw) {
   return s;
 }
 function resolveCfg() {
-  const dbEnabled = readSetting('ims_enabled');
-  const interval = +(readSetting('ims_otp_interval') || process.env.IMS_OTP_INTERVAL || 18);
+  const dbEnabled = await readSetting('ims_enabled');
+  const interval = +(await readSetting('ims_otp_interval') || process.env.IMS_OTP_INTERVAL || 18);
   const cd = readCooldownCfg();
   return {
     ENABLED: (dbEnabled !== null ? dbEnabled : (process.env.IMS_ENABLED || 'false'))
               .toString().toLowerCase() === 'true',
-    BASE_URL: normalizeBase(readSetting('ims_base_url') || process.env.IMS_BASE_URL),
-    USERNAME: readSetting('ims_username') || process.env.IMS_USERNAME || '',
-    PASSWORD: readSetting('ims_password') || process.env.IMS_PASSWORD || '',
+    BASE_URL: normalizeBase(await readSetting('ims_base_url') || process.env.IMS_BASE_URL),
+    USERNAME: await readSetting('ims_username') || process.env.IMS_USERNAME || '',
+    PASSWORD: await readSetting('ims_password') || process.env.IMS_PASSWORD || '',
     INTERVAL: Math.max(cd.minInterval, interval),
     COOLDOWN: cd,
   };
@@ -146,7 +146,7 @@ function getCdrDebug(limit = CDR_DEBUG_MAX) {
 // manual header so it can't keep poisoning the session.
 async function forceRelogin(reason) {
   const { USERNAME, PASSWORD } = resolveCfg();
-  const manualCookie = String(readSetting('ims_cookie_header') || '').trim();
+  const manualCookie = String(await readSetting('ims_cookie_header') || '').trim();
   const haveCreds = !!(USERNAME && PASSWORD);
   const { minInterval } = readCooldownCfg();
 
@@ -230,7 +230,7 @@ function rememberDegradedFetch(reason, meta = {}) {
 
 function buildClient(baseURL) {
   _jar = new tough.CookieJar();
-  const manual = String(readSetting('ims_cookie_header') || '').trim();
+  const manual = String(await readSetting('ims_cookie_header') || '').trim();
   if (manual) {
     for (const part of manual.split(/;\s*/)) {
       if (!part) continue;
@@ -239,7 +239,7 @@ function buildClient(baseURL) {
     }
     dlog('loaded manual cookie header');
   } else {
-    const saved = readSetting('ims_session_cookie');
+    const saved = await readSetting('ims_session_cookie');
     if (saved) {
       try { _jar.setCookieSync(saved, baseURL); dlog('restored saved session'); }
       catch (e) { warn('cookie restore failed:', e.message); }
@@ -299,7 +299,7 @@ async function refreshSesskey() {
 
 async function login(forceCaptcha = false) {
   const { BASE_URL, USERNAME, PASSWORD } = resolveCfg();
-  const manualCookie = String(readSetting('ims_cookie_header') || '').trim();
+  const manualCookie = String(await readSetting('ims_cookie_header') || '').trim();
   if (!USERNAME && !PASSWORD && !manualCookie) {
     throw new Error('ims_creds_missing (set username/password OR cookie header)');
   }
@@ -671,7 +671,7 @@ async function loop() {
   while (!_stopFlag) {
     const cfg = resolveCfg();
     if (!cfg.ENABLED) { _running = false; log('disabled — stopping'); return; }
-    const hasCookie = !!String(readSetting('ims_cookie_header') || '').trim();
+    const hasCookie = !!String(await readSetting('ims_cookie_header') || '').trim();
     if (!hasCookie && (!cfg.USERNAME || !cfg.PASSWORD)) {
       _lastError = 'set ims_username/ims_password OR ims_cookie_header in admin Settings';
       await new Promise(r => setTimeout(r, 30_000)); continue;

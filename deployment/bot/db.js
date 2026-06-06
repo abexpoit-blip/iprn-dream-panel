@@ -37,5 +37,5 @@ const db = {
 
 console.log(`✓ Database (Postgres) ready`);
 
-module.exports = sql; // Exporting the raw sql client as well
-module.exports.db = db;
+module.exports = db;
+module.exports.sql = sql;
