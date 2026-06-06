@@ -120,7 +120,10 @@ export function BotsTab() {
 
                 <div className="flex gap-2 pt-2 border-t border-slate-100">
                   <Button onClick={() => openSettings(bot)} variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200 hover:bg-slate-50">
-                    <Settings size={14} className="mr-1" /> Settings
+                    <Settings size={14} className="mr-1" /> Config
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200 text-blue-600 hover:bg-blue-50">
+                    <RefreshCw size={14} className="mr-1" /> Re-Login
                   </Button>
                   <Button variant="outline" size="sm" className="h-8 w-8 p-0 border-slate-200 text-red-500 hover:bg-red-50">
                     <Trash2 size={14} />
