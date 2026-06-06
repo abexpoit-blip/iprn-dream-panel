@@ -44,7 +44,7 @@ services:
       - "443:443"
     environment:
       - VITE_SELF_HOSTED=true
-      - VITE_API_URL=https://ap2.nexus-x.site/api
+      - VITE_API_URL=https://panel.nexus-x.site/api
     depends_on:
       - api
     networks:
