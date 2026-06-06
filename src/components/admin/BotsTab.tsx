@@ -4,27 +4,36 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Bot, Plus, Trash2, Activity, Database } from "lucide-react";
+import { Bot, Plus, Trash2, Settings, Terminal, RefreshCw, Save, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export function BotsTab() {
   const [bots, setBots] = useState<any[]>([]);
   const [numbers, setNumbers] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
   const [isAddBotOpen, setIsAddBotOpen] = useState(false);
   const [isAddNumberOpen, setIsAddNumberOpen] = useState(false);
-  
-  const [newBot, setNewBot] = useState({ name: "" });
-  const [newNumber, setNewNumber] = useState({ number: "", payout_rate: "0.0", bot_id: "" });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [selectedBot, setSelectedBot] = useState<any>(null);
+  const [botSettings, setBotSettings] = useState<any[]>([]);
+
+  const [newBot, setNewBot] = useState({ name: "", bot_type: "ims" });
+  const [newNumber, setNewNumber] = useState({ number: "", service_tag: "", bot_id: "", allocation_id: "" });
 
   const fetchData = async () => {
     setLoading(true);
     const { data: botsData } = await supabase.from('bots').select('*');
     const { data: numbersData } = await supabase.from('number_pool').select('*, bots(name)');
+    const { data: logsData } = await supabase.from('otp_audit_log').select('*').order('created_at', { ascending: false }).limit(20);
+    
     setBots(botsData || []);
     setNumbers(numbersData || []);
+    setAuditLogs(logsData || []);
     setLoading(false);
   };
 
@@ -36,7 +45,7 @@ export function BotsTab() {
     const { error } = await supabase.from('bots').insert([newBot]);
     if (error) toast.error("Failed to add bot");
     else {
-      toast.success("Bot added");
+      toast.success("Bot registered");
       setIsAddBotOpen(false);
       fetchData();
     }
@@ -45,7 +54,7 @@ export function BotsTab() {
   const handleAddNumber = async () => {
     const { error } = await supabase.from('number_pool').insert([{
         ...newNumber,
-        payout_rate: parseFloat(newNumber.payout_rate)
+        status: 'active'
     }]);
     if (error) toast.error("Failed to add number");
     else {
@@ -55,112 +64,262 @@ export function BotsTab() {
     }
   };
 
+  const openSettings = async (bot: any) => {
+    setSelectedBot(bot);
+    setIsSettingsOpen(true);
+    const { data } = await supabase.from('bot_settings').select('*').eq('bot_id', bot.id);
+    setBotSettings(data || []);
+  };
+
+  const updateBotSetting = async (key: string, value: string) => {
+    const { error } = await supabase.from('bot_settings').upsert({
+      bot_id: selectedBot.id,
+      setting_key: key,
+      setting_value: value
+    }, { onConflict: 'bot_id,setting_key' });
+
+    if (error) toast.error("Failed to update setting");
+    else toast.success(`Setting ${key} updated`);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Bots Management */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-black text-[#2b3a4a] uppercase text-[12px] tracking-widest flex items-center gap-2">
-              <Bot size={16} className="text-[#0061f2]" /> Active Bots
-            </h3>
-            <Dialog open={isAddBotOpen} onOpenChange={setIsAddBotOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="bg-[#0061f2] text-white font-bold text-[10px] uppercase h-8"><Plus size={14} className="mr-1" /> Add Bot</Button>
-              </DialogTrigger>
-              <DialogContent className="rounded-2xl border-[#e3e6ec] shadow-2xl p-0 overflow-hidden sm:max-w-md">
-                 <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc]">
-                    <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest">Register New Bot</h3>
-                 </div>
-                 <div className="p-6 space-y-4">
-                    <div className="space-y-2">
-                       <Label className="text-[11px] font-black uppercase text-[#69707a]">Bot Name / ID</Label>
-                       <Input value={newBot.name} onChange={(e) => setNewBot({name: e.target.value})} placeholder="e.g. IMS_BOT_01" className="rounded-lg h-10 border-[#e3e6ec]" />
-                    </div>
-                    <Button onClick={handleAddBot} className="w-full bg-[#0061f2] text-white font-bold text-xs uppercase h-10">Add Bot</Button>
-                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] overflow-hidden">
-             <Table>
-                <TableHeader><TableRow className="bg-[#f8f9fc]"><TableHead className="text-[10px] font-black uppercase px-6">Name</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Status</TableHead></TableRow></TableHeader>
-                <TableBody>
-                   {bots.map(bot => (
-                     <TableRow key={bot.id} className="border-b border-[#f2f4f8]">
-                        <td className="px-6 py-3 font-bold text-[#2b3a4a] text-[13px]">{bot.name}</td>
-                        <td className="px-6 py-3">
-                           <span className={cn(
-                             "px-2 py-0.5 rounded text-[9px] font-black uppercase shadow-sm",
-                             bot.status === 'online' ? "bg-green-500 text-white" : "bg-slate-400 text-white"
-                           )}>{bot.status}</span>
-                        </td>
-                     </TableRow>
-                   ))}
-                </TableBody>
-             </Table>
-          </div>
-        </div>
+      <Tabs defaultValue="status" className="w-full">
+        <TabsList className="bg-slate-100 p-1 mb-4 h-11">
+          <TabsTrigger value="status" className="text-[11px] font-black uppercase">Bot Status</TabsTrigger>
+          <TabsTrigger value="pool" className="text-[11px] font-black uppercase">Number Pool</TabsTrigger>
+          <TabsTrigger value="audit" className="text-[11px] font-black uppercase">Live OTP Audit</TabsTrigger>
+        </TabsList>
 
-        {/* Number Pool Management */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-black text-[#2b3a4a] uppercase text-[12px] tracking-widest flex items-center gap-2">
-              <Database size={16} className="text-[#0061f2]" /> Number Pool
+        <TabsContent value="status">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
+              <Bot size={16} className="text-[#0061f2]" /> Active Workers
             </h3>
-            <Dialog open={isAddNumberOpen} onOpenChange={setIsAddNumberOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="bg-[#0061f2] text-white font-bold text-[10px] uppercase h-8"><Plus size={14} className="mr-1" /> Add Number</Button>
-              </DialogTrigger>
-              <DialogContent className="rounded-2xl border-[#e3e6ec] shadow-2xl p-0 overflow-hidden sm:max-w-md">
-                 <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc]">
-                    <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest">Add Number to Pool</h3>
-                 </div>
-                 <div className="p-6 space-y-4">
-                    <div className="space-y-2">
-                       <Label className="text-[11px] font-black uppercase text-[#69707a]">Phone Number</Label>
-                       <Input value={newNumber.number} onChange={(e) => setNewNumber({...newNumber, number: e.target.value})} placeholder="e.g. +8801700000000" className="rounded-lg h-10 border-[#e3e6ec]" />
-                    </div>
-                    <div className="space-y-2">
-                       <Label className="text-[11px] font-black uppercase text-[#69707a]">Payout Rate ($)</Label>
-                       <Input type="number" step="0.001" value={newNumber.payout_rate} onChange={(e) => setNewNumber({...newNumber, payout_rate: e.target.value})} className="rounded-lg h-10 border-[#e3e6ec]" />
-                    </div>
-                    <div className="space-y-2">
-                       <Label className="text-[11px] font-black uppercase text-[#69707a]">Assign to Bot</Label>
-                       <select 
-                         className="w-full rounded-lg h-10 border-[#e3e6ec] bg-white text-[13px] px-3 outline-none focus:ring-1 focus:ring-[#0061f2]"
-                         value={newNumber.bot_id}
-                         onChange={(e) => setNewNumber({...newNumber, bot_id: e.target.value})}
-                       >
-                         <option value="">No Bot</option>
-                         {bots.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                       </select>
-                    </div>
-                    <Button onClick={handleAddNumber} className="w-full bg-[#0061f2] text-white font-bold text-xs uppercase h-10">Add to Pool</Button>
-                 </div>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => setIsAddBotOpen(true)} size="sm" className="bg-[#0061f2] text-white font-bold text-[10px] uppercase h-8"><Plus size={14} className="mr-1" /> New Bot</Button>
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {bots.map(bot => (
+              <div key={bot.id} className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] p-5 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-black text-[#2b3a4a] text-sm uppercase tracking-tight">{bot.name}</h4>
+                    <p className="text-[10px] text-[#69707a] font-bold uppercase">{bot.bot_type} Worker</p>
+                  </div>
+                  <span className={cn(
+                    "px-2 py-0.5 rounded text-[9px] font-black uppercase",
+                    bot.status === 'online' ? "bg-green-100 text-green-600 border border-green-200" : "bg-slate-100 text-slate-500 border border-slate-200"
+                  )}>{bot.status}</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase text-[#69707a]">
+                   <div className="bg-slate-50 p-2 rounded border border-slate-100">Last Seen: <span className="text-[#2b3a4a] block">{bot.last_seen ? new Date(bot.last_seen).toLocaleTimeString() : 'Never'}</span></div>
+                   <div className="bg-slate-50 p-2 rounded border border-slate-100">Status: <span className="text-[#2b3a4a] block">{bot.status}</span></div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-100">
+                  <Button onClick={() => openSettings(bot)} variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200 hover:bg-slate-50">
+                    <Settings size={14} className="mr-1" /> Settings
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 w-8 p-0 border-slate-200 text-red-500 hover:bg-red-50">
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="pool">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
+              <Terminal size={16} className="text-[#0061f2]" /> Active Allocations
+            </h3>
+            <Button onClick={() => setIsAddNumberOpen(true)} size="sm" className="bg-[#0061f2] text-white font-bold text-[10px] uppercase h-8"><Plus size={14} className="mr-1" /> Pool Number</Button>
+          </div>
+          
           <div className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] overflow-hidden">
-             <Table>
-                <TableHeader><TableRow className="bg-[#f8f9fc]"><TableHead className="text-[10px] font-black uppercase px-6">Number</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Bot</TableHead><TableHead className="text-[10px] font-black uppercase px-6 text-center">Action</TableHead></TableRow></TableHeader>
-                <TableBody>
-                   {numbers.map(n => (
-                     <TableRow key={n.id} className="border-b border-[#f2f4f8]">
-                        <td className="px-6 py-3 font-bold text-[#2b3a4a] text-[13px]">{n.number}</td>
-                        <td className="px-6 py-3 text-[11px] font-medium text-[#69707a]">{n.bots?.name || 'Unassigned'}</td>
-                        <td className="px-6 py-3 text-center">
-                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500 hover:bg-red-50">
-                              <Trash2 size={14} />
-                           </Button>
-                        </td>
-                     </TableRow>
-                   ))}
-                </TableBody>
-             </Table>
+            <Table>
+              <TableHeader><TableRow className="bg-[#f8f9fc]"><TableHead className="text-[10px] font-black uppercase px-6">Number</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Service</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Worker</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Status</TableHead><TableHead className="text-[10px] font-black uppercase px-6 text-center">Action</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {numbers.map(n => (
+                  <TableRow key={n.id} className="border-b border-[#f2f4f8]">
+                    <td className="px-6 py-3 font-black text-[#2b3a4a] text-[13px]">{n.number}</td>
+                    <td className="px-6 py-3 text-[11px] font-bold text-[#69707a] uppercase">{n.service_tag || 'Any'}</td>
+                    <td className="px-6 py-3 text-[11px] font-medium text-[#69707a]">{n.bots?.name || 'Unassigned'}</td>
+                    <td className="px-6 py-3">
+                       <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[9px] font-black uppercase border border-blue-100">{n.status}</span>
+                    </td>
+                    <td className="px-6 py-3 text-center">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500 hover:bg-red-50">
+                        <Trash2 size={14} />
+                      </Button>
+                    </td>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="audit">
+           <div className="flex justify-between items-center mb-4">
+            <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
+              <Activity size={16} className="text-[#e81500]" /> OTP Ingest Stream
+            </h3>
+            <Button onClick={fetchData} variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200">
+               <RefreshCw size={14} className="mr-1" /> Refresh
+            </Button>
+          </div>
+
+          <div className="bg-[#1a1c23] rounded-xl shadow-2xl overflow-hidden border border-[#2d303e]">
+             <div className="px-4 py-2 border-b border-[#2d303e] bg-[#242731] flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">Live Logs</span>
+             </div>
+             <div className="overflow-x-auto">
+               <Table>
+                 <TableHeader><TableRow className="border-b border-[#2d303e] hover:bg-transparent"><TableHead className="text-[10px] font-bold text-white/40 uppercase">Timestamp</TableHead><TableHead className="text-[10px] font-bold text-white/40 uppercase">Number</TableHead><TableHead className="text-[10px] font-bold text-white/40 uppercase">Service</TableHead><TableHead className="text-[10px] font-bold text-white/40 uppercase">OTP</TableHead><TableHead className="text-[10px] font-bold text-white/40 uppercase">Outcome</TableHead></TableRow></TableHeader>
+                 <TableBody>
+                    {auditLogs.map(log => (
+                      <TableRow key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <td className="px-4 py-2 font-mono text-[11px] text-white/60">{new Date(log.created_at).toLocaleTimeString()}</td>
+                        <td className="px-4 py-2 font-mono text-[11px] text-blue-400">{log.phone_number}</td>
+                        <td className="px-4 py-2 text-[10px] font-black text-white/80 uppercase tracking-tighter">{log.cli}</td>
+                        <td className="px-4 py-2 font-mono text-[11px] text-green-400 font-bold">{log.otp_code}</td>
+                        <td className="px-4 py-2">
+                           <span className={cn(
+                             "text-[9px] font-black uppercase px-1.5 py-0.5 rounded",
+                             log.outcome === 'billed' ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                           )}>{log.outcome}</span>
+                        </td>
+                      </TableRow>
+                    ))}
+                    {auditLogs.length === 0 && (
+                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-white/20 font-mono text-xs">Waiting for incoming OTP data...</TableCell></TableRow>
+                    )}
+                 </TableBody>
+               </Table>
+             </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Settings Dialog */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-2xl border-slate-200">
+           <div className="bg-[#f8f9fc] px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+              <h3 className="font-black text-[#2b3a4a] text-xs uppercase tracking-widest flex items-center gap-2">
+                 <Settings size={16} className="text-[#0061f2]" /> Bot Configuration: {selectedBot?.name}
+              </h3>
+           </div>
+           <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-4">
+                    <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><ShieldCheck size={14} /> Portal Credentials</h4>
+                    <div className="space-y-3">
+                       <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-slate-600">Portal URL</Label>
+                          <Input 
+                            defaultValue={botSettings.find(s => s.setting_key === 'portal_url')?.setting_value || ''} 
+                            onBlur={(e) => updateBotSetting('portal_url', e.target.value)}
+                            placeholder="https://imssms.org/login" className="h-9 text-xs" 
+                          />
+                       </div>
+                       <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-slate-600">Username</Label>
+                          <Input 
+                            defaultValue={botSettings.find(s => s.setting_key === 'username')?.setting_value || ''} 
+                            onBlur={(e) => updateBotSetting('username', e.target.value)}
+                            className="h-9 text-xs" 
+                          />
+                       </div>
+                       <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-slate-600">Password</Label>
+                          <Input 
+                            type="password"
+                            defaultValue={botSettings.find(s => s.setting_key === 'password')?.setting_value || ''} 
+                            onBlur={(e) => updateBotSetting('password', e.target.value)}
+                            className="h-9 text-xs" 
+                          />
+                       </div>
+                    </div>
+                 </div>
+                 <div className="space-y-4">
+                    <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Terminal size={14} /> Polling Behavior</h4>
+                    <div className="space-y-3">
+                       <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-slate-600">Interval (Seconds)</Label>
+                          <Input 
+                            type="number"
+                            defaultValue={botSettings.find(s => s.setting_key === 'interval')?.setting_value || '15'} 
+                            onBlur={(e) => updateBotSetting('interval', e.target.value)}
+                            className="h-9 text-xs" 
+                          />
+                       </div>
+                       <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-slate-600">Cookie Override</Label>
+                          <Input 
+                            placeholder="Optional PHPSESSID"
+                            defaultValue={botSettings.find(s => s.setting_key === 'cookie_override')?.setting_value || ''} 
+                            onBlur={(e) => updateBotSetting('cookie_override', e.target.value)}
+                            className="h-9 text-xs" 
+                          />
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Bot Dialog */}
+      <Dialog open={isAddBotOpen} onOpenChange={setIsAddBotOpen}>
+        <DialogContent className="sm:max-w-md p-6">
+           <DialogHeader><DialogTitle className="font-black uppercase text-sm tracking-widest">Register New Worker</DialogTitle></DialogHeader>
+           <div className="space-y-4 mt-4">
+              <div className="space-y-2">
+                 <Label className="text-[11px] font-black uppercase text-slate-500">Worker Label</Label>
+                 <Input value={newBot.name} onChange={(e) => setNewBot({...newBot, name: e.target.value})} placeholder="e.g. IMS_MAIN_01" className="h-10" />
+              </div>
+              <div className="space-y-2">
+                 <Label className="text-[11px] font-black uppercase text-slate-500">Platform</Label>
+                 <select className="w-full h-10 rounded-md border border-slate-200 px-3 text-sm" value={newBot.bot_type} onChange={(e) => setNewBot({...newBot, bot_type: e.target.value})}>
+                    <option value="ims">IMS SMS (imssms.org)</option>
+                    <option value="smshadi">SMS Hadi (2.59.169.96)</option>
+                 </select>
+              </div>
+              <Button onClick={handleAddBot} className="w-full bg-[#0061f2] h-10 font-black uppercase text-xs">Register Worker</Button>
+           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Number Dialog */}
+      <Dialog open={isAddNumberOpen} onOpenChange={setIsAddNumberOpen}>
+        <DialogContent className="sm:max-w-md p-6">
+           <DialogHeader><DialogTitle className="font-black uppercase text-sm tracking-widest">Add to Number Pool</DialogTitle></DialogHeader>
+           <div className="space-y-4 mt-4">
+              <div className="space-y-2">
+                 <Label className="text-[11px] font-black uppercase text-slate-500">Phone Number</Label>
+                 <Input value={newNumber.number} onChange={(e) => setNewNumber({...newNumber, number: e.target.value})} placeholder="e.g. +88017..." className="h-10" />
+              </div>
+              <div className="space-y-2">
+                 <Label className="text-[11px] font-black uppercase text-slate-500">Service Restriction (Optional)</Label>
+                 <Input value={newNumber.service_tag} onChange={(e) => setNewNumber({...newNumber, service_tag: e.target.value})} placeholder="e.g. Facebook" className="h-10" />
+              </div>
+              <div className="space-y-2">
+                 <Label className="text-[11px] font-black uppercase text-slate-500">Assign Worker</Label>
+                 <select className="w-full h-10 rounded-md border border-slate-200 px-3 text-sm" value={newNumber.bot_id} onChange={(e) => setNewNumber({...newNumber, bot_id: e.target.value})}>
+                    <option value="">Manual Pool (Global)</option>
+                    {bots.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                 </select>
+              </div>
+              <Button onClick={handleAddNumber} className="w-full bg-[#0061f2] h-10 font-black uppercase text-xs">Add Number</Button>
+           </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
