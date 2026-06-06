@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -12,6 +13,9 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Users, Settings, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_dashboard/clients")({
   component: ClientsPage,
