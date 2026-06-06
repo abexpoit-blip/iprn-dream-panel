@@ -9,12 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
+import { Route as DashboardClientsRouteImport } from './routes/_dashboard/clients'
 import { Route as DashboardSmsRangesRouteImport } from './routes/_dashboard/sms/ranges'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -34,6 +41,11 @@ const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardClientsRoute = DashboardClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSmsRangesRoute = DashboardSmsRangesRouteImport.update({
   id: '/sms/ranges',
   path: '/sms/ranges',
@@ -43,12 +55,16 @@ const DashboardSmsRangesRoute = DashboardSmsRangesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/clients': typeof DashboardClientsRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/clients': typeof DashboardClientsRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
 }
@@ -57,19 +73,29 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/_dashboard/clients': typeof DashboardClientsRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_dashboard/sms/ranges': typeof DashboardSmsRangesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/sms/ranges'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/clients'
+    | '/dashboard'
+    | '/sms/ranges'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/sms/ranges'
+  to: '/' | '/login' | '/register' | '/clients' | '/dashboard' | '/sms/ranges'
   id:
     | '__root__'
     | '/'
     | '/_dashboard'
     | '/login'
+    | '/register'
+    | '/_dashboard/clients'
     | '/_dashboard/dashboard'
     | '/_dashboard/sms/ranges'
   fileRoutesById: FileRoutesById
@@ -78,10 +104,18 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -110,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/clients': {
+      id: '/_dashboard/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof DashboardClientsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/sms/ranges': {
       id: '/_dashboard/sms/ranges'
       path: '/sms/ranges'
@@ -121,11 +162,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardRouteChildren {
+  DashboardClientsRoute: typeof DashboardClientsRoute
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardSmsRangesRoute: typeof DashboardSmsRangesRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardClientsRoute: DashboardClientsRoute,
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardSmsRangesRoute: DashboardSmsRangesRoute,
 }
@@ -138,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
