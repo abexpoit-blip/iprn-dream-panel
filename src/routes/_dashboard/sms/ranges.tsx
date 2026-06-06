@@ -85,7 +85,7 @@ function SmsRangesPage() {
                     <TableCell colSpan={9} className="text-center py-10 text-gray-500 text-sm italic">No ranges found</TableCell>
                   </TableRow>
                 ) : (
-                  ranges?.map((range) => (
+                  ranges?.map((range: any) => (
                     <TableRow key={range.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
                       <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{range.prefix}</TableCell>
                       <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{range.test_number}</TableCell>

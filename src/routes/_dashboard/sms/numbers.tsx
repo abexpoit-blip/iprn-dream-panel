@@ -28,8 +28,8 @@ function SmsNumbersPage() {
         .limit(100);
       if (error) throw error;
       // Unique numbers for display purposes in this list
-      const uniqueNumbers = Array.from(new Set(data.map(n => n.number))).map(num => {
-        return data.find(n => n.number === num);
+      const uniqueNumbers = Array.from(new Set(data.map((n: any) => n.number))).map(num => {
+        return data.find((n: any) => n.number === num);
       });
       return uniqueNumbers;
     }
