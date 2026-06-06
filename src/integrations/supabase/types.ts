@@ -99,6 +99,7 @@ export type Database = {
       }
       bots: {
         Row: {
+          auto_relogin: boolean | null
           bot_type: string | null
           config: Json | null
           created_at: string | null
@@ -107,9 +108,11 @@ export type Database = {
           last_seen: string | null
           name: string
           number_panel_type: string | null
+          session_keep_alive: boolean | null
           status: string
         }
         Insert: {
+          auto_relogin?: boolean | null
           bot_type?: string | null
           config?: Json | null
           created_at?: string | null
@@ -118,9 +121,11 @@ export type Database = {
           last_seen?: string | null
           name: string
           number_panel_type?: string | null
+          session_keep_alive?: boolean | null
           status?: string
         }
         Update: {
+          auto_relogin?: boolean | null
           bot_type?: string | null
           config?: Json | null
           created_at?: string | null
@@ -129,6 +134,7 @@ export type Database = {
           last_seen?: string | null
           name?: string
           number_panel_type?: string | null
+          session_keep_alive?: boolean | null
           status?: string
         }
         Relationships: []
@@ -176,32 +182,41 @@ export type Database = {
       }
       number_panels: {
         Row: {
+          auto_relogin: boolean | null
           created_at: string | null
           id: string
+          last_error: string | null
           last_login: string | null
           name: string
           panel_url: string
           password: string | null
+          session_keep_alive: boolean | null
           status: string | null
           username: string | null
         }
         Insert: {
+          auto_relogin?: boolean | null
           created_at?: string | null
           id?: string
+          last_error?: string | null
           last_login?: string | null
           name: string
           panel_url: string
           password?: string | null
+          session_keep_alive?: boolean | null
           status?: string | null
           username?: string | null
         }
         Update: {
+          auto_relogin?: boolean | null
           created_at?: string | null
           id?: string
+          last_error?: string | null
           last_login?: string | null
           name?: string
           panel_url?: string
           password?: string | null
+          session_keep_alive?: boolean | null
           status?: string | null
           username?: string | null
         }
@@ -217,6 +232,8 @@ export type Database = {
           number: string
           number_panel_id: string | null
           payout_rate: number | null
+          reserved_at: string | null
+          reserved_for: string | null
           service_tag: string | null
           status: string
           updated_at: string | null
@@ -231,6 +248,8 @@ export type Database = {
           number: string
           number_panel_id?: string | null
           payout_rate?: number | null
+          reserved_at?: string | null
+          reserved_for?: string | null
           service_tag?: string | null
           status?: string
           updated_at?: string | null
@@ -245,6 +264,8 @@ export type Database = {
           number?: string
           number_panel_id?: string | null
           payout_rate?: number | null
+          reserved_at?: string | null
+          reserved_for?: string | null
           service_tag?: string | null
           status?: string
           updated_at?: string | null
