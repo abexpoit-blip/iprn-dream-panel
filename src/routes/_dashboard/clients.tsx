@@ -140,7 +140,7 @@ function ClientsPage() {
              <div className="flex gap-1">
                 <Button variant="outline" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase border-[#e3e6ec] text-[#69707a] hover:bg-white">First</Button>
                 <Button variant="outline" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase border-[#e3e6ec] text-[#69707a] hover:bg-white">Previous</Button>
-                <Button variant="solid" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase bg-[#0061f2] text-white">1</Button>
+                <Button variant="default" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase bg-[#0061f2] text-white">1</Button>
                 <Button variant="outline" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase border-[#e3e6ec] text-[#69707a] hover:bg-white">Next</Button>
                 <Button variant="outline" size="sm" className="h-8 px-3 text-[11px] font-bold uppercase border-[#e3e6ec] text-[#69707a] hover:bg-white">Last</Button>
              </div>
