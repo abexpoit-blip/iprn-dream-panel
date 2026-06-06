@@ -35,10 +35,10 @@ function LoginPage() {
     setLoading(true);
     const raw = username.trim();
 
-    // If user typed an email, try it directly. Otherwise try agent then client domains.
+    // Support admin account directly if detected
     const candidates = raw.includes("@")
       ? [raw]
-      : [`${raw.toLowerCase()}@imssms.org`, `${raw.toLowerCase()}@client.imssms.org`];
+      : [`${raw.toLowerCase()}@imssms.org`, `${raw.toLowerCase()}@client.imssms.org`, `${raw.toLowerCase()}@admin.com`];
 
     let signedInUserId: string | null = null;
     let lastError: string | null = null;
