@@ -28,6 +28,8 @@ function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSmsModuleOpen, setIsSmsModuleOpen] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
