@@ -56,8 +56,10 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
     depends_on:
       - frontend
+      - api
     networks:
       - nexus_network
+    restart: always
 
 networks:
   nexus_network:
