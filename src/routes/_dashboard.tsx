@@ -174,11 +174,40 @@ function DashboardLayout() {
             </Button>
             <Button variant="ghost" size="icon"><Maximize size={18} /></Button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
-                {profile?.username?.[0]?.toUpperCase() || 'U'}
-              </div>
-              <ChevronDown size={14} className="text-gray-400" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 p-1 px-2 hover:bg-gray-100 h-10">
+                    <div className="w-8 h-8 rounded-full bg-[#0061f2] flex items-center justify-center text-xs font-bold text-white shadow-sm">
+                      {profile?.username?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                    <div className="hidden md:flex flex-col items-start mr-1">
+                      <span className="text-[11px] font-bold text-[#2b3a4a] leading-none uppercase">{profile?.username || 'User'}</span>
+                      <span className="text-[9px] text-[#69707a] leading-none mt-1 uppercase font-bold">{profile?.role || 'Agent'}</span>
+                    </div>
+                    <ChevronDown size={12} className="text-[#69707a]" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 mt-1 border-[#e3e6ec] shadow-lg">
+                  <DropdownMenuLabel className="text-[10px] uppercase text-[#69707a] font-bold tracking-wider">Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-sm py-2 cursor-pointer hover:bg-[#f2f4f8]">
+                    <Settings className="mr-2 h-4 w-4 text-[#69707a]" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="text-sm py-2 cursor-pointer text-red-600 hover:bg-red-50"
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      navigate({ to: "/login" });
+                    }}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
+
           </div>
         </header>
 
