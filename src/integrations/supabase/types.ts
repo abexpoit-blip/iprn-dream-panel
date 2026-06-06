@@ -214,6 +214,7 @@ export type Database = {
           currency: string | null
           id: string
           memo: string | null
+          name: string | null
           payout_1_1: number | null
           payout_30_45: number | null
           payout_7_1: number | null
@@ -226,6 +227,7 @@ export type Database = {
           currency?: string | null
           id?: string
           memo?: string | null
+          name?: string | null
           payout_1_1?: number | null
           payout_30_45?: number | null
           payout_7_1?: number | null
@@ -238,6 +240,7 @@ export type Database = {
           currency?: string | null
           id?: string
           memo?: string | null
+          name?: string | null
           payout_1_1?: number | null
           payout_30_45?: number | null
           payout_7_1?: number | null
