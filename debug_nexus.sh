@@ -17,6 +17,11 @@ docker-compose down --remove-orphans
 docker system prune -f
 
 echo -e "\n--- 4. ATTEMPTING DEPLOYMENT ---"
+# Pull latest changes again just in case
+git fetch origin
+git reset --hard origin/main
+
+# Build and start services
 docker-compose up -d --build --force-recreate
 
 echo -e "\n--- 5. CHECKING SERVICE HEALTH ---"
