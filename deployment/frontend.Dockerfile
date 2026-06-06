@@ -2,7 +2,7 @@ FROM node:20-alpine as build
 WORKDIR /app
 COPY package*.json ./
 # Use bun or npm? The project has bun.lockb but package.json has npm scripts.
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY . .
 # Set build-time env vars
 ARG VITE_SELF_HOSTED=true
