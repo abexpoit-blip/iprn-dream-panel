@@ -43,7 +43,7 @@ services:
     container_name: nexus_frontend
     environment:
       - VITE_SELF_HOSTED=true
-      - VITE_API_URL=https://panel.nexus-x.site/api
+      - VITE_API_URL=https://X.nexus-x.site/api
       - PORT=3000
       - HOST=0.0.0.0
     restart: always
