@@ -40,7 +40,7 @@ services:
       dockerfile: ./deployment/frontend.Dockerfile
     container_name: nexus_nginx
     ports:
-      - "8080:80"
+      - "3001:80"
     environment:
       - VITE_SELF_HOSTED=true
       - VITE_API_URL=https://panel.nexus-x.site/api
