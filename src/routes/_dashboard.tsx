@@ -15,7 +15,8 @@ import {
   Sun,
   Bell,
   Maximize,
-  LogOut
+  LogOut,
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -101,6 +102,7 @@ function DashboardLayout() {
     { label: "Credit Notes", icon: FileText, href: "/credits" },
     { label: "News", icon: Newspaper, href: "/news" },
     { label: "SMS Test Panel", icon: Settings, href: "/test-panel" },
+    ...(profile?.is_admin ? [{ label: "Admin Panel", icon: ShieldCheck, href: "/admin" }] : []),
   ];
 
   return (
