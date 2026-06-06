@@ -29,8 +29,8 @@ function ClientSmsNumbersPage() {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      const unique = Array.from(new Set(data.map((n) => n.number))).map((num) =>
-        data.find((n) => n.number === num)
+      const unique = Array.from(new Set(data.map((n: any) => n.number))).map((num) =>
+        data.find((n: any) => n.number === num)
       );
       return unique;
     },
