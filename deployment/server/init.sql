@@ -124,3 +124,34 @@ CREATE TABLE IF NOT EXISTS sms_cdr (
 INSERT INTO profiles (username, password_hash, role, is_admin)
 VALUES ('admin', '$2a$10$wS8oGvN7YfC5vK8n/Jq.u.N5P3.7W7wK5C6C6C6C6C6C6C6C6C6', 'admin', true)
 ON CONFLICT (username) DO NOTHING;
+
+-- Seeding from previous Lovable configuration
+INSERT INTO bots (id, name, bot_type, status)
+VALUES 
+    ('36fae619-2d83-4416-b243-8f7af4c33100', 'IMS Main Agent', 'ims', 'offline'),
+    (uuid_generate_v4(), 'SMS Hadi Agent', 'smshadi', 'offline')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO bot_settings (bot_id, setting_key, setting_value, is_secret)
+SELECT 
+    id,
+    column_name,
+    CASE 
+        WHEN name = 'IMS Main Agent' AND column_name = 'username' THEN 'mamun99'
+        WHEN name = 'IMS Main Agent' AND column_name = 'password' THEN 'mamun@12aa#'
+        WHEN name = 'IMS Main Agent' AND column_name = 'portal_url' THEN 'https://www.imssms.org/login'
+        WHEN name = 'SMS Hadi Agent' AND column_name = 'username' THEN 'mamun999'
+        WHEN name = 'SMS Hadi Agent' AND column_name = 'password' THEN 'mamun999'
+        WHEN name = 'SMS Hadi Agent' AND column_name = 'portal_url' THEN 'http://2.59.169.96/ints/login'
+        WHEN column_name = 'interval' THEN '15'
+    END,
+    CASE WHEN column_name = 'password' THEN true ELSE false END
+FROM bots
+CROSS JOIN (VALUES ('username'), ('password'), ('portal_url'), ('interval')) AS settings(column_name)
+ON CONFLICT (bot_id, setting_key) DO NOTHING;
+
+INSERT INTO number_panels (name, panel_url, username, password, status)
+VALUES 
+    ('IMS Pool Panel', 'https://www.imssms.org/login', 'mamun99', 'mamun@12aa#', 'offline'),
+    ('Hadi Pool Panel', 'http://2.59.169.96/ints/login', 'mamun999', 'mamun999', 'offline')
+ON CONFLICT DO NOTHING;
