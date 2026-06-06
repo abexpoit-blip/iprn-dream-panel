@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Bot, Plus, Trash2, Settings, Terminal, RefreshCw, Activity, ShieldCheck } from "lucide-react";
+import { Bot, Plus, Trash2, Settings, Terminal, RefreshCw, Activity, ShieldCheck, Layout } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -12,26 +12,31 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export function BotsTab() {
   const [bots, setBots] = useState<any[]>([]);
+  const [panels, setPanels] = useState<any[]>([]);
   const [numbers, setNumbers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [isAddBotOpen, setIsAddBotOpen] = useState(false);
+  const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
   const [isAddNumberOpen, setIsAddNumberOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedBot, setSelectedBot] = useState<any>(null);
   const [botSettings, setBotSettings] = useState<any[]>([]);
 
   const [newBot, setNewBot] = useState({ name: "", bot_type: "ims" });
-  const [newNumber, setNewNumber] = useState({ number: "", service_tag: "", bot_id: "", allocation_id: "" });
+  const [newPanel, setNewPanel] = useState({ name: "", panel_url: "", username: "", password: "" });
+  const [newNumber, setNewNumber] = useState({ number: "", service_tag: "", bot_id: "", number_panel_id: "" });
 
   const fetchData = async () => {
     setLoading(true);
     const { data: botsData } = await supabase.from('bots').select('*');
-    const { data: numbersData } = await supabase.from('number_pool').select('*, bots(name)');
+    const { data: panelsData } = await supabase.from('number_panels').select('*');
+    const { data: numbersData } = await supabase.from('number_pool').select('*, bots(name), number_panels(name)');
     const { data: logsData } = await supabase.from('otp_audit_log').select('*').order('created_at', { ascending: false }).limit(20);
     
     setBots(botsData || []);
+    setPanels(panelsData || []);
     setNumbers(numbersData || []);
     setAuditLogs(logsData || []);
     setLoading(false);
@@ -47,6 +52,16 @@ export function BotsTab() {
     else {
       toast.success("Bot registered");
       setIsAddBotOpen(false);
+      fetchData();
+    }
+  };
+
+  const handleAddPanel = async () => {
+    const { error } = await supabase.from('number_panels').insert([newPanel]);
+    if (error) toast.error("Failed to add panel");
+    else {
+      toast.success("Number panel registered");
+      setIsAddPanelOpen(false);
       fetchData();
     }
   };
@@ -87,6 +102,7 @@ export function BotsTab() {
       <Tabs defaultValue="status" className="w-full">
         <TabsList className="bg-slate-100 p-1 mb-4 h-11">
           <TabsTrigger value="status" className="text-[11px] font-black uppercase">Bot Status</TabsTrigger>
+          <TabsTrigger value="panels" className="text-[11px] font-black uppercase">Number Panels</TabsTrigger>
           <TabsTrigger value="pool" className="text-[11px] font-black uppercase">Number Pool</TabsTrigger>
           <TabsTrigger value="audit" className="text-[11px] font-black uppercase">Live OTP Audit</TabsTrigger>
         </TabsList>
@@ -94,7 +110,7 @@ export function BotsTab() {
         <TabsContent value="status">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
-              <Bot size={16} className="text-[#0061f2]" /> Active Workers
+              <Bot size={16} className="text-[#0061f2]" /> OTP Scraper Workers
             </h3>
             <Button onClick={() => setIsAddBotOpen(true)} size="sm" className="bg-[#0061f2] text-white font-bold text-[10px] uppercase h-8"><Plus size={14} className="mr-1" /> New Bot</Button>
           </div>
@@ -134,23 +150,72 @@ export function BotsTab() {
           </div>
         </TabsContent>
 
+        <TabsContent value="panels">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
+              <Layout size={16} className="text-[#0061f2]" /> Number Panel Logins
+            </h3>
+            <Button onClick={() => setIsAddPanelOpen(true)} size="sm" className="bg-[#0061f2] text-white font-bold text-[10px] uppercase h-8"><Plus size={14} className="mr-1" /> New Panel</Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {panels.map(panel => (
+              <div key={panel.id} className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] p-5 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-black text-[#2b3a4a] text-sm uppercase tracking-tight">{panel.name}</h4>
+                    <p className="text-[10px] text-[#69707a] font-bold uppercase truncate max-w-[150px]">{panel.panel_url}</p>
+                  </div>
+                  <span className={cn(
+                    "px-2 py-0.5 rounded text-[9px] font-black uppercase",
+                    panel.status === 'online' ? "bg-green-100 text-green-600 border border-green-200" : "bg-slate-100 text-slate-500 border border-slate-200"
+                  )}>{panel.status}</span>
+                </div>
+                
+                <div className="space-y-2 text-[10px] font-bold uppercase text-[#69707a]">
+                   <div className="bg-slate-50 p-2 rounded border border-slate-100">User: <span className="text-[#2b3a4a] ml-1">{panel.username}</span></div>
+                   <div className="bg-slate-50 p-2 rounded border border-slate-100">Last Login: <span className="text-[#2b3a4a] ml-1">{panel.last_login ? new Date(panel.last_login).toLocaleString() : 'Never'}</span></div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-100">
+                  <Button variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200 text-blue-600 hover:bg-blue-50">
+                    <RefreshCw size={14} className="mr-1" /> Check Session
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 w-8 p-0 border-slate-200 text-red-500 hover:bg-red-50">
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
         <TabsContent value="pool">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
-              <Terminal size={16} className="text-[#0061f2]" /> Active Allocations
+              <Terminal size={16} className="text-[#0061f2]" /> Active Number Pool
             </h3>
-            <Button onClick={() => setIsAddNumberOpen(true)} size="sm" className="bg-[#0061f2] text-white font-bold text-[10px] uppercase h-8"><Plus size={14} className="mr-1" /> Pool Number</Button>
+            <Button onClick={() => setIsAddNumberOpen(true)} size="sm" className="bg-[#0061f2] text-white font-bold text-[10px] uppercase h-8"><Plus size={14} className="mr-1" /> Add Number</Button>
           </div>
           
           <div className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] overflow-hidden">
             <Table>
-              <TableHeader><TableRow className="bg-[#f8f9fc]"><TableHead className="text-[10px] font-black uppercase px-6">Number</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Service</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Worker</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Status</TableHead><TableHead className="text-[10px] font-black uppercase px-6 text-center">Action</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow className="bg-[#f8f9fc]"><TableHead className="text-[10px] font-black uppercase px-6">Number</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Service</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Panel/Bot</TableHead><TableHead className="text-[10px] font-black uppercase px-6">Status</TableHead><TableHead className="text-[10px] font-black uppercase px-6 text-center">Action</TableHead></TableRow></TableHeader>
               <TableBody>
                 {numbers.map(n => (
                   <TableRow key={n.id} className="border-b border-[#f2f4f8]">
                     <td className="px-6 py-3 font-black text-[#2b3a4a] text-[13px]">{n.number}</td>
                     <td className="px-6 py-3 text-[11px] font-bold text-[#69707a] uppercase">{n.service_tag || 'Any'}</td>
-                    <td className="px-6 py-3 text-[11px] font-medium text-[#69707a]">{n.bots?.name || 'Unassigned'}</td>
+                    <td className="px-6 py-3 text-[11px] font-medium text-[#69707a]">
+                       {n.number_panels?.name ? (
+                         <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-[#0061f2] uppercase">Panel: {n.number_panels.name}</span>
+                            <span className="opacity-50 text-[9px]">Bot: {n.bots?.name || 'None'}</span>
+                         </div>
+                       ) : (
+                         n.bots?.name || 'Unassigned'
+                       )}
+                    </td>
                     <td className="px-6 py-3">
                        <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[9px] font-black uppercase border border-blue-100">{n.status}</span>
                     </td>
@@ -298,6 +363,34 @@ export function BotsTab() {
         </DialogContent>
       </Dialog>
 
+      {/* Add Panel Dialog */}
+      <Dialog open={isAddPanelOpen} onOpenChange={setIsAddPanelOpen}>
+        <DialogContent className="sm:max-w-md p-6">
+           <DialogHeader><DialogTitle className="font-black uppercase text-sm tracking-widest">Register Number Panel</DialogTitle></DialogHeader>
+           <div className="space-y-4 mt-4">
+              <div className="space-y-2">
+                 <Label className="text-[11px] font-black uppercase text-slate-500">Panel Name</Label>
+                 <Input value={newPanel.name} onChange={(e) => setNewPanel({...newPanel, name: e.target.value})} placeholder="e.g. Panel One" className="h-10" />
+              </div>
+              <div className="space-y-2">
+                 <Label className="text-[11px] font-black uppercase text-slate-500">Login URL</Label>
+                 <Input value={newPanel.panel_url} onChange={(e) => setNewPanel({...newPanel, panel_url: e.target.value})} placeholder="http://..." className="h-10" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                 <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-slate-500">Username</Label>
+                    <Input value={newPanel.username} onChange={(e) => setNewPanel({...newPanel, username: e.target.value})} className="h-10" />
+                 </div>
+                 <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-slate-500">Password</Label>
+                    <Input type="password" value={newPanel.password} onChange={(e) => setNewPanel({...newPanel, password: e.target.value})} className="h-10" />
+                 </div>
+              </div>
+              <Button onClick={handleAddPanel} className="w-full bg-[#0061f2] h-10 font-black uppercase text-xs">Register Panel</Button>
+           </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Add Number Dialog */}
       <Dialog open={isAddNumberOpen} onOpenChange={setIsAddNumberOpen}>
         <DialogContent className="sm:max-w-md p-6">
@@ -308,15 +401,24 @@ export function BotsTab() {
                  <Input value={newNumber.number} onChange={(e) => setNewNumber({...newNumber, number: e.target.value})} placeholder="e.g. +88017..." className="h-10" />
               </div>
               <div className="space-y-2">
-                 <Label className="text-[11px] font-black uppercase text-slate-500">Service Restriction (Optional)</Label>
+                 <Label className="text-[11px] font-black uppercase text-slate-500">Service Tag</Label>
                  <Input value={newNumber.service_tag} onChange={(e) => setNewNumber({...newNumber, service_tag: e.target.value})} placeholder="e.g. Facebook" className="h-10" />
               </div>
-              <div className="space-y-2">
-                 <Label className="text-[11px] font-black uppercase text-slate-500">Assign Worker</Label>
-                 <select className="w-full h-10 rounded-md border border-slate-200 px-3 text-sm" value={newNumber.bot_id} onChange={(e) => setNewNumber({...newNumber, bot_id: e.target.value})}>
-                    <option value="">Manual Pool (Global)</option>
-                    {bots.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                 </select>
+              <div className="grid grid-cols-2 gap-3">
+                 <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-slate-500">Source Panel</Label>
+                    <select className="w-full h-10 rounded-md border border-slate-200 px-3 text-sm" value={newNumber.number_panel_id} onChange={(e) => setNewNumber({...newNumber, number_panel_id: e.target.value})}>
+                       <option value="">Direct Entry</option>
+                       {panels.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                 </div>
+                 <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-slate-500">Assign Worker</Label>
+                    <select className="w-full h-10 rounded-md border border-slate-200 px-3 text-sm" value={newNumber.bot_id} onChange={(e) => setNewNumber({...newNumber, bot_id: e.target.value})}>
+                       <option value="">Manual Pool</option>
+                       {bots.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                 </div>
               </div>
               <Button onClick={handleAddNumber} className="w-full bg-[#0061f2] h-10 font-black uppercase text-xs">Add Number</Button>
            </div>
@@ -325,4 +427,5 @@ export function BotsTab() {
     </div>
   );
 }
+
 
