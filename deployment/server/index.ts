@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { jwt, sign } from 'hono/jwt';
-import type { SignatureKey } from 'hono/utils/jwt/jws';
+
 
 import postgres from 'postgres';
 import bcrypt from 'bcryptjs';
