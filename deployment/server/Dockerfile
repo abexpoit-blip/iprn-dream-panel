@@ -9,7 +9,8 @@ FROM node:20-alpine
 WORKDIR /app
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/dist ./dist
-# We need production dependencies only for smaller image but for now install all or just copy node_modules
+COPY --from=build /app/init.sql ./init.sql
+
 # To be safe, just install production ones
 RUN npm install --omit=dev
 EXPOSE 3005
