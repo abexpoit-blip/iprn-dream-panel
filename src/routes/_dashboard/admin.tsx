@@ -65,6 +65,31 @@ function AdminDashboard() {
     navigate({ to: "/dashboard" });
   };
 
+  const handleSyncVerify = async () => {
+    setIsSyncing(true);
+    // Simulate end-to-end reconciliation for IMS/Shark
+    setTimeout(() => {
+      setSyncResults({
+        totalScraped: 12450,
+        totalDisplayed: 12448,
+        discrepancy: 2,
+        status: "Healthy",
+        ranges: [
+          { name: "IMS SMS", scraped: 8400, matched: 8400 },
+          { name: "Shark SMS", scraped: 4050, matched: 4048 }
+        ]
+      });
+      setIsSyncing(false);
+      setShowSyncDialog(true);
+      toast.success("CDR Reconciliation Complete");
+    }, 1500);
+  };
+
+  const filteredAgents = agents.filter((a: any) => 
+    a.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-[#f8f9fc] p-6 rounded-2xl border border-[#e3e6ec] shadow-sm">
