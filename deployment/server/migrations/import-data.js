@@ -77,6 +77,17 @@ async function importTable(table, tempProfileHash) {
 
   let ok = 0, skipped = 0;
   for (const row of raw) {
+    // Per-table field remap (Lovable schema → VPS schema)
+    if (table === 'sms_cdr') {
+      if (row.number && !row.phone_number) row.phone_number = row.number;
+      if (row.received_at && !row.created_at) row.created_at = row.received_at;
+      if (row.payout != null && row.price_bdt == null) row.price_bdt = row.payout;
+      if (row.message && !row.otp_code) {
+        const m = String(row.message).match(/\b(\d{3,8})\b/);
+        if (m) row.otp_code = m[1];
+      }
+    }
+
     // Drop columns the VPS schema doesn't have
     const filtered = {};
     for (const k of Object.keys(row)) {
@@ -87,6 +98,7 @@ async function importTable(table, tempProfileHash) {
     if (table === 'profiles' && cols.has('password_hash') && !filtered.password_hash) {
       filtered.password_hash = tempProfileHash;
     }
+
 
     try {
       await sql`INSERT INTO ${sql(table)} ${sql(filtered)} ON CONFLICT DO NOTHING`;

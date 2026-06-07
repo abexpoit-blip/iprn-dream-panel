@@ -115,7 +115,21 @@ CREATE TABLE IF NOT EXISTS banned_keywords (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- Clients
+CREATE TABLE IF NOT EXISTS clients (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    username TEXT,
+    email TEXT,
+    skype_id TEXT,
+    balance NUMERIC(12,2) DEFAULT 0,
+    status TEXT DEFAULT 'Active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
 -- SMS CDR (Call Detail Record)
+
 CREATE TABLE IF NOT EXISTS sms_cdr (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,

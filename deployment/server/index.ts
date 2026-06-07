@@ -21,33 +21,24 @@ const sql = postgres(DATABASE_URL, {
 // Database Initialization Helper
 async function initDb() {
   try {
-    console.log('[DB] Checking for profiles table...');
-    const [exists] = await sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_name = 'profiles'
-      );
-    `;
-    
-    if (!exists.exists) {
-      console.log('[DB] Profiles table not found. Running init.sql...');
-      const fs = await import('node:fs');
-      const path = await import('node:path');
-      const initSql = fs.readFileSync(path.join(process.cwd(), 'init.sql'), 'utf8');
-      
-      // Split by semicolon and filter empty lines to run each statement
-      const statements = initSql.split(';').map(s => s.trim()).filter(s => s.length > 0);
-      for (const statement of statements) {
+    console.log('[DB] Running init.sql (idempotent)...');
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const initSql = fs.readFileSync(path.join(process.cwd(), 'init.sql'), 'utf8');
+    const statements = initSql.split(';').map(s => s.trim()).filter(s => s.length > 0);
+    for (const statement of statements) {
+      try {
         await sql.unsafe(statement);
+      } catch (e: any) {
+        console.warn('[DB] stmt failed (continuing):', e.message);
       }
-      console.log('[DB] Initialization complete.');
-    } else {
-      console.log('[DB] Database already initialized.');
     }
+    console.log('[DB] Initialization complete.');
   } catch (err) {
     console.error('[DB] Initialization error:', err);
   }
 }
+
 
 // Run initialization
 initDb();
