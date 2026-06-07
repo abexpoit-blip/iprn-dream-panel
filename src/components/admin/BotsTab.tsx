@@ -27,7 +27,7 @@ export function BotsTab() {
   const [selectedBot, setSelectedBot] = useState<any>(null);
   const [botSettings, setBotSettings] = useState<any[]>([]);
 
-  const [newBot, setNewBot] = useState({ name: "", bot_type: "ims" });
+  const [newBot, setNewBot] = useState({ name: "", bot_type: "shark" });
   const [newPanel, setNewPanel] = useState({ name: "", panel_url: "", username: "", password: "" });
   const [newNumber, setNewNumber] = useState({ number: "", service_tag: "", bot_id: "", number_panel_id: "" });
 

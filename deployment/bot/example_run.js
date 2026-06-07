@@ -1,12 +1,17 @@
 // example_run.js
 const imsBot = require('./imsBot');
+const sharkBot = require('./sharkBot');
 
 async function run() {
   console.log('🤖 Nexus Bots service initializing...');
   
-  await imsBot.start();
+  // Start bots in parallel
+  await Promise.all([
+    imsBot.start(),
+    sharkBot.start()
+  ]);
 
-  console.log('✓ IMS Bot started.');
+  console.log('✓ All active bots started.');
   
   // Keep the process alive
   setInterval(() => {

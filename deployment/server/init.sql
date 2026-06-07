@@ -161,7 +161,8 @@ ON CONFLICT (bot_id, setting_key) DO NOTHING;
 INSERT INTO number_panels (name, panel_url, username, password, status)
 VALUES 
     ('IMS Pool Panel', 'https://www.imssms.org/login', 'mamun99', 'mamun@12aa#', 'offline'),
-    ('Hadi Pool Panel', 'http://2.59.169.96/ints/login', 'mamun999', 'mamun999', 'offline')
+    ('Hadi Pool Panel', 'http://2.59.169.96/ints/login', 'mamun999', 'mamun999', 'offline'),
+    ('Shark Pool Panel', 'http://65.109.111.158/ints/login', 'mamun01', 'mamun@12#A', 'offline')
 ON CONFLICT DO NOTHING;
 
 -- SMS Ranges seeding
