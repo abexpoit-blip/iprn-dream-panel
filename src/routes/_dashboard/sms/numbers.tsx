@@ -12,6 +12,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_dashboard/sms/numbers")({
   component: SmsNumbersPage,
@@ -67,10 +68,10 @@ function SmsNumbersPage() {
                   </TableRow>
                 ) : !numbers || numbers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-10 text-gray-500 text-sm italic">No numbers found</TableCell>
+                    <TableCell colSpan={5} className="text-center py-10 text-gray-500 text-sm italic">No numbers found</TableCell>
                   </TableRow>
                 ) : (
-                  numbers.map((num: any, idx) => (
+                  numbers.map((num: any) => (
                     <TableRow key={idx} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
                       <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.number}</TableCell>
                       <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.service_tag || 'Global'}</TableCell>
