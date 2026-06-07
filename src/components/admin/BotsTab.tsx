@@ -18,7 +18,7 @@ export function BotsTab() {
   const [numbers, setNumbers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
   const [isAddBotOpen, setIsAddBotOpen] = useState(false);
   const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
@@ -27,6 +27,12 @@ export function BotsTab() {
   const [selectedBot, setSelectedBot] = useState<any>(null);
   const [botSettings, setBotSettings] = useState<any[]>([]);
 
+  // Controlled form state per bot type: { [bot_type]: { [setting_key]: value } }
+  const [formState, setFormState] = useState<Record<string, Record<string, string>>>({
+    shark: {}, ims: {}, smshadi: {}
+  });
+  const [savingType, setSavingType] = useState<string | null>(null);
+
   const [newBot, setNewBot] = useState({ name: "", bot_type: "shark" });
   const [newPanel, setNewPanel] = useState({ name: "", panel_url: "", username: "", password: "" });
   const [newNumber, setNewNumber] = useState({ number: "", service_tag: "", bot_id: "", number_panel_id: "" });
@@ -34,17 +40,37 @@ export function BotsTab() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [botsData, panelsData, numbersData, logsData] = await Promise.all([
+      const [botsData, panelsData, numbersData, logsData, settingsData] = await Promise.all([
         supabase.from('bots').select('*'),
         supabase.from('number_panels').select('*'),
         supabase.from('number_pool').select('*'),
-        supabase.from('otp_audit_log').select('*').limit(20).order('created_at', { ascending: false })
+        supabase.from('otp_audit_log').select('*').limit(20).order('created_at', { ascending: false }),
+        supabase.from('bot_settings').select('*'),
       ]);
-      
-      setBots(botsData.data || []);
+
+      const allBots = botsData.data || [];
+      const allSettings = settingsData.data || [];
+      setBots(allBots);
       setPanels(panelsData.data || []);
       setNumbers(numbersData.data || []);
       setAuditLogs(logsData.data || []);
+      setBotSettings(allSettings);
+
+      // Hydrate form state from DB, but don't overwrite fields the user is currently editing
+      setFormState(prev => {
+        const next: Record<string, Record<string, string>> = { ...prev };
+        for (const bot of allBots) {
+          const type = bot.bot_type;
+          if (!next[type]) next[type] = {};
+          const settingsForBot = allSettings.filter(s => s.bot_id === bot.id);
+          for (const s of settingsForBot) {
+            if (next[type][s.setting_key] === undefined) {
+              next[type][s.setting_key] = s.setting_value ?? '';
+            }
+          }
+        }
+        return next;
+      });
     } catch (err) {
       console.error("Fetch data error:", err);
     } finally {
@@ -92,37 +118,78 @@ export function BotsTab() {
   const openSettings = async (bot: any) => {
     setSelectedBot(bot);
     setIsSettingsOpen(true);
-    const { data } = await supabase.from('bot_settings').select('*').eq('bot_id', bot.id);
-    setBotSettings(data || []);
   };
 
-  const updateBotSetting = async (key: string, value: string, botId?: string) => {
-    const targetBotId = botId || selectedBot?.id;
-    if (!targetBotId) {
-       console.warn("No bot selected for setting update:", key);
-       return;
-    }
+  // Local form change — does NOT hit DB. Save button does the upsert.
+  const setField = (botType: string, key: string, value: string) => {
+    setFormState(prev => ({
+      ...prev,
+      [botType]: { ...(prev[botType] || {}), [key]: value },
+    }));
+  };
 
-    const { error } = await supabase.from('bot_settings').upsert({
-      bot_id: targetBotId,
-      setting_key: key,
-      setting_value: value
-    }, { onConflict: 'bot_id,setting_key' });
+  const getField = (botType: string, key: string, fallback = '') =>
+    formState[botType]?.[key] ?? fallback;
 
+  // Ensure bot row exists for a given type; returns its id.
+  const ensureBotId = async (botType: string, displayName: string): Promise<string | null> => {
+    const existing = bots.find(b => b.bot_type === botType);
+    if (existing) return existing.id;
+    const { data, error } = await supabase
+      .from('bots')
+      .insert({ name: displayName, bot_type: botType, status: 'offline' })
+      .select('id')
+      .single();
     if (error) {
-      console.error("Setting update error:", error);
-      toast.error("Failed to update setting");
-    } else {
-      toast.success(`Setting ${key} updated`);
+      console.error('ensureBotId error', error);
+      toast.error(`Could not create ${botType} bot row`);
+      return null;
+    }
+    return data?.id ?? null;
+  };
+
+  const saveBotConfig = async (botType: string, displayName: string, keys: string[]) => {
+    setSavingType(botType);
+    try {
+      const botId = await ensureBotId(botType, displayName);
+      if (!botId) return;
+
+      const rows = keys
+        .filter(k => formState[botType]?.[k] !== undefined)
+        .map(k => ({
+          bot_id: botId,
+          setting_key: k,
+          setting_value: formState[botType][k] ?? '',
+        }));
+
+      if (rows.length === 0) {
+        toast.info("Nothing to save");
+        return;
+      }
+
+      const { error } = await supabase
+        .from('bot_settings')
+        .upsert(rows, { onConflict: 'bot_id,setting_key' });
+
+      if (error) {
+        console.error('saveBotConfig error', error);
+        toast.error(error.message || 'Failed to save config');
+      } else {
+        toast.success(`${displayName} config saved`);
+        fetchData();
+      }
+    } finally {
+      setSavingType(null);
     }
   };
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (typeof fetchData === 'function') fetchData();
-    }, 10000);
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
+
 
   const toggleAutomation = async (type: 'bot' | 'panel', id: string, field: string, value: boolean) => {
     const table = type === 'bot' ? 'bots' : 'number_panels';
