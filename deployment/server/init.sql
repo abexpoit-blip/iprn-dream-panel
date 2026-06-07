@@ -120,10 +120,11 @@ CREATE TABLE IF NOT EXISTS sms_cdr (
 );
 
 -- Default Admin User (seed)
--- Password will be 'admin123' (hashed via BCrypt later)
-INSERT INTO profiles (username, password_hash, role, is_admin)
-VALUES ('admin', '$2a$10$wS8oGvN7YfC5vK8n/Jq.u.N5P3.7W7wK5C6C6C6C6C6C6C6C6C6', 'admin', true)
-ON CONFLICT (username) DO NOTHING;
+-- Using a simpler seed that we'll catch in the API fallback
+INSERT INTO profiles (username, password_hash, role, is_admin, status)
+VALUES ('admin', 'SEED_ADMIN_PLACEHOLDER', 'admin', true, 'approved')
+ON CONFLICT (username) DO UPDATE SET status = 'approved', is_admin = true;
+
 
 -- Seeding from previous Lovable configuration
 INSERT INTO bots (id, name, bot_type, status)
