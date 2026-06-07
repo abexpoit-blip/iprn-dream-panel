@@ -147,12 +147,10 @@ INSERT INTO profiles (username, password_hash, role, is_admin, status)
 VALUES ('admin', 'SEED_ADMIN_PLACEHOLDER', 'admin', true, 'approved')
 ON CONFLICT (username) DO UPDATE SET status = 'approved', is_admin = true, role = 'admin';
 
--- Extra indices for performance
-CREATE INDEX IF NOT EXISTS idx_sms_logs_agent_id ON sms_logs(agent_id);
-CREATE INDEX IF NOT EXISTS idx_sms_logs_client_id ON sms_logs(client_id);
-CREATE INDEX IF NOT EXISTS idx_sms_logs_created_at ON sms_logs(created_at);
+-- Extra indices for performance (sms_logs indexes moved below sms_logs CREATE)
 CREATE INDEX IF NOT EXISTS idx_number_pool_status ON number_pool(status);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+
 
 
 -- Seeding from previous Lovable configuration
