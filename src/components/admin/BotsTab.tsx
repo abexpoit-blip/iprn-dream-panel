@@ -492,7 +492,15 @@ export function BotsTab() {
                       </div>
                     </div>
                     <div className="flex items-end">
-                      <Button onClick={() => toast.success("Hadi configuration saved locally")} className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Hadi Config</Button>
+                      <Button
+                        disabled={savingType === 'smshadi'}
+                        onClick={() => saveBotConfig('smshadi', 'SMS Hadi Agent', [
+                          'hadi_username','hadi_password','hadi_cookies'
+                        ])}
+                        className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg"
+                      >
+                        {savingType === 'smshadi' ? 'Saving...' : 'Save Hadi Config'}
+                      </Button>
                     </div>
                   </div>
                 </TabsContent>
