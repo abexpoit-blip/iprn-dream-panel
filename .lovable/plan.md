@@ -1,19 +1,33 @@
-I will enhance the IMS Agent platform by implementing a number pool system, OTP scraping, and improved financial/performance reporting. I will also ensure the system works correctly in the self-hosted environment by updating the data proxy and authentication logic.
+The user is experiencing issues with the Admin Panel, specifically the "Bot Config" section not loading and various bugs across admin/agent accounts. 
 
-### Number Pool & OTP Scraping
-*   **Number Pool Management:** Implement a robust UI in the Admin Panel to manage the `number_pool` table, including adding, reserving, and expiring numbers.
-*   **OTP Scraper Configuration:** Add a dedicated interface to manage IMS and Hadi scraper settings, using the provided credentials (`mamun99` / `mamun@12aa#`).
-*   **Real-time Ingest Monitoring:** Update the Live OTP Audit tab to show real-time scraped messages from the ingest stream.
+Based on exploration:
+1. `src/components/admin/BotsTab.tsx` contains a "Bot Dashboard" under the "config" tab.
+2. The code has hardcoded default values and uses `updateBotSetting` which calls `supabase.from('bot_settings').upsert(...)`.
+3. Some UI buttons use `window.location.href = '/bot-dashboard'`, but no such route exists in `src/routes`.
+4. The "Bot Config" link in the sidebar redirects to `/admin?tab=bots`.
+5. Several pages like News and Clients are currently basic or have minor issues.
 
-### Reporting & Stats Upgrades (Admin & Agent)
-*   **Detailed CDR Reports:** Enhance SMS CDR with filtering by client, date range, and status.
-*   **Client & Range Leaderboards:** Add visual leaderboards for clients and number ranges based on SMS volume and payout performance.
-*   **Agent-specific Reporting:** Ensure agents can see their own clients' performance and their own payout history accurately.
+### Fix Bot Config & Dashboard
+- Create the missing `/bot-dashboard` route and page.
+- Fix the routing from Admin -> Bot Config to properly select the `bots` tab and specifically the configuration view.
+- Ensure all bot types (Shark, IMS, Hadi) have consistent UI for credentials, cookie login, and session settings.
+- Implement automatic polling (every 10s) for bot statuses on the dashboard.
 
-### Technical Infrastructure
-*   **Self-Hosted Data Proxy:** Update `src/integrations/supabase/client.ts` and the backend `deployment/server/index.ts` to support all necessary CRUD operations and relationship queries required for the new reporting features.
-*   **Database Schema Updates:** Verify and apply any missing columns or indices to `profiles`, `number_pool`, and `sms_logs` to support the new features.
-*   **Auth Reliability:** Fix the "Invalid credentials" and "Server authentication error" by ensuring the bcrypt comparison and seed admin fallback are perfectly aligned between the frontend and backend.
+### Fix Role-Based Access & Data Display
+- Ensure Admin and Agent roles see the correct data.
+- Fix the `Profiles` table access and ensure `is_admin` checks are robust.
+- Standardize the look and feel across all pages (column layouts, text, buttons) to match the IMS theme.
 
-### Deployment
-*   The changes will be applied to the codebase and then deployed to the VPS by running the standard deployment script.
+### Verification & Reconciliation
+- Implement a real data sync check for CDR totals (Scraped vs Displayed).
+- Ensure CSV exports match visible columns and filters.
+- Add pagination and status indicators to CDR reports.
+
+### VPS Command Support
+- Prepare a script/command to update the VPS with the latest changes.
+
+**Technical Details:**
+- Missing Route: `src/routes/bot-dashboard.tsx`
+- File to Fix: `src/components/admin/BotsTab.tsx` (Add Shark/IMS/Hadi specific UI details)
+- File to Fix: `src/routes/_dashboard/admin.tsx` (Ensure tab selection is handled correctly)
+- File to Fix: `src/routes/_dashboard.tsx` (Fix sidebar links)
