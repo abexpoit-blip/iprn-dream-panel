@@ -408,7 +408,17 @@ export function BotsTab() {
                           </div>
                         </div>
                         
-                        <Button onClick={() => toast.success("Shark configuration saved locally")} className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Shark Config</Button>
+                        <Button
+                          disabled={savingType === 'shark'}
+                          onClick={() => saveBotConfig('shark', 'Shark SMS Agent', [
+                            'shark_username','shark_password','shark_cookies',
+                            'shark_remember_me','shark_cookie_persistence','shark_auto_refresh',
+                            'shark_session_timeout','shark_association_check','shark_source_validation'
+                          ])}
+                          className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg"
+                        >
+                          {savingType === 'shark' ? 'Saving...' : 'Save Shark Config'}
+                        </Button>
                     </div>
                   </div>
                 </TabsContent>
