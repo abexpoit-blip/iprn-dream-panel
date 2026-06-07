@@ -10,8 +10,9 @@ const jar = new CookieJar();
 const client = wrapper(axios.create({ jar, withCredentials: true }));
 
 let isActive = false;
-const BOT_ID = 'shark-sms-bot-id'; // To be updated with real ID from DB
+let BOT_ID = null; // Resolved from DB at start()
 const BOT_NAME = 'Shark SMS Bot';
+const BOT_TYPE = 'shark';
 
 async function login() {
     const user = await getSetting(BOT_ID, 'username', 'mamun01');
