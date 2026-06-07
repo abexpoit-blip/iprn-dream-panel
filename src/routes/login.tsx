@@ -38,18 +38,28 @@ function LoginPage() {
     // Use simple username for self-hosted, or email candidates for Supabase
     const candidates = raw.includes("@")
       ? [raw]
-      : [`${raw.toLowerCase()}@nexus.site`, `${raw.toLowerCase()}@imssms.org`, `${raw.toLowerCase()}@client.imssms.org`, `${raw.toLowerCase()}@admin.com`, raw];
+      : [
+          `${raw.toLowerCase()}@nexus.site`,
+          `${raw.toLowerCase()}@imssms.org`,
+          `${raw.toLowerCase()}@client.imssms.org`,
+          `${raw.toLowerCase()}@admin.com`,
+          raw
+        ];
 
     let signedInUserId: string | null = null;
     let lastError: string | null = null;
 
-    for (const email of candidates) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (!error && data.user) {
-        signedInUserId = data.user.id;
-        break;
-      }
-      lastError = error?.message || lastError;
+    // Parallelize authentication attempts to significantly speed up login
+    const loginResults = await Promise.all(
+      candidates.map(email => supabase.auth.signInWithPassword({ email, password }))
+    );
+
+    const successfulLogin = loginResults.find(r => !r.error && r.data.user);
+
+    if (successfulLogin) {
+      signedInUserId = successfulLogin.data.user.id;
+    } else {
+      lastError = loginResults[0]?.error?.message || "Invalid credentials.";
     }
 
     if (!signedInUserId) {
