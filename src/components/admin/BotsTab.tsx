@@ -18,7 +18,7 @@ export function BotsTab() {
   const [numbers, setNumbers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
   const [isAddBotOpen, setIsAddBotOpen] = useState(false);
   const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
@@ -27,6 +27,12 @@ export function BotsTab() {
   const [selectedBot, setSelectedBot] = useState<any>(null);
   const [botSettings, setBotSettings] = useState<any[]>([]);
 
+  // Controlled form state per bot type: { [bot_type]: { [setting_key]: value } }
+  const [formState, setFormState] = useState<Record<string, Record<string, string>>>({
+    shark: {}, ims: {}, smshadi: {}
+  });
+  const [savingType, setSavingType] = useState<string | null>(null);
+
   const [newBot, setNewBot] = useState({ name: "", bot_type: "shark" });
   const [newPanel, setNewPanel] = useState({ name: "", panel_url: "", username: "", password: "" });
   const [newNumber, setNewNumber] = useState({ number: "", service_tag: "", bot_id: "", number_panel_id: "" });
@@ -34,17 +40,37 @@ export function BotsTab() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [botsData, panelsData, numbersData, logsData] = await Promise.all([
+      const [botsData, panelsData, numbersData, logsData, settingsData] = await Promise.all([
         supabase.from('bots').select('*'),
         supabase.from('number_panels').select('*'),
         supabase.from('number_pool').select('*'),
-        supabase.from('otp_audit_log').select('*').limit(20).order('created_at', { ascending: false })
+        supabase.from('otp_audit_log').select('*').limit(20).order('created_at', { ascending: false }),
+        supabase.from('bot_settings').select('*'),
       ]);
-      
-      setBots(botsData.data || []);
+
+      const allBots = botsData.data || [];
+      const allSettings = settingsData.data || [];
+      setBots(allBots);
       setPanels(panelsData.data || []);
       setNumbers(numbersData.data || []);
       setAuditLogs(logsData.data || []);
+      setBotSettings(allSettings);
+
+      // Hydrate form state from DB, but don't overwrite fields the user is currently editing
+      setFormState(prev => {
+        const next: Record<string, Record<string, string>> = { ...prev };
+        for (const bot of allBots) {
+          const type = bot.bot_type;
+          if (!next[type]) next[type] = {};
+          const settingsForBot = allSettings.filter((s: any) => s.bot_id === bot.id);
+          for (const s of settingsForBot) {
+            if (next[type][s.setting_key] === undefined) {
+              next[type][s.setting_key] = s.setting_value ?? '';
+            }
+          }
+        }
+        return next;
+      });
     } catch (err) {
       console.error("Fetch data error:", err);
     } finally {
@@ -92,37 +118,101 @@ export function BotsTab() {
   const openSettings = async (bot: any) => {
     setSelectedBot(bot);
     setIsSettingsOpen(true);
-    const { data } = await supabase.from('bot_settings').select('*').eq('bot_id', bot.id);
-    setBotSettings(data || []);
   };
 
+  // Local form change — does NOT hit DB. Save button does the upsert.
+  const setField = (botType: string, key: string, value: string) => {
+    setFormState(prev => ({
+      ...prev,
+      [botType]: { ...(prev[botType] || {}), [key]: value },
+    }));
+  };
+
+  const getField = (botType: string, key: string, fallback = '') =>
+    formState[botType]?.[key] ?? fallback;
+
+  // Ensure bot row exists for a given type; returns its id.
+  const ensureBotId = async (botType: string, displayName: string): Promise<string | null> => {
+    const existing = bots.find(b => b.bot_type === botType);
+    if (existing) return existing.id;
+    const { data, error } = await supabase
+      .from('bots')
+      .insert({ name: displayName, bot_type: botType, status: 'offline' })
+      .select('id')
+      .single();
+    if (error) {
+      console.error('ensureBotId error', error);
+      toast.error(`Could not create ${botType} bot row`);
+      return null;
+    }
+    return data?.id ?? null;
+  };
+
+  const saveBotConfig = async (botType: string, displayName: string, keys: string[]) => {
+    setSavingType(botType);
+    try {
+      const botId = await ensureBotId(botType, displayName);
+      if (!botId) return;
+
+      const rows = keys
+        .filter(k => formState[botType]?.[k] !== undefined)
+        .map(k => ({
+          bot_id: botId,
+          setting_key: k,
+          setting_value: formState[botType][k] ?? '',
+        }));
+
+      if (rows.length === 0) {
+        toast.info("Nothing to save");
+        return;
+      }
+
+      const { error } = await supabase
+        .from('bot_settings')
+        .upsert(rows, { onConflict: 'bot_id,setting_key' });
+
+      if (error) {
+        console.error('saveBotConfig error', error);
+        toast.error(error.message || 'Failed to save config');
+      } else {
+        toast.success(`${displayName} config saved`);
+        fetchData();
+      }
+    } finally {
+      setSavingType(null);
+    }
+  };
+
+  // Backward-compatible single-field update. Updates local state immediately and
+  // also persists to DB so legacy onChange call sites keep working.
   const updateBotSetting = async (key: string, value: string, botId?: string) => {
+    // Find bot type from id (so local form state stays in sync) — fallback to selectedBot
+    const bot = bots.find(b => b.id === botId) || selectedBot;
+    if (bot?.bot_type) setField(bot.bot_type, key, value);
+
     const targetBotId = botId || selectedBot?.id;
     if (!targetBotId) {
-       console.warn("No bot selected for setting update:", key);
-       return;
+      console.warn("No bot selected for setting update:", key);
+      return;
     }
-
     const { error } = await supabase.from('bot_settings').upsert({
       bot_id: targetBotId,
       setting_key: key,
-      setting_value: value
+      setting_value: value,
     }, { onConflict: 'bot_id,setting_key' });
-
     if (error) {
       console.error("Setting update error:", error);
-      toast.error("Failed to update setting");
-    } else {
-      toast.success(`Setting ${key} updated`);
+      toast.error(error.message || "Failed to update setting");
     }
   };
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (typeof fetchData === 'function') fetchData();
-    }, 10000);
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
+
 
   const toggleAutomation = async (type: 'bot' | 'panel', id: string, field: string, value: boolean) => {
     const table = type === 'bot' ? 'bots' : 'number_panels';
@@ -170,6 +260,7 @@ export function BotsTab() {
       <Tabs defaultValue="status" className="w-full">
         <TabsList className="bg-slate-100 p-1 mb-4 h-11">
           <TabsTrigger value="status" className="text-[11px] font-black uppercase">Bot Status</TabsTrigger>
+          <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Config</TabsTrigger>
           <TabsTrigger value="panels" className="text-[11px] font-black uppercase">Number Panels</TabsTrigger>
           <TabsTrigger value="pool" className="text-[11px] font-black uppercase">Number Pool</TabsTrigger>
           <TabsTrigger value="audit" className="text-[11px] font-black uppercase">Live OTP Audit</TabsTrigger>
@@ -317,7 +408,17 @@ export function BotsTab() {
                           </div>
                         </div>
                         
-                        <Button onClick={() => toast.success("Shark configuration saved locally")} className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Shark Config</Button>
+                        <Button
+                          disabled={savingType === 'shark'}
+                          onClick={() => saveBotConfig('shark', 'Shark SMS Agent', [
+                            'shark_username','shark_password','shark_cookies',
+                            'shark_remember_me','shark_cookie_persistence','shark_auto_refresh',
+                            'shark_session_timeout','shark_association_check','shark_source_validation'
+                          ])}
+                          className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg"
+                        >
+                          {savingType === 'shark' ? 'Saving...' : 'Save Shark Config'}
+                        </Button>
                     </div>
                   </div>
                 </TabsContent>
@@ -357,11 +458,15 @@ export function BotsTab() {
                       </div>
                     </div>
                     <div className="flex items-end">
-                      <Button 
-                        onClick={() => toast.success("IMS configuration saved securely")} 
+                      <Button
+                        disabled={savingType === 'ims'}
+                        onClick={() => saveBotConfig('ims', 'IMS Main Agent', [
+                          'ims_username','ims_password','ims_cookies',
+                          'ims_remember_me','ims_session_timeout'
+                        ])}
                         className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg"
                       >
-                        Save IMS Config
+                        {savingType === 'ims' ? 'Saving...' : 'Save IMS Config'}
                       </Button>
                     </div>
                   </div>
@@ -387,7 +492,15 @@ export function BotsTab() {
                       </div>
                     </div>
                     <div className="flex items-end">
-                      <Button onClick={() => toast.success("Hadi configuration saved locally")} className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Hadi Config</Button>
+                      <Button
+                        disabled={savingType === 'smshadi'}
+                        onClick={() => saveBotConfig('smshadi', 'SMS Hadi Agent', [
+                          'hadi_username','hadi_password','hadi_cookies'
+                        ])}
+                        className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg"
+                      >
+                        {savingType === 'smshadi' ? 'Saving...' : 'Save Hadi Config'}
+                      </Button>
                     </div>
                   </div>
                 </TabsContent>
