@@ -200,12 +200,12 @@ function StatsCDRPage() {
             </p>
             <div className="flex gap-1">
               <Button 
-                onClick={() => setPage(p => Math.max(1, p - 1))} 
+                onClick={() => setPage((p: number) => Math.max(1, p - 1))} 
                 disabled={page === 1}
                 variant="outline" size="sm" className="h-8 px-3 text-[11px] font-black uppercase bg-white"
               >Previous</Button>
               <Button 
-                onClick={() => setPage(p => p + 1)} 
+                onClick={() => setPage((p: number) => p + 1)} 
                 disabled={!logs?.count || page * pageSize >= logs.count}
                 variant="outline" size="sm" className="h-8 px-3 text-[11px] font-black uppercase bg-white"
               >Next</Button>
