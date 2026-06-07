@@ -37,8 +37,14 @@ function LoginPage() {
 
     try {
       console.log("[Login] Attempting sign in for:", raw);
+      // Attempt login by email first, then try appending @ims.sms if it's a simple username
+      let loginEmail = raw;
+      if (!raw.includes('@')) {
+        loginEmail = `${raw}@ims.sms`;
+      }
+
       const result = await supabase.auth.signInWithPassword({ 
-        email: raw, 
+        email: loginEmail, 
         password 
       });
 

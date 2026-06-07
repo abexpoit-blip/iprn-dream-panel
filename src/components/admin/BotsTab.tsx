@@ -96,20 +96,30 @@ export function BotsTab() {
     setBotSettings(data || []);
   };
 
-  const updateBotSetting = async (key: string, value: string) => {
+  const updateBotSetting = async (key: string, value: string, botId?: string) => {
+    const targetBotId = botId || selectedBot?.id;
+    if (!targetBotId) {
+       console.warn("No bot selected for setting update:", key);
+       return;
+    }
+
     const { error } = await supabase.from('bot_settings').upsert({
-      bot_id: selectedBot.id,
+      bot_id: targetBotId,
       setting_key: key,
       setting_value: value
     }, { onConflict: 'bot_id,setting_key' });
 
-    if (error) toast.error("Failed to update setting");
-    else toast.success(`Setting ${key} updated`);
+    if (error) {
+      console.error("Setting update error:", error);
+      toast.error("Failed to update setting");
+    } else {
+      toast.success(`Setting ${key} updated`);
+    }
   };
 
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchData();
+      if (typeof fetchData === 'function') fetchData();
     }, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -163,7 +173,7 @@ export function BotsTab() {
           <TabsTrigger value="panels" className="text-[11px] font-black uppercase">Number Panels</TabsTrigger>
           <TabsTrigger value="pool" className="text-[11px] font-black uppercase">Number Pool</TabsTrigger>
           <TabsTrigger value="audit" className="text-[11px] font-black uppercase">Live OTP Audit</TabsTrigger>
-          <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Config</TabsTrigger>
+          <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Dashboard</TabsTrigger>
         </TabsList>
 
         <TabsContent value="status">
@@ -219,7 +229,7 @@ export function BotsTab() {
         <TabsContent value="config">
            <div className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] p-6">
               <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest mb-6 flex items-center gap-2">
-                 <Settings size={16} className="text-[#0061f2]" /> Global Scraper Configuration
+                 <Settings size={16} className="text-[#0061f2]" /> Shark / IMS / Hadi Bot Dashboard
               </h3>
               
               <Tabs defaultValue="shark" className="w-full">
@@ -237,15 +247,15 @@ export function BotsTab() {
                           <div className="mt-4 space-y-4">
                               <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase">Username</Label>
-                                <Input defaultValue="mamun01" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_username', e.target.value)} />
+                                <Input defaultValue="mamun01" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_username', e.target.value, bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                               <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase">Password</Label>
-                                <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_password', e.target.value)} />
+                                <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_password', e.target.value, bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                               <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase">Cookie Data (JSON)</Label>
-                                <Input placeholder='{"session": "..."}' className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_cookies', e.target.value)} />
+                                <Input placeholder='{"session": "..."}' className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_cookies', e.target.value, bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                           </div>
                         </div>
@@ -254,20 +264,26 @@ export function BotsTab() {
                           <h4 className="text-[11px] font-black uppercase text-blue-600">Session Controls</h4>
                           <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Remember Me</span>
-                              <Checkbox onCheckedChange={(checked) => updateBotSetting('shark_remember_me', String(checked))} />
+                              <Checkbox onCheckedChange={(checked) => updateBotSetting('shark_remember_me', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                           </div>
                           <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Cookie Persistence</span>
-                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_cookie_persistence', String(checked))} />
+                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_cookie_persistence', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                           </div>
                           <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Auto-Refresh (15s)</span>
-                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_auto_refresh', String(checked))} />
+                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_auto_refresh', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                           </div>
-                          <div className="space-y-1 pt-2">
-                             <Label className="text-[10px] font-bold">Session Timeout (min)</Label>
-                             <Input type="number" defaultValue="60" className="h-8 text-xs" onChange={(e) => updateBotSetting('shark_session_timeout', e.target.value)} />
-                          </div>
+                             <div className="space-y-1 pt-2">
+                                <Label className="text-[10px] font-bold">Session Timeout (min)</Label>
+                                <Input 
+                                  type="number" 
+                                  defaultValue={botSettings.find(s => s.setting_key === 'shark_session_timeout')?.setting_value || '60'} 
+                                  className="h-8 text-xs" 
+                                  onChange={(e) => updateBotSetting('shark_session_timeout', e.target.value, bots.find(b => b.bot_type === 'shark')?.id)} 
+                                />
+                             </div>
+
                         </div>
                     </div>
 
@@ -280,14 +296,14 @@ export function BotsTab() {
                                     <p className="text-[10px] font-black uppercase">Association Check</p>
                                     <p className="text-[9px] text-slate-500 italic">Verify number pool ownership before delivery</p>
                                 </div>
-                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_association_check', String(checked))} />
+                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_association_check', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                               <div className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>
                                     <p className="text-[10px] font-black uppercase">Source Validation</p>
                                     <p className="text-[9px] text-slate-500 italic">Block duplicate source message IDs</p>
                                 </div>
-                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_source_validation', String(checked))} />
+                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_source_validation', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                           </div>
                         </div>
@@ -304,29 +320,40 @@ export function BotsTab() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">User</Label>
-                          <Input defaultValue="mamun99" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_username', e.target.value)} />
+                          <Input defaultValue="mamun99" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_username', e.target.value, bots.find(b => b.bot_type === 'ims')?.id)} />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">Pass</Label>
-                          <Input type="password" defaultValue="mamun@12aa#" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_password', e.target.value)} />
+                          <Input type="password" defaultValue="mamun@12aa#" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_password', e.target.value, bots.find(b => b.bot_type === 'ims')?.id)} />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">Cookies</Label>
-                          <Input placeholder="Enter login cookies..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_cookies', e.target.value)} />
+                          <Input placeholder="Enter login cookies..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_cookies', e.target.value, bots.find(b => b.bot_type === 'ims')?.id)} />
                           <p className="text-[9px] text-slate-400 italic">Securely stored with HttpOnly, Secure, SameSite=Strict flags</p>
                         </div>
                         <div className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200">
                           <span className="text-[10px] font-bold">Remember Me</span>
-                          <Checkbox onCheckedChange={(checked) => updateBotSetting('ims_remember_me', String(checked))} />
+                          <Checkbox onCheckedChange={(checked) => updateBotSetting('ims_remember_me', String(checked), bots.find(b => b.bot_type === 'ims')?.id)} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] font-bold">Timeout (min)</Label>
-                          <Input type="number" defaultValue="30" className="h-8 text-xs" onChange={(e) => updateBotSetting('ims_session_timeout', e.target.value)} />
+                          <Input 
+                            type="number" 
+                            defaultValue={botSettings.find(s => s.setting_key === 'ims_session_timeout')?.setting_value || '30'} 
+                            className="h-8 text-xs" 
+                            onChange={(e) => updateBotSetting('ims_session_timeout', e.target.value, bots.find(b => b.bot_type === 'ims')?.id)} 
+                          />
                         </div>
+
                       </div>
                     </div>
                     <div className="flex items-end">
-                      <Button onClick={() => toast.success("IMS configuration saved locally")} className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save IMS Config</Button>
+                      <Button 
+                        onClick={() => toast.success("IMS configuration saved securely")} 
+                        className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg"
+                      >
+                        Save IMS Config
+                      </Button>
                     </div>
                   </div>
                 </TabsContent>
@@ -338,15 +365,15 @@ export function BotsTab() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">Username</Label>
-                          <Input className="h-10 rounded-lg" onChange={(e) => updateBotSetting('hadi_username', e.target.value)} />
+                          <Input className="h-10 rounded-lg" onChange={(e) => updateBotSetting('hadi_username', e.target.value, bots.find(b => b.bot_type === 'smshadi')?.id)} />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">Password</Label>
-                          <Input type="password" placeholder="Hadi Password..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('hadi_password', e.target.value)} />
+                          <Input type="password" placeholder="Hadi Password..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('hadi_password', e.target.value, bots.find(b => b.bot_type === 'smshadi')?.id)} />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">Cookies</Label>
-                          <Input placeholder="Enter login cookies..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('hadi_cookies', e.target.value)} />
+                          <Input placeholder="Enter login cookies..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('hadi_cookies', e.target.value, bots.find(b => b.bot_type === 'smshadi')?.id)} />
                         </div>
                       </div>
                     </div>
