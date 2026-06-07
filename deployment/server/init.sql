@@ -216,6 +216,11 @@ CREATE TABLE IF NOT EXISTS sms_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_sms_logs_agent_id ON sms_logs(agent_id);
+CREATE INDEX IF NOT EXISTS idx_sms_logs_client_id ON sms_logs(client_id);
+CREATE INDEX IF NOT EXISTS idx_sms_logs_created_at ON sms_logs(created_at);
+
+
 -- News seeding
 CREATE TABLE IF NOT EXISTS news (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
