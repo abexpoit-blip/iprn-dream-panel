@@ -161,8 +161,9 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 INSERT INTO bot_settings (bot_id, setting_key, setting_value, is_secret)
-SELECT 
-    id,
+SELECT bot_id, column_name, val, is_secret FROM (
+  SELECT 
+    id AS bot_id,
     column_name,
     CASE 
         WHEN name = 'IMS Main Agent' AND column_name = 'username' THEN 'mamun99'
@@ -172,11 +173,14 @@ SELECT
         WHEN name = 'SMS Hadi Agent' AND column_name = 'password' THEN 'mamun999'
         WHEN name = 'SMS Hadi Agent' AND column_name = 'portal_url' THEN 'http://2.59.169.96/ints/login'
         WHEN column_name = 'interval' THEN '15'
-    END,
-    CASE WHEN column_name = 'password' THEN true ELSE false END
-FROM bots
-CROSS JOIN (VALUES ('username'), ('password'), ('portal_url'), ('interval')) AS settings(column_name)
+    END AS val,
+    (column_name = 'password') AS is_secret
+  FROM bots
+  CROSS JOIN (VALUES ('username'), ('password'), ('portal_url'), ('interval')) AS settings(column_name)
+) sub
+WHERE val IS NOT NULL
 ON CONFLICT (bot_id, setting_key) DO NOTHING;
+
 
 INSERT INTO number_panels (name, panel_url, username, password, status)
 VALUES 
