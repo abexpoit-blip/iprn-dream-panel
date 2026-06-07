@@ -157,10 +157,22 @@ function createSupabaseClient() {
                     }
                   });
                   const data = await res.json();
-                  return { data, error: res.ok ? null : { message: data.error || 'Update failed' } };
+                  return { data, error: res.ok ? null : { message: 'Update failed' } };
                 } catch (e: any) {
                   return { data: null, error: { message: e.message } };
                 }
+              },
+              in: async (col: string, vals: any[]) => {
+                return Promise.all(vals.map(id => {
+                  return fetch(`${API_URL}/api/data/${table}?id=${id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(body),
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` 
+                    }
+                  });
+                })).then(() => ({ error: null }));
               }
             };
           },
@@ -217,5 +229,3 @@ export const supabase = new Proxy({} as any, {
     return Reflect.get(_supabase, prop, receiver);
   },
 });
-
-
