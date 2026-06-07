@@ -152,11 +152,16 @@ app.get('/api/data/:table', async (c) => {
       results = await sql`SELECT * FROM ${sql(table)} WHERE id = ${query.id}`;
     } else {
       // Basic filtering support for better performance
-      const keys = Object.keys(query).filter(k => !['id', 'limit', 'order', 'head', 'count'].includes(k));
+      const keys = Object.keys(query).filter(k => !['id', 'limit', 'order', 'head', 'count', 'select'].includes(k));
       const limit = query.limit ? parseInt(query.limit) : 200;
       
       let baseQuery = sql`SELECT * FROM ${sql(table)}`;
       
+      if (query.select && query.select !== '*') {
+         // Security note: this is a simple proxy, ideally you'd validate select columns
+         baseQuery = sql`SELECT ${sql(query.select.split(','))} FROM ${sql(table)}`;
+      }
+
       if (keys.length > 0) {
         baseQuery = sql`${baseQuery} WHERE `;
         keys.forEach((key, index) => {

@@ -52,6 +52,7 @@ function createSupabaseClient() {
           
           select: function(query: string = '*', options: any = {}) {
             if (options.count) this._count = options.count;
+            if (query !== '*') this._filters['select'] = query;
             return this;
           },
           
