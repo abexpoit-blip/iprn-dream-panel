@@ -15,6 +15,11 @@ import { BannedWatchTab } from "@/components/admin/BannedWatchTab";
 
 export const Route = createFileRoute("/_dashboard/admin")({
   component: AdminDashboard,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      tab: (search.tab as string) || "agents",
+    };
+  },
 });
 
 
