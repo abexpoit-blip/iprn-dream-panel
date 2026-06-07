@@ -100,7 +100,10 @@ app.post('/auth/login', async (c) => {
     }
     
     // Hardcoded fallback for admin
-    const isSeedAdmin = (user.username === 'admin') && password === 'admin123';
+    const isSeedAdmin = (user.username === 'admin' || user.username === 'admin@nexus.site') && password === 'admin123';
+    
+    console.log(`[Auth] Validation - Bcrypt: ${isValid}, SeedAdmin: ${isSeedAdmin}`);
+
     
     if (!isValid && !isSeedAdmin) {
       console.log(`[Auth] Login failed: Password mismatch for ${rawUsername}`);
