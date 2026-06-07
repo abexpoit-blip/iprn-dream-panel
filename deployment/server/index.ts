@@ -198,7 +198,7 @@ app.get('/api/data/:table', async (c) => {
   }
 });
 
-app.post('/api/data/:table', async (c) =u003e {
+app.post('/api/data/:table', async (c) => {
   const table = c.req.param('table');
   const body = await c.req.json();
   try {
