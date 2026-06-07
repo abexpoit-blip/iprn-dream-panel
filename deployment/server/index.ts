@@ -86,7 +86,9 @@ app.post('/auth/login', async (c) => {
       return c.json({ error: 'Invalid credentials' }, 401);
     }
     
-    if (user.status !== 'approved' && user.status !== 'active') {
+    // Status can be active or approved
+    const isApproved = user.status === 'approved' || user.status === 'active' || user.is_admin;
+    if (!isApproved) {
       console.log(`[Auth] Login blocked: User status is ${user.status}`);
       return c.json({ error: 'Account pending approval or suspended' }, 403);
     }

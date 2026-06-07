@@ -40,10 +40,10 @@ function StatsCDRPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-none bg-[#f8f9fc] hover:bg-[#f8f9fc]">
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Number</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Prefix</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Message</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Payout</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Phone Number</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">OTP Code</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">CLI/Source</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Amount (BDT)</TableHead>
                   <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Status</TableHead>
                   <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Received At</TableHead>
                 </TableRow>
@@ -67,10 +67,10 @@ function StatsCDRPage() {
                 ) : (
                   logs?.map((log: any, idx: number) => (
                     <TableRow key={log.id} className={cn("border-b border-[#f2f4f8] hover:bg-gray-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]")}>
-                      <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{log.number}</TableCell>
-                      <TableCell className="text-[13px] font-medium text-[#69707a] px-6 py-4">{log.prefix}</TableCell>
-                      <TableCell className="text-[13px] text-[#69707a] px-6 py-4 max-w-xs truncate">{log.message}</TableCell>
-                      <TableCell className="text-[13px] font-bold text-[#0061f2] px-6 py-4">${log.payout}</TableCell>
+                      <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{log.phone_number}</TableCell>
+                      <TableCell className="text-[13px] font-black text-[#e81500] px-6 py-4">{log.otp_code || 'PENDING'}</TableCell>
+                      <TableCell className="text-[13px] text-[#69707a] px-6 py-4">{log.cli || '-'}</TableCell>
+                      <TableCell className="text-[13px] font-bold text-[#0061f2] px-6 py-4">{log.price_bdt} BDT</TableCell>
                       <TableCell className="px-6 py-4">
                         <span className={cn(
                           "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider",

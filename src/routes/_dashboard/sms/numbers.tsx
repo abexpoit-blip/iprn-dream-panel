@@ -19,19 +19,14 @@ export const Route = createFileRoute("/_dashboard/sms/numbers")({
 
 function SmsNumbersPage() {
   const { data: numbers, isLoading } = useQuery({
-    queryKey: ['sms_numbers'],
+    queryKey: ['number_pool_view'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('sms_logs')
-        .select('number, status, created_at')
-        .order('created_at', { ascending: false })
-        .limit(100);
+        .from('number_pool')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) throw error;
-      // Unique numbers for display purposes in this list
-      const uniqueNumbers = Array.from(new Set(data.map((n: any) => n.number))).map(num => {
-        return data.find((n: any) => n.number === num);
-      });
-      return uniqueNumbers;
+      return data;
     }
   });
 
@@ -59,8 +54,9 @@ function SmsNumbersPage() {
               <TableHeader className="bg-gray-50 border-b border-[#e3e6ec]">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Phone Number</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Service</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Status</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Last Seen</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Last Update</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -77,12 +73,16 @@ function SmsNumbersPage() {
                   numbers.map((num: any, idx) => (
                     <TableRow key={idx} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
                       <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.number}</TableCell>
+                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.service_tag || 'Global'}</TableCell>
                       <TableCell className="py-3 border-r border-[#e3e6ec]">
-                        <span className="px-2 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded uppercase">Active</span>
+                        <span className={cn(
+                          "px-2 py-0.5 text-white text-[10px] font-bold rounded uppercase",
+                          num.status === 'available' ? "bg-green-500" : num.status === 'reserved' ? "bg-amber-500" : "bg-slate-500"
+                        )}>{num.status}</span>
                       </TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{new Date(num.created_at).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{new Date(num.updated_at || num.created_at).toLocaleString()}</TableCell>
                       <TableCell className="py-3 text-center">
-                         <Button variant="ghost" size="sm" className="h-7 text-[#0061f2] hover:bg-blue-50 text-[10px] font-bold uppercase">View Logs</Button>
+                         <Button variant="ghost" size="sm" className="h-7 text-[#0061f2] hover:bg-blue-50 text-[10px] font-bold uppercase">Details</Button>
                       </TableCell>
                     </TableRow>
                   ))
