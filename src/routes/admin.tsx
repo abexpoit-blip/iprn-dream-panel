@@ -20,7 +20,7 @@ function AdminRedirect() {
 
       const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
       if (profile?.is_admin) {
-        navigate({ to: "/_dashboard/admin" });
+        navigate({ to: "/admin" });
       } else {
         toast.error("Access Denied");
         navigate({ to: "/dashboard" });
