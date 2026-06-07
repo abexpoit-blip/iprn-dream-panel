@@ -24,23 +24,16 @@ function AdminLogin() {
     setLoading(true);
 
     try {
-      // Admin login usually uses email in Supabase, but we can treat username as email if needed
-      // or just assume they enter their email. The user said "agent and cleint login panel same but admin login panel separate"
+      console.log("[AdminLogin] Attempting admin sign in...");
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: username,
+        email: username.trim(),
         password,
       });
 
       if (error) throw error;
 
-      // Check if is admin
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("is_admin, role")
-        .eq("id", data.user.id)
-        .single();
-
-      if (profileError || !profile?.is_admin) {
+      if (!data.user?.is_admin) {
+        console.warn("[AdminLogin] Non-admin attempted login:", data.user);
         await supabase.auth.signOut();
         throw new Error("Access denied. Admin privileges required.");
       }
@@ -48,6 +41,7 @@ function AdminLogin() {
       toast.success("Welcome back, Admin!");
       navigate({ to: "/admin" });
     } catch (error: any) {
+      console.error("[AdminLogin] Error:", error);
       toast.error(error.message || "Login failed");
     } finally {
       setLoading(false);

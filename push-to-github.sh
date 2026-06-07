@@ -2,5 +2,5 @@
 # Commands to push your local changes to the new GitHub repo
 
 git add .
-git commit -m "Performance: Fix login logic, optimize Nginx, and add robust deployment script"
+git commit -m "Fix: Robust authentication logic and improved server-side debugging"
 git push origin main

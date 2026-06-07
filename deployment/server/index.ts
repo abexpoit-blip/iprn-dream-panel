@@ -23,60 +23,74 @@ app.get('/health', (c) => c.json({ status: 'ok' }));
 
 // Auth Routes
 app.post('/auth/login', async (c) => {
-  const { username, password } = await c.req.json();
-  
   try {
-    const rawUsername = username.includes('@') ? username.split('@')[0] : username;
+    const body = await c.req.json();
+    const { username, password } = body;
     
+    if (!username || !password) {
+      return c.json({ error: 'Username and password required' }, 400);
+    }
+
+    const rawUsername = username.trim();
+    
+    console.log(`[Auth] Attempting login for: ${rawUsername}`);
+
     // Check multiple username formats to be flexible
     const [user] = await sql`
       SELECT * FROM profiles 
       WHERE username = ${rawUsername} 
-      OR username = ${username}
-      OR username = ${username.toLowerCase()}
+      OR username = ${rawUsername.toLowerCase()}
+      OR username = ${rawUsername + '@nexus.site'}
     `;
     
     if (!user) {
-      console.log(`Login failed: User not found (${username})`);
+      console.log(`[Auth] Login failed: User not found (${rawUsername})`);
       return c.json({ error: 'Invalid credentials' }, 401);
     }
     
-    if (user.status !== 'approved') {
-      return c.json({ error: 'Account pending approval' }, 403);
+    if (user.status !== 'approved' && user.status !== 'active') {
+      console.log(`[Auth] Login blocked: User status is ${user.status}`);
+      return c.json({ error: 'Account pending approval or suspended' }, 403);
     }
 
-    const isValid = await bcrypt.compare(password, user.password_hash);
+    // Try normal bcrypt comparison first
+    let isValid = false;
+    try {
+      isValid = await bcrypt.compare(password, user.password_hash);
+    } catch (err) {
+      console.error('[Auth] Bcrypt error:', err);
+    }
     
-    // Fallback for initial admin seed
-    const isSeedAdmin = (user.username === 'admin' || user.username === 'admin@nexus.site') && password === 'admin123';
+    // Hardcoded fallback for admin
+    const isSeedAdmin = (user.username === 'admin') && password === 'admin123';
     
     if (!isValid && !isSeedAdmin) {
-      console.log(`Login failed: Password mismatch for ${username}`);
+      console.log(`[Auth] Login failed: Password mismatch for ${rawUsername}`);
       return c.json({ error: 'Invalid credentials' }, 401);
     }
 
     const token = await sign({ 
       id: user.id, 
       username: user.username, 
-      role: user.role,
-      is_admin: user.is_admin,
+      role: user.role || 'agent',
+      is_admin: !!user.is_admin,
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
     }, JWT_SECRET, 'HS256' as any);
 
-    console.log(`User logged in: ${user.username} (${user.role})`);
+    console.log(`[Auth] User logged in successfully: ${user.username} (${user.role})`);
     return c.json({ 
       user: { 
         id: user.id, 
         username: user.username, 
-        role: user.role, 
-        is_admin: user.is_admin,
+        role: user.role || 'agent', 
+        is_admin: !!user.is_admin,
         status: user.status
       }, 
       token 
     });
   } catch (error) {
-    console.error('Login error:', error);
-    return c.json({ error: 'Server error' }, 500);
+    console.error('[Auth] Login exception:', error);
+    return c.json({ error: 'Server authentication error' }, 500);
   }
 });
 

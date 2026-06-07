@@ -36,55 +36,32 @@ function LoginPage() {
     const raw = username.trim();
 
     try {
+      console.log("[Login] Attempting sign in for:", raw);
       const result = await supabase.auth.signInWithPassword({ 
         email: raw, 
         password 
       });
 
       if (result.error) {
+        console.error("[Login] Auth error:", result.error);
         toast.error("Login failed", { description: result.error.message || "Invalid credentials." });
         setLoading(false);
         return;
       }
 
-      const signedInUserId = result.data.user.id;
+      const user = result.data.user;
+      console.log("[Login] Success, user profile:", user);
       
-      // Read profile to determine role / approval
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("status, role, is_admin")
-        .eq("id", signedInUserId)
-        .single();
-
-      if (profileError || !profile) {
-        await supabase.auth.signOut();
-        toast.error("Account error", { description: "Profile not found. Contact support." });
-        setLoading(false);
-        return;
-      }
-
-      if (profile.role === "client") {
+      if (user.role === "client") {
         navigate({ to: "/client/dashboard" });
-        setLoading(false);
-        return;
-      }
-
-      // Agent / admin require approved status
-      if (profile.status !== "approved") {
-        await supabase.auth.signOut();
-        toast.error("Account Pending Approval", {
-          description: "Your account is currently under review or suspended.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (profile.is_admin) {
+      } else if (user.is_admin) {
         toast.info("Admin detected. Proceeding to dashboard.");
+        navigate({ to: "/dashboard" });
+      } else {
+        navigate({ to: "/dashboard" });
       }
-
-      navigate({ to: "/dashboard" });
     } catch (err: any) {
+      console.error("[Login] Exception:", err);
       toast.error("Error", { description: err.message || "Something went wrong." });
     } finally {
       setLoading(false);
