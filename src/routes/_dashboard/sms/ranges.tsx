@@ -69,14 +69,18 @@ function SmsRangesPage() {
         <CardContent className="p-6">
           <div className="flex flex-wrap gap-2 mb-6 border-b border-[#e3e6ec] pb-6">
             <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Copy</Button>
-            <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">CSV</Button>
-            <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Excel</Button>
+            <Button onClick={handleExport} variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">CSV</Button>
+            <Button onClick={handleExport} variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Excel</Button>
             <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">PDF</Button>
             <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Print</Button>
             
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs font-bold text-[#69707a] uppercase tracking-wider">Search:</span>
-              <Input className="w-48 h-8 border-[#c5ccd6] focus:border-[#0061f2] focus:ring-0 text-xs" />
+              <Input 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-48 h-8 border-[#c5ccd6] focus:border-[#0061f2] focus:ring-0 text-xs" 
+              />
             </div>
           </div>
 
