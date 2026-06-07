@@ -399,7 +399,7 @@ export function BotsTab() {
               <Activity size={16} className="text-[#e81500]" /> OTP Ingest Stream
             </h3>
             <div className="flex gap-2">
-              <Button onClick={() => window.open(`${API_URL}/health`, '_blank')} variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200">
+              <Button onClick={() => window.open('/health', '_blank')} variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200">
                 <Terminal size={14} className="mr-1" /> Service Health
               </Button>
               <Button onClick={fetchData} variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200">
