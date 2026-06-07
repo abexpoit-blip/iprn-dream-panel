@@ -43,20 +43,21 @@ async function findMatchingAllocation({
   if (!tail) return null;
 
   try {
-    // Search number_pool for active numbers matching the tail
+    // Search number_pool for numbers matching the tail
+    // Safeguard: Must be 'reserved' or 'available' (if system allows auto-assign)
+    // For Shark SMS, we check active status or reserved
     const query = `
-      SELECT id, number as phone_number, user_id, service_tag as service_slug
+      SELECT id, number as phone_number, user_id, reserved_for, service_tag as service_slug
       FROM number_pool
-      WHERE status = 'active' AND number LIKE ?
+      WHERE (status = 'reserved' OR status = 'available') AND number LIKE ?
       LIMIT 1
     `;
     const res = await db.prepare(query).get(`%${tail}`);
     if (res) {
-      // Map to structure expected by markOtpReceived
       return {
         id: res.id,
         phone_number: res.phone_number,
-        user_id: res.user_id,
+        user_id: res.reserved_for || res.user_id, // Ensure user ID is correctly mapped from reservation
         provider: provider,
         service_id: null
       };
