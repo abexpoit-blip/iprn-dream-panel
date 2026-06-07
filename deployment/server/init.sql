@@ -147,12 +147,10 @@ INSERT INTO profiles (username, password_hash, role, is_admin, status)
 VALUES ('admin', 'SEED_ADMIN_PLACEHOLDER', 'admin', true, 'approved')
 ON CONFLICT (username) DO UPDATE SET status = 'approved', is_admin = true, role = 'admin';
 
--- Extra indices for performance
-CREATE INDEX IF NOT EXISTS idx_sms_logs_agent_id ON sms_logs(agent_id);
-CREATE INDEX IF NOT EXISTS idx_sms_logs_client_id ON sms_logs(client_id);
-CREATE INDEX IF NOT EXISTS idx_sms_logs_created_at ON sms_logs(created_at);
+-- Extra indices for performance (sms_logs indexes moved below sms_logs CREATE)
 CREATE INDEX IF NOT EXISTS idx_number_pool_status ON number_pool(status);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+
 
 
 -- Seeding from previous Lovable configuration
@@ -163,8 +161,9 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 INSERT INTO bot_settings (bot_id, setting_key, setting_value, is_secret)
-SELECT 
-    id,
+SELECT bot_id, column_name, val, is_secret FROM (
+  SELECT 
+    id AS bot_id,
     column_name,
     CASE 
         WHEN name = 'IMS Main Agent' AND column_name = 'username' THEN 'mamun99'
@@ -174,11 +173,14 @@ SELECT
         WHEN name = 'SMS Hadi Agent' AND column_name = 'password' THEN 'mamun999'
         WHEN name = 'SMS Hadi Agent' AND column_name = 'portal_url' THEN 'http://2.59.169.96/ints/login'
         WHEN column_name = 'interval' THEN '15'
-    END,
-    CASE WHEN column_name = 'password' THEN true ELSE false END
-FROM bots
-CROSS JOIN (VALUES ('username'), ('password'), ('portal_url'), ('interval')) AS settings(column_name)
+    END AS val,
+    (column_name = 'password') AS is_secret
+  FROM bots
+  CROSS JOIN (VALUES ('username'), ('password'), ('portal_url'), ('interval')) AS settings(column_name)
+) sub
+WHERE val IS NOT NULL
 ON CONFLICT (bot_id, setting_key) DO NOTHING;
+
 
 INSERT INTO number_panels (name, panel_url, username, password, status)
 VALUES 
@@ -213,6 +215,11 @@ CREATE TABLE IF NOT EXISTS sms_logs (
     status TEXT DEFAULT 'success',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_sms_logs_agent_id ON sms_logs(agent_id);
+CREATE INDEX IF NOT EXISTS idx_sms_logs_client_id ON sms_logs(client_id);
+CREATE INDEX IF NOT EXISTS idx_sms_logs_created_at ON sms_logs(created_at);
+
 
 -- News seeding
 CREATE TABLE IF NOT EXISTS news (
