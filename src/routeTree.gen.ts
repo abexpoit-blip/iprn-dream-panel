@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ClientRouteImport } from './routes/client'
+import { Route as BotDashboardRouteImport } from './routes/bot-dashboard'
 import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
@@ -48,6 +49,11 @@ const LoginRoute = LoginRouteImport.update({
 const ClientRoute = ClientRouteImport.update({
   id: '/client',
   path: '/client',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BotDashboardRoute = BotDashboardRouteImport.update({
+  id: '/bot-dashboard',
+  path: '/bot-dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -163,6 +169,7 @@ const DashboardSmsNumbersRoute = DashboardSmsNumbersRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin-login': typeof AdminLoginRoute
+  '/bot-dashboard': typeof BotDashboardRoute
   '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin-login': typeof AdminLoginRoute
+  '/bot-dashboard': typeof BotDashboardRoute
   '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
+  '/bot-dashboard': typeof BotDashboardRoute
   '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -245,6 +254,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin-login'
+    | '/bot-dashboard'
     | '/client'
     | '/login'
     | '/register'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin-login'
+    | '/bot-dashboard'
     | '/client'
     | '/login'
     | '/register'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_dashboard'
     | '/admin-login'
+    | '/bot-dashboard'
     | '/client'
     | '/login'
     | '/register'
@@ -326,6 +338,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
+  BotDashboardRoute: typeof BotDashboardRoute
   ClientRoute: typeof ClientRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       path: '/client'
       fullPath: '/client'
       preLoaderRoute: typeof ClientRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bot-dashboard': {
+      id: '/bot-dashboard'
+      path: '/bot-dashboard'
+      fullPath: '/bot-dashboard'
+      preLoaderRoute: typeof BotDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin-login': {
@@ -572,6 +592,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
+  BotDashboardRoute: BotDashboardRoute,
   ClientRoute: ClientRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
