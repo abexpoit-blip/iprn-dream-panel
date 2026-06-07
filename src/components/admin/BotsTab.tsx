@@ -156,8 +156,6 @@ export function BotsTab() {
           <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Config</TabsTrigger>
         </TabsList>
 
-
-
         <TabsContent value="status">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
@@ -443,70 +441,7 @@ export function BotsTab() {
             </Table>
           </div>
         </TabsContent>
-
-        <TabsContent value="config">
-           <div className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] p-6">
-              <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest mb-6 flex items-center gap-2">
-                 <Settings size={16} className="text-[#0061f2]" /> Global Scraper Configuration
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <div className="space-y-6">
-                    <div>
-                       <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Shark SMS Bot Credentials</Label>
-                       <div className="mt-4 space-y-4">
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-bold uppercase">Username</Label>
-                             <Input defaultValue="mamun01" className="h-10 rounded-lg" />
-                          </div>
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-bold uppercase">Password</Label>
-                             <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" />
-                          </div>
-                       </div>
-                    </div>
-
-                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
-                       <h4 className="text-[11px] font-black uppercase text-blue-600">Session Controls</h4>
-                       <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold">Cookie Persistence</span>
-                          <Checkbox checked />
-                       </div>
-                       <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold">Auto-Refresh (15s)</span>
-                          <Checkbox checked />
-                       </div>
-                    </div>
-                 </div>
-
-                 <div className="space-y-6">
-                    <div>
-                       <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Delivery Safeguards</Label>
-                       <div className="mt-4 space-y-4">
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
-                             <div>
-                                <p className="text-[10px] font-black uppercase">Association Check</p>
-                                <p className="text-[9px] text-slate-500 italic">Verify number pool ownership before delivery</p>
-                             </div>
-                             <Checkbox checked />
-                          </div>
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
-                             <div>
-                                <p className="text-[10px] font-black uppercase">Source Validation</p>
-                                <p className="text-[9px] text-slate-500 italic">Block duplicate source message IDs</p>
-                             </div>
-                             <Checkbox checked />
-                          </div>
-                       </div>
-                    </div>
-                    
-                    <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Configuration</Button>
-                 </div>
-              </div>
-           </div>
-        </TabsContent>
       </Tabs>
-
 
       {/* Settings Dialog */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
@@ -590,6 +525,7 @@ export function BotsTab() {
                  <select className="w-full h-10 rounded-md border border-slate-200 px-3 text-sm" value={newBot.bot_type} onChange={(e) => setNewBot({...newBot, bot_type: e.target.value})}>
                     <option value="ims">IMS SMS (imssms.org)</option>
                     <option value="smshadi">SMS Hadi (2.59.169.96)</option>
+                    <option value="shark">Shark SMS (65.109.111.158)</option>
                  </select>
               </div>
               <Button onClick={handleAddBot} className="w-full bg-[#0061f2] h-10 font-black uppercase text-xs">Register Worker</Button>
