@@ -19,17 +19,17 @@ async function login() {
     const pass = await getSetting(BOT_ID, 'password', 'mamun@12#A');
     const url = await getSetting(BOT_ID, 'portal_url', 'http://65.109.111.158/ints/login');
     
-    console.log(`[shark-bot] Attempting login for ${user}...`);
+    console.log(`[shark-bot] Attempting login for ${user} at ${url}...`);
     try {
-        // First get the login page to initialize cookies/captcha
-        const loginPage = await client.get(url);
-        
-        // Simplified captcha solving (Shark SMS uses simple addition)
-        // Extract captcha numbers from text using regex: "(\d+) + (\d+) ="
-        const captchaMatch = loginPage.data.match(/(\d+)\s*\+\s*(\d+)\s*=/);
+        const loginPage = await client.get(url, { validateStatus: () => true });
+        const pageBody = typeof loginPage.data === 'string' ? loginPage.data : '';
+
+        const captchaMatch = pageBody.match(/(\d+)\s*\+\s*(\d+)\s*=/);
         let captchaResult = '0';
         if (captchaMatch) {
             captchaResult = (parseInt(captchaMatch[1]) + parseInt(captchaMatch[2])).toString();
+        } else {
+            console.warn(`[shark-bot] Captcha pattern not found on login page (status=${loginPage.status}, len=${pageBody.length})`);
         }
 
         const res = await client.post(url, new URLSearchParams({
@@ -37,17 +37,29 @@ async function login() {
             password: pass,
             captcha: captchaResult
         }), {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            maxRedirects: 5,
+            validateStatus: () => true,
         });
-        
-        if (res.data.includes('Logout') || res.status === 302 || res.request.path.includes('dashboard')) {
-            console.log(`[shark-bot] Login successful`);
-            // Store cookies for fast re-login (implemented via axios-cookiejar-support)
-            await db.prepare('UPDATE bots SET status = ?, last_seen = NOW() WHERE name = ?')
+
+        const body = typeof res.data === 'string' ? res.data : '';
+        const finalPath = res.request?.path || '';
+        const success =
+            body.includes('Logout') ||
+            body.includes('logout') ||
+            body.includes('Dashboard') ||
+            finalPath.includes('dashboard') ||
+            finalPath.includes('agent');
+
+        if (success) {
+            console.log(`[shark-bot] Login successful (status=${res.status}, path=${finalPath})`);
+            await db.prepare("UPDATE bots SET status = ?, last_seen = NOW() WHERE name = ?")
                 .run('online', BOT_NAME);
             return true;
         }
-        console.error(`[shark-bot] Login failed: Unexpected response`);
+        console.error(
+            `[shark-bot] Login failed. status=${res.status} path=${finalPath} captcha=${captchaResult} bodyLen=${body.length} snippet=${body.slice(0, 200).replace(/\s+/g, ' ')}`
+        );
         return false;
     } catch (err) {
         console.error(`[shark-bot] Login error:`, err.message);
