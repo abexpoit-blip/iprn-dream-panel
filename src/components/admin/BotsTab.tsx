@@ -260,6 +260,7 @@ export function BotsTab() {
       <Tabs defaultValue="status" className="w-full">
         <TabsList className="bg-slate-100 p-1 mb-4 h-11">
           <TabsTrigger value="status" className="text-[11px] font-black uppercase">Bot Status</TabsTrigger>
+          <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Config</TabsTrigger>
           <TabsTrigger value="panels" className="text-[11px] font-black uppercase">Number Panels</TabsTrigger>
           <TabsTrigger value="pool" className="text-[11px] font-black uppercase">Number Pool</TabsTrigger>
           <TabsTrigger value="audit" className="text-[11px] font-black uppercase">Live OTP Audit</TabsTrigger>
