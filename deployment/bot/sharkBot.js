@@ -118,12 +118,21 @@ async function scrapeSms() {
 async function start() {
     isActive = true;
     console.log('[shark-bot] Bot starting...');
-    
-    // Check if we need to insert bot into DB
-    const existing = await db.prepare('SELECT id FROM bots WHERE name = ?').get(BOT_NAME);
-    if (!existing) {
-        await db.prepare('INSERT INTO bots (id, name, bot_type, status) VALUES (?, ?, ?, ?)')
-            .run(crypto.randomUUID(), BOT_NAME, 'shark', 'offline');
+
+    // Resolve BOT_ID from DB (lookup by bot_type, insert if missing)
+    try {
+        let existing = await db.prepare('SELECT id FROM bots WHERE bot_type = ? LIMIT 1').get(BOT_TYPE);
+        if (!existing) {
+            const newId = require('crypto').randomUUID();
+            await db.prepare('INSERT INTO bots (id, name, bot_type, status) VALUES (?, ?, ?, ?)')
+                .run(newId, BOT_NAME, BOT_TYPE, 'offline');
+            BOT_ID = newId;
+        } else {
+            BOT_ID = existing.id;
+        }
+    } catch (err) {
+        console.error('[shark-bot] Failed to resolve BOT_ID:', err.message);
+        return;
     }
 
     const ok = await login();
