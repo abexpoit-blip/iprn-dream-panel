@@ -8,13 +8,21 @@ CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    full_name TEXT,
+    skype_id TEXT,
     role TEXT DEFAULT 'agent', -- 'admin', 'agent', 'client'
     is_admin BOOLEAN DEFAULT false,
     status TEXT DEFAULT 'approved', -- 'pending', 'approved', 'suspended'
-    balance NUMERIC DEFAULT 0,
+    balance NUMERIC(12,2) DEFAULT 0,
+    last_payout_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- Idempotent column additions for existing deployments
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS skype_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_payout_at TIMESTAMP WITH TIME ZONE;
 
 -- Bots table
 CREATE TABLE IF NOT EXISTS bots (
