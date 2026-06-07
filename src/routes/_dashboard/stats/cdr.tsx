@@ -53,13 +53,16 @@ function StatsCDRPage() {
 
   const handleExport = () => {
     const headers = ["Date", "Range", "Number", "CLI", "Client", "SMS", "Currency", "My Payout", "Client Payout"];
+    
+    // Use the filtered logs which already account for searchTerm
     const csvData = filteredLogs.map((log: any) => [
       new Date(log.received_at || log.created_at).toLocaleString(),
       log.range || '-',
       log.phone_number || log.number,
       log.cli || '-',
       log.client_name || 'Agent',
-      log.message || log.sms_text || log.otp_code,
+      // Replacing commas in SMS message to avoid breaking CSV format
+      (log.message || log.sms_text || log.otp_code || "").toString().replace(/,/g, " "),
       "USD",
       `$${log.my_payout || '0.00'}`,
       `$${log.client_payout || '0.00'}`
@@ -69,7 +72,7 @@ function StatsCDRPage() {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `CDR_Report_${new Date().toISOString()}.csv`;
+    link.download = `CDR_Report_${filterRange.replace(/\s+/g, '_')}_${new Date().toISOString()}.csv`;
     link.click();
   };
 

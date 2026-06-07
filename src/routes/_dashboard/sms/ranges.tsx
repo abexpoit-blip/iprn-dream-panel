@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/_dashboard/sms/ranges")({
 });
 
 function SmsRangesPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+
   const { data: ranges, isLoading } = useQuery({
     queryKey: ['sms_ranges'],
     queryFn: async () => {
@@ -30,6 +33,31 @@ function SmsRangesPage() {
     }
   });
 
+  const filteredRanges = ranges?.filter((r: any) => 
+    r.prefix?.includes(searchTerm) || 
+    r.memo?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const handleExport = () => {
+    const headers = ["Prefix", "Test Number", "Currency", "1/1", "7/1", "7/7", "30/45", "Memo"];
+    const csvData = filteredRanges.map((r: any) => [
+      r.prefix,
+      r.test_number || '-',
+      r.currency,
+      r.payout_1_1 || 'NA',
+      r.payout_7_1,
+      r.payout_7_7 || 'NA',
+      r.payout_30_45,
+      (r.memo || '-').replace(/,/g, " ")
+    ]);
+    const csvContent = [headers, ...csvData].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Ranges_Report_${new Date().toISOString()}.csv`;
+    link.click();
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -41,14 +69,18 @@ function SmsRangesPage() {
         <CardContent className="p-6">
           <div className="flex flex-wrap gap-2 mb-6 border-b border-[#e3e6ec] pb-6">
             <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Copy</Button>
-            <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">CSV</Button>
-            <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Excel</Button>
+            <Button onClick={handleExport} variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">CSV</Button>
+            <Button onClick={handleExport} variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Excel</Button>
             <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">PDF</Button>
             <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Print</Button>
             
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs font-bold text-[#69707a] uppercase tracking-wider">Search:</span>
-              <Input className="w-48 h-8 border-[#c5ccd6] focus:border-[#0061f2] focus:ring-0 text-xs" />
+              <Input 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-48 h-8 border-[#c5ccd6] focus:border-[#0061f2] focus:ring-0 text-xs" 
+              />
             </div>
           </div>
 
@@ -80,25 +112,25 @@ function SmsRangesPage() {
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-10 text-gray-500 text-sm italic">Loading ranges...</TableCell>
                   </TableRow>
-                ) : ranges?.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-10 text-gray-500 text-sm italic">No ranges found</TableCell>
-                  </TableRow>
-                ) : (
-                  ranges?.map((range: any) => (
-                    <TableRow key={range.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
-                      <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{range.prefix}</TableCell>
-                      <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{range.test_number}</TableCell>
-                      <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{range.currency}</TableCell>
-                      <TableCell className="text-center text-xs font-bold text-[#e81500] py-3 border-r border-[#e3e6ec]">{range.payout_1_1 || 'NA'}</TableCell>
-                      <TableCell className="text-center text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">${range.payout_7_1}</TableCell>
-                      <TableCell className="text-center text-xs font-bold text-[#e81500] py-3 border-r border-[#e3e6ec]">{range.payout_7_7 || 'NA'}</TableCell>
-                      <TableCell className="text-center text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">${range.payout_30_45}</TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{range.memo || '-'}</TableCell>
-                      <TableCell className="py-3"></TableCell>
-                    </TableRow>
-                  ))
-                )}
+        ) : filteredRanges?.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={9} className="text-center py-10 text-gray-500 text-sm italic">No ranges found</TableCell>
+          </TableRow>
+        ) : (
+          filteredRanges?.map((range: any) => (
+            <TableRow key={range.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
+              <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{range.prefix}</TableCell>
+              <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{range.test_number}</TableCell>
+              <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{range.currency}</TableCell>
+              <TableCell className="text-center text-xs font-bold text-[#e81500] py-3 border-r border-[#e3e6ec]">{range.payout_1_1 || 'NA'}</TableCell>
+              <TableCell className="text-center text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">${range.payout_7_1}</TableCell>
+              <TableCell className="text-center text-xs font-bold text-[#e81500] py-3 border-r border-[#e3e6ec]">{range.payout_7_7 || 'NA'}</TableCell>
+              <TableCell className="text-center text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">${range.payout_30_45}</TableCell>
+              <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{range.memo || '-'}</TableCell>
+              <TableCell className="py-3"></TableCell>
+            </TableRow>
+          ))
+        )}
               </TableBody>
             </Table>
           </div>

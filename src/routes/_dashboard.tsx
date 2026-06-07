@@ -18,7 +18,8 @@ import {
   LogOut,
   ShieldCheck,
   UserCheck,
-  ChevronRight
+  ChevronRight,
+  Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -95,6 +96,7 @@ function DashboardLayout() {
 
   const menuItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "Bot Dashboard", icon: Bot, href: "/admin", search: { tab: "bots" } },
     { 
       label: "SMS Module", 
       icon: MessageSquare, 
