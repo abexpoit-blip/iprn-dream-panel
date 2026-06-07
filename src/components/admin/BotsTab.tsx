@@ -96,15 +96,25 @@ export function BotsTab() {
     setBotSettings(data || []);
   };
 
-  const updateBotSetting = async (key: string, value: string) => {
+  const updateBotSetting = async (key: string, value: string, botId?: string) => {
+    const targetBotId = botId || selectedBot?.id;
+    if (!targetBotId) {
+       console.warn("No bot selected for setting update:", key);
+       return;
+    }
+
     const { error } = await supabase.from('bot_settings').upsert({
-      bot_id: selectedBot.id,
+      bot_id: targetBotId,
       setting_key: key,
       setting_value: value
     }, { onConflict: 'bot_id,setting_key' });
 
-    if (error) toast.error("Failed to update setting");
-    else toast.success(`Setting ${key} updated`);
+    if (error) {
+      console.error("Setting update error:", error);
+      toast.error("Failed to update setting");
+    } else {
+      toast.success(`Setting ${key} updated`);
+    }
   };
 
   useEffect(() => {
@@ -237,15 +247,15 @@ export function BotsTab() {
                           <div className="mt-4 space-y-4">
                               <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase">Username</Label>
-                                <Input defaultValue="mamun01" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_username', e.target.value)} />
+                                <Input defaultValue="mamun01" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_username', e.target.value, bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                               <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase">Password</Label>
-                                <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_password', e.target.value)} />
+                                <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_password', e.target.value, bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                               <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase">Cookie Data (JSON)</Label>
-                                <Input placeholder='{"session": "..."}' className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_cookies', e.target.value)} />
+                                <Input placeholder='{"session": "..."}' className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_cookies', e.target.value, bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                           </div>
                         </div>
@@ -304,15 +314,15 @@ export function BotsTab() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">User</Label>
-                          <Input defaultValue="mamun99" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_username', e.target.value)} />
+                          <Input defaultValue="mamun99" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_username', e.target.value, bots.find(b => b.bot_type === 'ims')?.id)} />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">Pass</Label>
-                          <Input type="password" defaultValue="mamun@12aa#" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_password', e.target.value)} />
+                          <Input type="password" defaultValue="mamun@12aa#" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_password', e.target.value, bots.find(b => b.bot_type === 'ims')?.id)} />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">Cookies</Label>
-                          <Input placeholder="Enter login cookies..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_cookies', e.target.value)} />
+                          <Input placeholder="Enter login cookies..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_cookies', e.target.value, bots.find(b => b.bot_type === 'ims')?.id)} />
                           <p className="text-[9px] text-slate-400 italic">Securely stored with HttpOnly, Secure, SameSite=Strict flags</p>
                         </div>
                         <div className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200">
