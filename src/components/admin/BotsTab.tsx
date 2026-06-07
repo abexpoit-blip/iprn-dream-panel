@@ -458,11 +458,15 @@ export function BotsTab() {
                       </div>
                     </div>
                     <div className="flex items-end">
-                      <Button 
-                        onClick={() => toast.success("IMS configuration saved securely")} 
+                      <Button
+                        disabled={savingType === 'ims'}
+                        onClick={() => saveBotConfig('ims', 'IMS Main Agent', [
+                          'ims_username','ims_password','ims_cookies',
+                          'ims_remember_me','ims_session_timeout'
+                        ])}
                         className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg"
                       >
-                        Save IMS Config
+                        {savingType === 'ims' ? 'Saving...' : 'Save IMS Config'}
                       </Button>
                     </div>
                   </div>
