@@ -21,16 +21,21 @@ function createSupabaseClient() {
           return { data: { session: { user: JSON.parse(userJson), access_token: token } } };
         },
         signInWithPassword: async ({ email, password }: any) => {
-          const res = await fetch(`${API_URL}/auth/login`, {
-            method: 'POST',
-            body: JSON.stringify({ username: email.split('@')[0], password }),
-            headers: { 'Content-Type': 'application/json' }
-          });
-          const data = await res.json();
-          if (data.error) return { error: data.error };
-          localStorage.setItem('nexus_token', data.token);
-          localStorage.setItem('nexus_user', JSON.stringify(data.user));
-          return { data: { user: data.user, session: { access_token: data.token } } };
+          try {
+            const res = await fetch(`${API_URL}/auth/login`, {
+              method: 'POST',
+              body: JSON.stringify({ username: email, password }),
+              headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) return { error: { message: data.error || 'Login failed' } };
+            
+            localStorage.setItem('nexus_token', data.token);
+            localStorage.setItem('nexus_user', JSON.stringify(data.user));
+            return { data: { user: data.user, session: { access_token: data.token } } };
+          } catch (e: any) {
+            return { error: { message: 'Connection error: ' + e.message } };
+          }
         },
         signOut: async () => {
           localStorage.removeItem('nexus_token');
@@ -42,59 +47,62 @@ function createSupabaseClient() {
         select: (query: string = '*') => ({
           eq: (col: string, val: any) => ({
             single: async () => {
-              const res = await fetch(`${API_URL}/data/${table}?${col}=${val}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
-              });
-              const data = await res.json();
-              return { data: data[0], error: null };
+              try {
+                const res = await fetch(`${API_URL}/api/data/${table}?${col}=${val}`, {
+                  headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
+                });
+                const data = await res.json();
+                if (!res.ok) return { data: null, error: data.error || 'Fetch error' };
+                return { data: Array.isArray(data) ? data[0] : data, error: null };
+              } catch (e: any) {
+                return { data: null, error: e.message };
+              }
             }
           }),
           order: (col: string, opt: any) => ({
             limit: (n: number) => ({
               then: async (cb: any) => {
-                const res = await fetch(`${API_URL}/data/${table}`, {
-                  headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
-                });
-                const data = await res.json();
-                return cb({ data, error: null });
+                try {
+                  const res = await fetch(`${API_URL}/api/data/${table}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
+                  });
+                  const data = await res.json();
+                  return cb({ data, error: null });
+                } catch (e: any) {
+                  return cb({ data: null, error: e.message });
+                }
               }
             }),
             then: async (cb: any) => {
-               const res = await fetch(`${API_URL}/data/${table}`, {
-                  headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
-                });
-                const data = await res.json();
-                return cb({ data, error: null });
+               try {
+                  const res = await fetch(`${API_URL}/api/data/${table}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
+                  });
+                  const data = await res.json();
+                  return cb({ data, error: null });
+               } catch (e: any) {
+                  return cb({ data: null, error: e.message });
+               }
             }
           }),
           then: async (cb: any) => {
-            const res = await fetch(`${API_URL}/data/${table}`, {
-              headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
-            });
-            const data = await res.json();
-            return cb({ data, error: null });
+            try {
+              const res = await fetch(`${API_URL}/api/data/${table}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
+              });
+              const data = await res.json();
+              return cb({ data, error: null });
+            } catch (e: any) {
+              return cb({ data: null, error: e.message });
+            }
           }
         }),
         insert: (rows: any[]) => ({
           then: async (cb: any) => {
-            const res = await fetch(`${API_URL}/data/${table}`, {
-              method: 'POST',
-              body: JSON.stringify(rows[0]),
-              headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` 
-              }
-            });
-            const data = await res.json();
-            return cb({ data, error: null });
-          }
-        }),
-        update: (body: any) => ({
-          eq: (col: string, val: any) => ({
-            then: async (cb: any) => {
-              const res = await fetch(`${API_URL}/data/${table}?id=${val}`, {
-                method: 'PATCH',
-                body: JSON.stringify(body),
+            try {
+              const res = await fetch(`${API_URL}/api/data/${table}`, {
+                method: 'POST',
+                body: JSON.stringify(rows[0]),
                 headers: { 
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` 
@@ -102,6 +110,28 @@ function createSupabaseClient() {
               });
               const data = await res.json();
               return cb({ data, error: null });
+            } catch (e: any) {
+              return cb({ data: null, error: e.message });
+            }
+          }
+        }),
+        update: (body: any) => ({
+          eq: (col: string, val: any) => ({
+            then: async (cb: any) => {
+              try {
+                const res = await fetch(`${API_URL}/api/data/${table}?id=${val}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify(body),
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` 
+                  }
+                });
+                const data = await res.json();
+                return cb({ data, error: null });
+              } catch (e: any) {
+                return cb({ data: null, error: e.message });
+              }
             }
           })
         })

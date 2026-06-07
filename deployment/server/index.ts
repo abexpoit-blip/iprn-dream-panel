@@ -22,17 +22,32 @@ app.post('/auth/login', async (c) => {
   const { username, password } = await c.req.json();
   
   try {
-    const usernamePrefix = username.split('@')[0];
-    const [user] = await sql`SELECT * FROM profiles WHERE username = ${username} OR username = ${usernamePrefix}`;
+    const rawUsername = username.includes('@') ? username.split('@')[0] : username;
     
-    if (!user) return c.json({ error: 'Invalid credentials' }, 401);
+    // Check multiple username formats to be flexible
+    const [user] = await sql`
+      SELECT * FROM profiles 
+      WHERE username = ${rawUsername} 
+      OR username = ${username}
+      OR username = ${username.toLowerCase()}
+    `;
     
+    if (!user) {
+      console.log(`Login failed: User not found (${username})`);
+      return c.json({ error: 'Invalid credentials' }, 401);
+    }
+    
+    if (user.status !== 'approved') {
+      return c.json({ error: 'Account pending approval' }, 403);
+    }
+
     const isValid = await bcrypt.compare(password, user.password_hash);
     
-    // Fallback for initial admin seed if bcrypt hasn't hashed it yet
-    const isSeedAdmin = user.username === 'admin' && password === 'admin123';
+    // Fallback for initial admin seed
+    const isSeedAdmin = (user.username === 'admin' || user.username === 'admin@nexus.site') && password === 'admin123';
     
     if (!isValid && !isSeedAdmin) {
+      console.log(`Login failed: Password mismatch for ${username}`);
       return c.json({ error: 'Invalid credentials' }, 401);
     }
 
@@ -41,14 +56,20 @@ app.post('/auth/login', async (c) => {
       username: user.username, 
       role: user.role,
       is_admin: user.is_admin,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 // 24h
+      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
     }, JWT_SECRET, 'HS256' as any);
 
-
-
-
-
-    return c.json({ user: { id: user.id, username: user.username, role: user.role, is_admin: user.is_admin }, token });
+    console.log(`User logged in: ${user.username} (${user.role})`);
+    return c.json({ 
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        role: user.role, 
+        is_admin: user.is_admin,
+        status: user.status
+      }, 
+      token 
+    });
   } catch (error) {
     console.error('Login error:', error);
     return c.json({ error: 'Server error' }, 500);
