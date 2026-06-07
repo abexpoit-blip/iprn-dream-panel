@@ -60,36 +60,55 @@ async function scrapeSms() {
     const url = 'http://65.109.111.158/agent/sms/cdr'; // Detailed SMS Logs
     try {
         const res = await client.get(url);
-        // Parsing table logic: find table rows in res.data
-        // We look for Date, Range, Number, CLI, Message/OTP
         console.log(`[shark-bot] Scraped logs, searching for new messages...`);
         
-        // Mock implementation of delivery to user
-        /*
-        const newMessages = parseTable(res.data);
-        for (const msg of newMessages) {
+        // Use regex to find table rows with data (Date, Range, Number, CLI, Message/OTP)
+        // Format: <td>2026-06-07 15:12:27</td>...<td>Number</td><td>CLI</td><td>Message</td>
+        const rowRegex = /<tr>\s*<td>([\d-: ]+)<\/td>\s*<td>([^<]+)<\/td>\s*<td>(\+?\d+)<\/td>\s*<td>([^<]*)<\/td>[\s\S]*?<td>([^<]*)<\/td>/gi;
+        let match;
+        
+        while ((match = rowRegex.exec(res.data)) !== null) {
+            const [_, dateStr, range, phone, cli, fullText] = match;
+            const sourceMsgId = `${dateStr}_${phone}_${cli}`.replace(/\s+/g, '');
+            
+            // 1. Seen Check
+            if (await hasSeenSourceMessage('shark', sourceMsgId)) continue;
+
+            // 2. Association Safeguard (Find user who owns this number)
             const allocation = await findMatchingAllocation({
                 provider: 'shark',
-                phone: msg.number
+                phone: phone,
+                panelRange: range
             });
             
-            if (allocation) {
-                await logOtpAudit({
-                    source: 'shark',
-                    phone_number: msg.number,
-                    otp_code: msg.otp,
-                    sms_text: msg.full_text,
-                    user_id: allocation.user_id,
-                    outcome: 'billed'
-                });
-                console.log(`[shark-bot] Delivered OTP for ${msg.number} to user ${allocation.user_id}`);
+            if (!allocation) {
+                console.log(`[shark-bot] [SAFEGUARD] Unassociated message for ${phone} (Range: ${range}). Skipping.`);
+                continue;
             }
+
+            // 3. OTP Extraction
+            const otpMatch = fullText.match(/\b(\d{4,8})\b/);
+            const otpCode = otpMatch ? otpMatch[1] : null;
+
+            // 4. Delivery Validation
+            await logOtpAudit({
+                source: 'shark',
+                source_msg_id: sourceMsgId,
+                phone_number: phone,
+                cli: cli,
+                otp_code: otpCode,
+                sms_text: fullText,
+                user_id: allocation.user_id,
+                outcome: otpCode ? 'billed' : 'mismatch',
+                amount_bdt: 0 // Will be calculated by system later
+            });
+
+            console.log(`[shark-bot] [DELIVERED] ${phone} -> User ${allocation.user_id} | OTP: ${otpCode || 'None'}`);
         }
-        */
     } catch (err) {
         console.error(`[shark-bot] Scrape error:`, err.message);
         // Auto re-login if session expired
-        if (err.response && err.response.status === 401) {
+        if (err.response && (err.response.status === 401 || err.response.status === 302)) {
             await login();
         }
     }

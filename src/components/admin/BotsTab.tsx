@@ -153,6 +153,7 @@ export function BotsTab() {
           <TabsTrigger value="panels" className="text-[11px] font-black uppercase">Number Panels</TabsTrigger>
           <TabsTrigger value="pool" className="text-[11px] font-black uppercase">Number Pool</TabsTrigger>
           <TabsTrigger value="audit" className="text-[11px] font-black uppercase">Live OTP Audit</TabsTrigger>
+          <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Config</TabsTrigger>
         </TabsList>
 
         <TabsContent value="status">
@@ -203,6 +204,68 @@ export function BotsTab() {
               </div>
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="config">
+           <div className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] p-6">
+              <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest mb-6 flex items-center gap-2">
+                 <Settings size={16} className="text-[#0061f2]" /> Global Scraper Configuration
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div className="space-y-6">
+                    <div>
+                       <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Shark SMS Bot Credentials</Label>
+                       <div className="mt-4 space-y-4">
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-bold uppercase">Username</Label>
+                             <Input defaultValue="mamun01" className="h-10 rounded-lg" />
+                          </div>
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-bold uppercase">Password</Label>
+                             <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" />
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
+                       <h4 className="text-[11px] font-black uppercase text-blue-600">Session Controls</h4>
+                       <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold">Cookie Persistence</span>
+                          <Checkbox checked />
+                       </div>
+                       <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold">Auto-Refresh (15s)</span>
+                          <Checkbox checked />
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="space-y-6">
+                    <div>
+                       <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Delivery Safeguards</Label>
+                       <div className="mt-4 space-y-4">
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                             <div>
+                                <p className="text-[10px] font-black uppercase">Association Check</p>
+                                <p className="text-[9px] text-slate-500 italic">Verify number pool ownership before delivery</p>
+                             </div>
+                             <Checkbox checked />
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                             <div>
+                                <p className="text-[10px] font-black uppercase">Source Validation</p>
+                                <p className="text-[9px] text-slate-500 italic">Block duplicate source message IDs</p>
+                             </div>
+                             <Checkbox checked />
+                          </div>
+                       </div>
+                    </div>
+                    
+                    <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Configuration</Button>
+                 </div>
+              </div>
+           </div>
         </TabsContent>
 
         <TabsContent value="panels">
@@ -333,10 +396,52 @@ export function BotsTab() {
             <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
               <Activity size={16} className="text-[#e81500]" /> OTP Ingest Stream
             </h3>
-            <Button onClick={fetchData} variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200">
-               <RefreshCw size={14} className="mr-1" /> Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => window.open(`${API_URL}/health`, '_blank')} variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200">
+                <Terminal size={14} className="mr-1" /> Service Health
+              </Button>
+              <Button onClick={fetchData} variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200">
+                 <RefreshCw size={14} className="mr-1" /> Refresh
+              </Button>
+            </div>
           </div>
+
+          <div className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] overflow-hidden">
+            <Table>
+              <TableHeader><TableRow className="bg-[#f8f9fc]">
+                <TableHead className="text-[10px] font-black uppercase px-6">Source</TableHead>
+                <TableHead className="text-[10px] font-black uppercase px-6">Number</TableHead>
+                <TableHead className="text-[10px] font-black uppercase px-6">OTP</TableHead>
+                <TableHead className="text-[10px] font-black uppercase px-6">Status</TableHead>
+                <TableHead className="text-[10px] font-black uppercase px-6">Time</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {auditLogs.map(log => (
+                  <TableRow key={log.id} className="border-b border-[#f2f4f8]">
+                    <td className="px-6 py-3 font-bold text-[12px] uppercase text-blue-600">{log.source}</td>
+                    <td className="px-6 py-3 font-black text-[#2b3a4a] text-[13px]">{log.phone_number}</td>
+                    <td className="px-6 py-3">
+                       <code className="bg-slate-100 px-2 py-1 rounded font-black text-[#e81500] text-[12px]">{log.otp_code || '---'}</code>
+                    </td>
+                    <td className="px-6 py-3">
+                       <span className={cn(
+                          "px-2 py-0.5 rounded text-[9px] font-black uppercase border",
+                          log.outcome === 'billed' ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200"
+                       )}>{log.outcome}</span>
+                    </td>
+                    <td className="px-6 py-3 text-[11px] font-medium text-slate-400">
+                       {new Date(log.created_at).toLocaleTimeString()}
+                    </td>
+                  </TableRow>
+                ))}
+                {auditLogs.length === 0 && (
+                   <TableRow><TableCell colSpan={5} className="text-center py-20 text-[#69707a] italic">No OTP logs yet</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
 
           <div className="bg-[#1a1c23] rounded-xl shadow-2xl overflow-hidden border border-[#2d303e]">
              <div className="px-4 py-2 border-b border-[#2d303e] bg-[#242731] flex items-center gap-2">
