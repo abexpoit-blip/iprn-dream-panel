@@ -30,6 +30,7 @@ WORKDIR /app
 # The built files are in dist/client and dist/server
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
 
 # For self-hosted TanStack Start without Nitro, we need to run the server entry point
 # Based on the config, it builds to dist/server/server.js
