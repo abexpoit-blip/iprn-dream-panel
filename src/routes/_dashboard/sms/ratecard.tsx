@@ -59,23 +59,26 @@ function SmsRateCardPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-[#2b3a4a]">SMS RateCard</h1>
+        <h1 className="text-2xl font-bold text-[#2b3a4a]">SMS RateCard Inventory</h1>
       </div>
 
       <Card className="shadow-sm border-[#e3e6ec]">
         <CardContent className="p-6">
           <div className="flex flex-wrap gap-2 mb-6 border-b border-[#e3e6ec] pb-6">
-            <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Copy</Button>
-            <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">CSV</Button>
-            <Button variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Excel</Button>
+            <Button onClick={handleExport} variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider shadow-sm">CSV</Button>
+            <Button onClick={handleExport} variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider shadow-sm">Excel</Button>
             
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs font-bold text-[#69707a] uppercase tracking-wider">Search:</span>
-              <Input className="w-48 h-8 border-[#c5ccd6] focus:border-[#0061f2] focus:ring-0 text-xs" />
+              <span className="text-[10px] font-black uppercase text-[#69707a] tracking-wider">Search:</span>
+              <Input 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-48 h-8 border-[#c5ccd6] focus:border-[#0061f2] focus:ring-0 text-xs shadow-sm" 
+              />
             </div>
           </div>
 
-          <div className="border border-[#e3e6ec] rounded overflow-hidden">
+          <div className="border border-[#e3e6ec] rounded overflow-hidden shadow-sm">
             <Table>
               <TableHeader className="bg-gray-50 border-b border-[#e3e6ec]">
                 <TableRow className="hover:bg-transparent">
@@ -91,15 +94,15 @@ function SmsRateCardPage() {
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-10 text-gray-500 text-sm italic">Loading rates...</TableCell>
                   </TableRow>
-                ) : !rates || rates.length === 0 ? (
+                ) : filteredRates?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-gray-500 text-sm italic">No rates found</TableCell>
+                    <TableCell colSpan={5} className="text-center py-10 text-gray-500 text-sm italic">No rates found matching search</TableCell>
                   </TableRow>
                 ) : (
-                  rates.map((rate: any, idx: number) => (
+                  filteredRates.map((rate: any, idx: number) => (
                     <TableRow key={idx} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
                       <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{rate.prefix}</TableCell>
-                      <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{rate.memo?.split(' ')[0] || 'International'}</TableCell>
+                      <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec] font-medium">{rate.memo?.split(' ')[0] || 'International'}</TableCell>
                       <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{rate.memo || 'All Networks'}</TableCell>
                       <TableCell className="text-xs font-bold text-[#00ac69] py-3 border-r border-[#e3e6ec]">${rate.payout_7_1 || '0.00'}</TableCell>
                       <TableCell className="text-xs text-[#69707a] py-3">{rate.memo || '-'}</TableCell>
