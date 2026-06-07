@@ -253,12 +253,20 @@ export function BotsTab() {
                         <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
                           <h4 className="text-[11px] font-black uppercase text-blue-600">Session Controls</h4>
                           <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold">Remember Me</span>
+                              <Checkbox onCheckedChange={(checked) => updateBotSetting('shark_remember_me', String(checked))} />
+                          </div>
+                          <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Cookie Persistence</span>
                               <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_cookie_persistence', String(checked))} />
                           </div>
                           <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Auto-Refresh (15s)</span>
                               <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_auto_refresh', String(checked))} />
+                          </div>
+                          <div className="space-y-1 pt-2">
+                             <Label className="text-[10px] font-bold">Session Timeout (min)</Label>
+                             <Input type="number" defaultValue="60" className="h-8 text-xs" onChange={(e) => updateBotSetting('shark_session_timeout', e.target.value)} />
                           </div>
                         </div>
                     </div>
@@ -305,6 +313,15 @@ export function BotsTab() {
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">Cookies</Label>
                           <Input placeholder="Enter login cookies..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_cookies', e.target.value)} />
+                          <p className="text-[9px] text-slate-400 italic">Securely stored with HttpOnly, Secure, SameSite=Strict flags</p>
+                        </div>
+                        <div className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200">
+                          <span className="text-[10px] font-bold">Remember Me</span>
+                          <Checkbox onCheckedChange={(checked) => updateBotSetting('ims_remember_me', String(checked))} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold">Timeout (min)</Label>
+                          <Input type="number" defaultValue="30" className="h-8 text-xs" onChange={(e) => updateBotSetting('ims_session_timeout', e.target.value)} />
                         </div>
                       </div>
                     </div>
@@ -575,6 +592,20 @@ export function BotsTab() {
                             placeholder="Optional PHPSESSID"
                             defaultValue={botSettings.find(s => s.setting_key === 'cookie_override')?.setting_value || ''} 
                             onBlur={(e) => updateBotSetting('cookie_override', e.target.value)}
+                            className="h-9 text-xs" 
+                          />
+                          <p className="text-[8px] text-slate-400 italic">Enforced: HttpOnly; Secure; SameSite=Strict</p>
+                       </div>
+                       <div className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200">
+                          <span className="text-[10px] font-bold">Remember Me</span>
+                          <Checkbox onCheckedChange={(checked) => updateBotSetting('remember_me', String(checked))} />
+                       </div>
+                       <div className="space-y-1">
+                          <Label className="text-[10px] font-bold">Session TTL (Min)</Label>
+                          <Input 
+                            type="number"
+                            defaultValue={botSettings.find(s => s.setting_key === 'session_timeout')?.setting_value || '60'}
+                            onBlur={(e) => updateBotSetting('session_timeout', e.target.value)}
                             className="h-9 text-xs" 
                           />
                        </div>
