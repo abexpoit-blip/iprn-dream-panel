@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -41,6 +42,7 @@ function ClientCdrPage() {
   ) || [];
 
   const handleExport = () => {
+    // Exact visible columns
     const headers = ["Number", "Prefix", "Message", "Payout", "Status", "Received"];
     const csvData = filteredRows.map((r: any) => [
       r.number,
@@ -58,6 +60,7 @@ function ClientCdrPage() {
     link.href = url;
     link.download = `Client_CDR_${new Date().toISOString()}.csv`;
     link.click();
+    toast.success("CSV export matching visible columns successful");
   };
 
   return (
