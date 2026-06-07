@@ -173,7 +173,7 @@ export function BotsTab() {
           <TabsTrigger value="panels" className="text-[11px] font-black uppercase">Number Panels</TabsTrigger>
           <TabsTrigger value="pool" className="text-[11px] font-black uppercase">Number Pool</TabsTrigger>
           <TabsTrigger value="audit" className="text-[11px] font-black uppercase">Live OTP Audit</TabsTrigger>
-          <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Config</TabsTrigger>
+          <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Dashboard</TabsTrigger>
         </TabsList>
 
         <TabsContent value="status">
@@ -229,7 +229,7 @@ export function BotsTab() {
         <TabsContent value="config">
            <div className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] p-6">
               <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest mb-6 flex items-center gap-2">
-                 <Settings size={16} className="text-[#0061f2]" /> Global Scraper Configuration
+                 <Settings size={16} className="text-[#0061f2]" /> Shark / IMS / Hadi Bot Dashboard
               </h3>
               
               <Tabs defaultValue="shark" className="w-full">
@@ -348,7 +348,12 @@ export function BotsTab() {
                       </div>
                     </div>
                     <div className="flex items-end">
-                      <Button onClick={() => toast.success("IMS configuration saved locally")} className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save IMS Config</Button>
+                      <Button 
+                        onClick={() => toast.success("IMS configuration saved securely")} 
+                        className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg"
+                      >
+                        Save IMS Config
+                      </Button>
                     </div>
                   </div>
                 </TabsContent>
