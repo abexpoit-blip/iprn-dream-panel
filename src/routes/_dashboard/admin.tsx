@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, LogIn, LogOut, ArrowLeft } from "lucide-react";
+import { Users, LogIn, ArrowLeft, Search, Plus, UserPlus, Filter, ShieldCheck, Database } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PayoutsTab } from "@/components/admin/PayoutsTab";
@@ -15,6 +16,7 @@ import { BannedWatchTab } from "@/components/admin/BannedWatchTab";
 export const Route = createFileRoute("/_dashboard/admin")({
   component: AdminDashboard,
 });
+
 
 function AdminDashboard() {
   const [agents, setAgents] = useState<any[]>([]);
