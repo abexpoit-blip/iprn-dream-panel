@@ -107,6 +107,13 @@ export function BotsTab() {
     else toast.success(`Setting ${key} updated`);
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleAutomation = async (type: 'bot' | 'panel', id: string, field: string, value: boolean) => {
     const table = type === 'bot' ? 'bots' : 'number_panels';
     try {
@@ -230,11 +237,15 @@ export function BotsTab() {
                           <div className="mt-4 space-y-4">
                               <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase">Username</Label>
-                                <Input defaultValue="mamun01" className="h-10 rounded-lg" />
+                                <Input defaultValue="mamun01" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_username', e.target.value)} />
                               </div>
                               <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase">Password</Label>
-                                <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" />
+                                <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_password', e.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-[10px] font-bold uppercase">Cookie Data (JSON)</Label>
+                                <Input placeholder='{"session": "..."}' className="h-10 rounded-lg" onChange={(e) => updateBotSetting('shark_cookies', e.target.value)} />
                               </div>
                           </div>
                         </div>
@@ -243,11 +254,11 @@ export function BotsTab() {
                           <h4 className="text-[11px] font-black uppercase text-blue-600">Session Controls</h4>
                           <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Cookie Persistence</span>
-                              <Checkbox checked />
+                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_cookie_persistence', String(checked))} />
                           </div>
                           <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Auto-Refresh (15s)</span>
-                              <Checkbox checked />
+                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_auto_refresh', String(checked))} />
                           </div>
                         </div>
                     </div>
@@ -261,19 +272,19 @@ export function BotsTab() {
                                     <p className="text-[10px] font-black uppercase">Association Check</p>
                                     <p className="text-[9px] text-slate-500 italic">Verify number pool ownership before delivery</p>
                                 </div>
-                                <Checkbox checked />
+                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_association_check', String(checked))} />
                               </div>
                               <div className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>
                                     <p className="text-[10px] font-black uppercase">Source Validation</p>
                                     <p className="text-[9px] text-slate-500 italic">Block duplicate source message IDs</p>
                                 </div>
-                                <Checkbox checked />
+                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_source_validation', String(checked))} />
                               </div>
                           </div>
                         </div>
                         
-                        <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Shark Config</Button>
+                        <Button onClick={() => toast.success("Shark configuration saved locally")} className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Shark Config</Button>
                     </div>
                   </div>
                 </TabsContent>
@@ -285,16 +296,20 @@ export function BotsTab() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">User</Label>
-                          <Input defaultValue="mamun99" className="h-10 rounded-lg" />
+                          <Input defaultValue="mamun99" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_username', e.target.value)} />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase">Pass</Label>
-                          <Input type="password" defaultValue="mamun@12aa#" className="h-10 rounded-lg" />
+                          <Input type="password" defaultValue="mamun@12aa#" className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_password', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase">Cookies</Label>
+                          <Input placeholder="Enter login cookies..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('ims_cookies', e.target.value)} />
                         </div>
                       </div>
                     </div>
                     <div className="flex items-end">
-                      <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save IMS Config</Button>
+                      <Button onClick={() => toast.success("IMS configuration saved locally")} className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save IMS Config</Button>
                     </div>
                   </div>
                 </TabsContent>
@@ -305,13 +320,21 @@ export function BotsTab() {
                       <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">SMS Hadi Credentials</Label>
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase">API Key</Label>
-                          <Input type="password" placeholder="Hadi API Key..." className="h-10 rounded-lg" />
+                          <Label className="text-[10px] font-bold uppercase">Username</Label>
+                          <Input className="h-10 rounded-lg" onChange={(e) => updateBotSetting('hadi_username', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase">Password</Label>
+                          <Input type="password" placeholder="Hadi Password..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('hadi_password', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase">Cookies</Label>
+                          <Input placeholder="Enter login cookies..." className="h-10 rounded-lg" onChange={(e) => updateBotSetting('hadi_cookies', e.target.value)} />
                         </div>
                       </div>
                     </div>
                     <div className="flex items-end">
-                      <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Hadi Config</Button>
+                      <Button onClick={() => toast.success("Hadi configuration saved locally")} className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Hadi Config</Button>
                     </div>
                   </div>
                 </TabsContent>

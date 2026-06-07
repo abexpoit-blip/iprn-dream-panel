@@ -10,26 +10,32 @@ export default function BotDashboard() {
   const [bots, setBots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchBots = async () => {
-    setLoading(true);
+  const fetchBots = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     const { data, error } = await supabase.from('bots').select('*');
     if (error) {
-      toast.error("Failed to load bots");
+      console.error("Failed to load bots:", error);
     } else {
       setBots(data || []);
     }
-    setLoading(false);
+    if (showLoading) setLoading(false);
   };
 
   useEffect(() => {
     fetchBots();
+    
+    const interval = setInterval(() => {
+      fetchBots(false);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-black text-[#2b3a4a] uppercase tracking-tighter">Bot Dashboard</h1>
-        <Button onClick={fetchBots} variant="outline" className="h-10 text-[11px] font-black uppercase"><RefreshCw size={14} className="mr-2" /> Refresh</Button>
+        <Button onClick={() => fetchBots()} variant="outline" className="h-10 text-[11px] font-black uppercase"><RefreshCw size={14} className="mr-2" /> Refresh</Button>
       </div>
 
       {loading ? (
