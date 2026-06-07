@@ -125,7 +125,10 @@ app.post('/auth/login', async (c) => {
         username: user.username, 
         role: user.role || 'agent', 
         is_admin: !!user.is_admin,
-        status: user.status
+        status: user.status,
+        balance: user.balance,
+        skype_id: user.skype_id,
+        full_name: user.full_name
       }, 
       token 
     });
@@ -149,17 +152,43 @@ app.get('/api/data/:table', async (c) => {
       results = await sql`SELECT * FROM ${sql(table)} WHERE id = ${query.id}`;
     } else {
       // Basic filtering support for better performance
-      const keys = Object.keys(query).filter(k => k !== 'id');
-      if (keys.length > 0) {
-        let baseQuery = sql`SELECT * FROM ${sql(table)} WHERE `;
-        keys.forEach((key, index) => {
-          baseQuery = sql`${baseQuery} ${sql(key)} = ${query[key]} ${index < keys.length - 1 ? sql`AND` : sql``}`;
-        });
-        results = await sql`${baseQuery} ORDER BY created_at DESC LIMIT 200`;
-      } else {
-        results = await sql`SELECT * FROM ${sql(table)} ORDER BY created_at DESC LIMIT 200`;
+      const keys = Object.keys(query).filter(k => !['id', 'limit', 'order', 'head', 'count', 'select'].includes(k));
+      const limit = query.limit ? parseInt(query.limit) : 200;
+      
+      let baseQuery = sql`SELECT * FROM ${sql(table)}`;
+      
+      if (query.select && query.select !== '*') {
+         // Security note: this is a simple proxy, ideally you'd validate select columns
+         baseQuery = sql`SELECT ${sql(query.select.split(','))} FROM ${sql(table)}`;
       }
+
+      if (keys.length > 0) {
+        baseQuery = sql`${baseQuery} WHERE `;
+        keys.forEach((key, index) => {
+          // Handle some common relationship patterns or special filters
+          if (query[key].startsWith('%') || query[key].endsWith('%')) {
+             baseQuery = sql`${baseQuery} ${sql(key)} ILIKE ${query[key]} ${index < keys.length - 1 ? sql`AND` : sql``}`;
+          } else {
+             baseQuery = sql`${baseQuery} ${sql(key)} = ${query[key]} ${index < keys.length - 1 ? sql`AND` : sql``}`;
+          }
+        });
+      }
+      
+      if (query.order) {
+        const [col, dir] = query.order.split('.');
+        baseQuery = sql`${baseQuery} ORDER BY ${sql(col)} ${dir === 'desc' ? sql`DESC` : sql`ASC`}`;
+      } else {
+        baseQuery = sql`${baseQuery} ORDER BY created_at DESC`;
+      }
+      
+      results = await sql`${baseQuery} LIMIT ${limit}`;
     }
+
+    if (query.count === 'exact') {
+       const countRes = await sql`SELECT count(*) FROM ${sql(table)}`;
+       c.header('Content-Range', `0-${results.length}/${countRes[0].count}`);
+    }
+
     return c.json(results);
   } catch (error) {
     console.error(`Error fetching ${table}:`, error);
@@ -192,6 +221,20 @@ app.patch('/api/data/:table', async (c) => {
     return c.json(results[0]);
   } catch (error) {
     console.error(`Error updating ${table}:`, error);
+    return c.json({ error: 'Database error' }, 500);
+  }
+});
+
+app.delete('/api/data/:table', async (c) => {
+  const table = c.req.param('table');
+  const id = c.req.query('id');
+  if (!id) return c.json({ error: 'Missing ID' }, 400);
+  
+  try {
+    await sql`DELETE FROM ${sql(table)} WHERE id = ${id}`;
+    return c.json({ success: true });
+  } catch (error) {
+    console.error(`Error deleting from ${table}:`, error);
     return c.json({ error: 'Database error' }, 500);
   }
 });

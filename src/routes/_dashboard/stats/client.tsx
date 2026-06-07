@@ -14,27 +14,23 @@ function StatsClientPage() {
   const { data: clientStats, isLoading } = useQuery({
     queryKey: ['client_performance_stats'],
     queryFn: async () => {
-      const userId = await getEffectiveUserId();
-      if (!userId) return [];
-
       // Fetch clients and their SMS activity
       const { data: clients } = await supabase
         .from('clients')
-        .select('id, username')
-        .eq('agent_id', userId);
+        .select('id, username');
 
       if (!clients) return [];
 
       // For each client, calculate stats
       const stats = await Promise.all(clients.map(async (client: any) => {
-        const { count } = await supabase
+        const res = await supabase
           .from('sms_logs')
-          .select('*', { count: 'exact', head: true })
+          .select('*', { count: 'exact' })
           .eq('client_id', client.id);
         
         return {
           username: client.username,
-          total_sms: count || 0,
+          total_sms: res.count || 0,
         };
       }));
 

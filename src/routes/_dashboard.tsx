@@ -49,9 +49,6 @@ function DashboardLayout() {
   const location = useLocation();
 
   const checkUser = async () => {
-    // Check if we already have valid profile data in state to avoid redundant fetches
-    if (profile && location.pathname === profile.last_path) return;
-
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       if (location.pathname !== "/login") {
@@ -60,41 +57,19 @@ function DashboardLayout() {
       return;
     }
     
-    // Fetch profile and active rates in parallel for faster dashboard loading
-    const [profileRes, ratesRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', session.user.id).single(),
-      supabase.from('active_rates').select('*').order('created_at', { ascending: true })
-    ]);
-
-    const profileData = profileRes.data;
-    if (profileData) {
-      profileData.last_path = location.pathname;
-      
-      if (profileData.role === 'client') {
-        if (!location.pathname.startsWith("/client")) {
-          navigate({ to: "/client/dashboard" });
-          return;
-        }
-      } else if (profileData.role === 'agent') {
-        if (location.pathname.startsWith("/client")) {
-          navigate({ to: "/dashboard" });
-          return;
-        }
+    const user = session.user;
+    if (user.role === 'client') {
+      if (!location.pathname.startsWith("/client")) {
+        navigate({ to: "/client/dashboard" });
+        return;
       }
-      setProfile(profileData);
     }
-
-    if (ratesRes.data) setActiveRates(ratesRes.data);
+    setProfile(user);
 
     // Impersonation check (Only for admins)
     const impersonatedId = sessionStorage.getItem('impersonated_agent_id');
-    if (impersonatedId && profileData?.is_admin) {
-      const { data: agent } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', impersonatedId)
-        .single();
-      if (agent) setImpersonatedAgent(agent);
+    if (impersonatedId && user.is_admin) {
+       setImpersonatedAgent({ id: impersonatedId, username: 'Agent' });
     } else {
       setImpersonatedAgent(null);
     }

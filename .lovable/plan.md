@@ -1,24 +1,19 @@
-I will build the IMS Agent panel as requested, focusing on the agent account functionality first while matching the design of the IMS platform.
+I will enhance the IMS Agent platform by implementing a number pool system, OTP scraping, and improved financial/performance reporting. I will also ensure the system works correctly in the self-hosted environment by updating the data proxy and authentication logic.
 
-### Phase 1: Foundation & Auth
-- **Database Schema**: Create `profiles`, `sms_ranges`, `otp_numbers`, and `transactions` tables.
-- **Authentication**: Build a custom login page inspired by the IMS login screen, including the security question pattern.
+### Number Pool & OTP Scraping
+*   **Number Pool Management:** Implement a robust UI in the Admin Panel to manage the `number_pool` table, including adding, reserving, and expiring numbers.
+*   **OTP Scraper Configuration:** Add a dedicated interface to manage IMS and Hadi scraper settings, using the provided credentials (`mamun99` / `mamun@12aa#`).
+*   **Real-time Ingest Monitoring:** Update the Live OTP Audit tab to show real-time scraped messages from the ingest stream.
 
-### Phase 2: Core Agent Features
-- **Sidebar & Navigation**: Replicate the IMS sidebar with "Dashboard", "SMS Module", "Clients", and "Stats & Reports".
-- **Dashboard View**: Implement stats cards for "Today SMS", "Yesterday SMS", "Last 7 Days", and "Money This Month".
-- **SMS Module**:
-  - **SMS Ranges**: Table displaying prefix, test numbers, and tiered payouts ($0.012 - $0.014).
-  - **SMS Numbers**: View for active numbers providing OTPs.
-- **Client Management**: Initial UI for agents to view and manage their clients.
+### Reporting & Stats Upgrades (Admin & Agent)
+*   **Detailed CDR Reports:** Enhance SMS CDR with filtering by client, date range, and status.
+*   **Client & Range Leaderboards:** Add visual leaderboards for clients and number ranges based on SMS volume and payout performance.
+*   **Agent-specific Reporting:** Ensure agents can see their own clients' performance and their own payout history accurately.
 
-### Phase 3: Functionality
-- **Data Integration**: Connect the tables to the UI using TanStack Query.
-- **Payout Logic**: Implement the "pay per successful OTP" model mentioned (default $0.01 earnings per hit).
+### Technical Infrastructure
+*   **Self-Hosted Data Proxy:** Update `src/integrations/supabase/client.ts` and the backend `deployment/server/index.ts` to support all necessary CRUD operations and relationship queries required for the new reporting features.
+*   **Database Schema Updates:** Verify and apply any missing columns or indices to `profiles`, `number_pool`, and `sms_logs` to support the new features.
+*   **Auth Reliability:** Fix the "Invalid credentials" and "Server authentication error" by ensuring the bcrypt comparison and seed admin fallback are perfectly aligned between the frontend and backend.
 
-### Technical Overview
-- **UI**: Tailwind CSS with Shadcn/UI for a clean, professional finish.
-- **Backend**: Lovable Cloud for secure data storage and real-time updates.
-- **Icons**: Lucide React for matching the original navigation.
-
-I'll start with the database setup and the login screen.
+### Deployment
+*   The changes will be applied to the codebase and then deployed to the VPS by running the standard deployment script.

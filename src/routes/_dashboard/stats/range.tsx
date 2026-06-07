@@ -21,15 +21,15 @@ function StatsRangePage() {
       if (!ranges) return [];
 
       const stats = await Promise.all(ranges.map(async (range: any) => {
-        const { count } = await supabase
+        const res = await supabase
           .from('sms_logs')
-          .select('*', { count: 'exact', head: true })
+          .select('*', { count: 'exact' })
           .ilike('number', `${range.prefix}%`);
         
         return {
           name: range.name || range.memo || range.prefix,
           prefix: range.prefix,
-          total_sms: count || 0,
+          total_sms: res.count || 0,
         };
       }));
 

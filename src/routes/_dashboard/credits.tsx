@@ -17,9 +17,9 @@ function CreditsPage() {
   const { data: profile, refetch: refetchProfile } = useQuery({
     queryKey: ['agent_profile'],
     queryFn: async () => {
-      const userId = await getEffectiveUserId();
-      if (!userId) return null;
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
       return data;
     }
   });
@@ -27,16 +27,15 @@ function CreditsPage() {
   const { data: payouts, refetch: refetchPayouts } = useQuery({
     queryKey: ['agent_payouts'],
     queryFn: async () => {
-      const userId = await getEffectiveUserId();
-      if (!userId) return [];
-      const { data } = await supabase.from('payouts').select('*').eq('agent_id', userId).order('created_at', { ascending: false });
+      const { data } = await supabase.from('payouts').select('*').order('created_at', { ascending: false });
       return data || [];
     }
   });
 
   const handleRequestPayout = async () => {
-    const userId = await getEffectiveUserId();
-    if (!userId || !profile) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || !profile) return;
+    const userId = session.user.id;
 
     if (Number(profile.balance || 0) < 100) {
       toast.error("Minimum payout is $100.00");
@@ -111,7 +110,7 @@ function CreditsPage() {
                 <TableHead className="text-[10px] font-black uppercase px-6">Amount</TableHead>
                 <TableHead className="text-[10px] font-black uppercase px-6">Status</TableHead>
                 <TableHead className="text-[10px] font-black uppercase px-6">Requested On</TableHead>
-                <TableHead className="text-[10px] font-black uppercase px-6">Method / Trans ID</TableHead>
+                <TableHead className="text-[10px] font-black uppercase px-6">Payment Info</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -128,7 +127,7 @@ function CreditsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-[12px] font-medium text-[#69707a]">{new Date(p.created_at).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-[12px] font-bold text-[#2b3a4a]">{p.transaction_id || 'Processing...'}</td>
+                  <td className="px-6 py-4 text-[12px] font-bold text-[#2b3a4a]">{p.payment_method} - {p.transaction_id || 'Processing...'}</td>
                 </TableRow>
               ))}
               {(!payouts || payouts.length === 0) && (

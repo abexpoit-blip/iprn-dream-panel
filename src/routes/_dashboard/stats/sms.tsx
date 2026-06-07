@@ -14,17 +14,15 @@ function StatsSmsPage() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['sms_stats_report'],
     queryFn: async () => {
-      // In a real app, we would use a SQL group by here.
-      // For now, we fetch recent logs and aggregate by date.
+      // Fetch recent logs
       const { data, error } = await supabase
         .from('sms_logs')
-        .select('created_at, payout')
-        .order('created_at', { ascending: false })
+        .select('*')
         .limit(1000);
       
       if (error) throw error;
 
-      const aggregated = data.reduce((acc: any, log: any) => {
+      const aggregated = (data || []).reduce((acc: any, log: any) => {
         const date = new Date(log.created_at).toLocaleDateString();
         if (!acc[date]) acc[date] = { date, count: 0, payout: 0 };
         acc[date].count += 1;

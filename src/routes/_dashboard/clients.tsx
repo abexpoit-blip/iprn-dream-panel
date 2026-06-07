@@ -32,7 +32,11 @@ export const Route = createFileRoute("/_dashboard/clients")({
 });
 
 function ClientsPage() {
-  const createClientFn = useServerFn(createClientAccount);
+  const createClientFn = async ({ data }: any) => {
+     const res = await supabase.from('clients').insert([{ ...data, status: 'Active' }]);
+     if (res.error) throw res.error;
+     return res;
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -46,13 +50,9 @@ function ClientsPage() {
   const { data: clients, isLoading, refetch } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      const userId = await getEffectiveUserId();
-      if (!userId) return [];
-
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('agent_id', userId)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
@@ -63,7 +63,11 @@ function ClientsPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await createClientFn({ data: newClient });
+      await createClientFn({ data: { 
+          username: newClient.username, 
+          email: newClient.email, 
+          skype_id: newClient.skype_id 
+      }});
       toast.success("Client account created", {
         description: `${newClient.username} can now log in with their password.`,
       });

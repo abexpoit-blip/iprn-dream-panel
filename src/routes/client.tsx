@@ -44,22 +44,13 @@ function ClientLayout() {
         }
         return;
       }
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
       
-      if (!prof) {
-        navigate({ to: "/login" });
-        return;
-      }
-
-      if (prof.role !== "client") {
+      const user = session.user;
+      if (user.role !== "client") {
         navigate({ to: "/dashboard" });
         return;
       }
-      setProfile(prof);
+      setProfile(user);
     };
     checkUser();
   }, [location.pathname]);

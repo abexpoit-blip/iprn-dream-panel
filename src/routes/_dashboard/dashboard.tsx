@@ -44,9 +44,6 @@ function DashboardPage() {
   const { data: statsData } = useQuery({
     queryKey: ['dashboard_stats'],
     queryFn: async () => {
-      const userId = await getEffectiveUserId();
-      if (!userId) return null;
-
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const yesterday = new Date(today);
@@ -56,23 +53,23 @@ function DashboardPage() {
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
       const [
-        { count: todayCount },
-        { count: yesterdayCount },
-        { count: last7DaysCount },
-        { data: monthData }
+        todayCount,
+        yesterdayCount,
+        last7DaysCount,
+        monthData
       ] = await Promise.all([
-        supabase.from('sms_logs').select('*', { count: 'exact', head: true }).eq('agent_id', userId).gte('created_at', today.toISOString()),
-        supabase.from('sms_logs').select('*', { count: 'exact', head: true }).eq('agent_id', userId).gte('created_at', yesterday.toISOString()).lt('created_at', today.toISOString()),
-        supabase.from('sms_logs').select('*', { count: 'exact', head: true }).eq('agent_id', userId).gte('created_at', last7Days.toISOString()),
-        supabase.from('sms_logs').select('payout').eq('agent_id', userId).gte('created_at', startOfMonth.toISOString())
+        supabase.from('sms_logs').select('*', { count: 'exact' }).gte('created_at', today.toISOString()),
+        supabase.from('sms_logs').select('*', { count: 'exact' }).gte('created_at', yesterday.toISOString()).lt('created_at', today.toISOString()),
+        supabase.from('sms_logs').select('*', { count: 'exact' }).gte('created_at', last7Days.toISOString()),
+        supabase.from('sms_logs').select('payout').gte('created_at', startOfMonth.toISOString())
       ]);
 
-      const monthPayout = monthData?.reduce((acc: number, curr: any) => acc + (Number(curr.payout) || 0), 0) || 0;
+      const monthPayout = monthData.data?.reduce((acc: number, curr: any) => acc + (Number(curr.payout) || 0), 0) || 0;
 
       return {
-        today: todayCount || 0,
-        yesterday: yesterdayCount || 0,
-        last7Days: last7DaysCount || 0,
+        today: todayCount.count || 0,
+        yesterday: yesterdayCount.count || 0,
+        last7Days: last7DaysCount.count || 0,
         monthPayout: monthPayout.toFixed(2)
       };
     }
@@ -81,13 +78,9 @@ function DashboardPage() {
   const { data: recentClients } = useQuery({
     queryKey: ['recent_clients'],
     queryFn: async () => {
-      const userId = await getEffectiveUserId();
-      if (!userId) return [];
-
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('agent_id', userId)
         .order('created_at', { ascending: false })
         .limit(10);
       if (error) throw error;

@@ -31,34 +31,34 @@ function ClientDashboardPage() {
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
       const [
-        { count: todayCount },
-        { count: yesterdayCount },
-        { count: last7DaysCount },
-        { data: monthData },
+        todayRes,
+        yesterdayRes,
+        last7Res,
+        monthRes,
       ] = await Promise.all([
         supabase
           .from("sms_logs")
-          .select("*", { count: "exact", head: true })
+          .select("*", { count: "exact" })
           .gte("created_at", today.toISOString()),
         supabase
           .from("sms_logs")
-          .select("*", { count: "exact", head: true })
+          .select("*", { count: "exact" })
           .gte("created_at", yesterday.toISOString())
           .lt("created_at", today.toISOString()),
         supabase
           .from("sms_logs")
-          .select("*", { count: "exact", head: true })
+          .select("*", { count: "exact" })
           .gte("created_at", last7Days.toISOString()),
         supabase.from("sms_logs").select("payout").gte("created_at", startOfMonth.toISOString()),
       ]);
 
       const monthPayout =
-        monthData?.reduce((acc: number, curr: any) => acc + (Number(curr.payout) || 0), 0) || 0;
+        monthRes.data?.reduce((acc: number, curr: any) => acc + (Number(curr.payout) || 0), 0) || 0;
 
       return {
-        today: todayCount || 0,
-        yesterday: yesterdayCount || 0,
-        last7Days: last7DaysCount || 0,
+        today: todayRes.count || 0,
+        yesterday: yesterdayRes.count || 0,
+        last7Days: last7Res.count || 0,
         monthPayout: monthPayout.toFixed(2),
       };
     },
