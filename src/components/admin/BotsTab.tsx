@@ -215,59 +215,107 @@ export function BotsTab() {
                  <Settings size={16} className="text-[#0061f2]" /> Global Scraper Configuration
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <div className="space-y-6">
-                    <div>
-                       <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Shark SMS Bot Credentials</Label>
-                       <div className="mt-4 space-y-4">
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-bold uppercase">Username</Label>
-                             <Input defaultValue="mamun01" className="h-10 rounded-lg" />
+              <Tabs defaultValue="shark" className="w-full">
+                <TabsList className="bg-slate-50 mb-6">
+                  <TabsTrigger value="shark" className="text-[10px] font-black uppercase">Shark SMS</TabsTrigger>
+                  <TabsTrigger value="ims" className="text-[10px] font-black uppercase">IMS SMS</TabsTrigger>
+                  <TabsTrigger value="hadi" className="text-[10px] font-black uppercase">SMS Hadi</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="shark" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                        <div>
+                          <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Shark SMS Bot Credentials</Label>
+                          <div className="mt-4 space-y-4">
+                              <div className="space-y-2">
+                                <Label className="text-[10px] font-bold uppercase">Username</Label>
+                                <Input defaultValue="mamun01" className="h-10 rounded-lg" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-[10px] font-bold uppercase">Password</Label>
+                                <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" />
+                              </div>
                           </div>
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-bold uppercase">Password</Label>
-                             <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" />
+                        </div>
+
+                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
+                          <h4 className="text-[11px] font-black uppercase text-blue-600">Session Controls</h4>
+                          <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold">Cookie Persistence</span>
+                              <Checkbox checked />
                           </div>
-                       </div>
+                          <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold">Auto-Refresh (15s)</span>
+                              <Checkbox checked />
+                          </div>
+                        </div>
                     </div>
 
-                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
-                       <h4 className="text-[11px] font-black uppercase text-blue-600">Session Controls</h4>
-                       <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold">Cookie Persistence</span>
-                          <Checkbox checked />
-                       </div>
-                       <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold">Auto-Refresh (15s)</span>
-                          <Checkbox checked />
-                       </div>
+                    <div className="space-y-6">
+                        <div>
+                          <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Delivery Safeguards</Label>
+                          <div className="mt-4 space-y-4">
+                              <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase">Association Check</p>
+                                    <p className="text-[9px] text-slate-500 italic">Verify number pool ownership before delivery</p>
+                                </div>
+                                <Checkbox checked />
+                              </div>
+                              <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase">Source Validation</p>
+                                    <p className="text-[9px] text-slate-500 italic">Block duplicate source message IDs</p>
+                                </div>
+                                <Checkbox checked />
+                              </div>
+                          </div>
+                        </div>
+                        
+                        <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Shark Config</Button>
                     </div>
-                 </div>
+                  </div>
+                </TabsContent>
 
-                 <div className="space-y-6">
-                    <div>
-                       <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Delivery Safeguards</Label>
-                       <div className="mt-4 space-y-4">
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
-                             <div>
-                                <p className="text-[10px] font-black uppercase">Association Check</p>
-                                <p className="text-[9px] text-slate-500 italic">Verify number pool ownership before delivery</p>
-                             </div>
-                             <Checkbox checked />
-                          </div>
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
-                             <div>
-                                <p className="text-[10px] font-black uppercase">Source Validation</p>
-                                <p className="text-[9px] text-slate-500 italic">Block duplicate source message IDs</p>
-                             </div>
-                             <Checkbox checked />
-                          </div>
-                       </div>
+                <TabsContent value="ims" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">IMS SMS Agent Login</Label>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase">User</Label>
+                          <Input defaultValue="mamun99" className="h-10 rounded-lg" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase">Pass</Label>
+                          <Input type="password" defaultValue="mamun@12aa#" className="h-10 rounded-lg" />
+                        </div>
+                      </div>
                     </div>
-                    
-                    <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Configuration</Button>
-                 </div>
-              </div>
+                    <div className="flex items-end">
+                      <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save IMS Config</Button>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="hadi" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">SMS Hadi Credentials</Label>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase">API Key</Label>
+                          <Input type="password" placeholder="Hadi API Key..." className="h-10 rounded-lg" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-end">
+                      <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Hadi Config</Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
            </div>
         </TabsContent>
 
