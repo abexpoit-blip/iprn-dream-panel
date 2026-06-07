@@ -96,6 +96,7 @@ function DashboardLayout() {
 
   const menuItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "Bot Dashboard", icon: Bot, href: "/admin", search: { tab: "bots" } },
     { 
       label: "SMS Module", 
       icon: MessageSquare, 
