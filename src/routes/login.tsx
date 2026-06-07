@@ -79,13 +79,18 @@ function LoginPage() {
     }
 
     // Agent / admin require approved status
+    // Agent / admin require approved status
     if (profile.status !== "approved") {
       await supabase.auth.signOut();
       toast.error("Account Pending Approval", {
-        description: "Your agent account is currently under review. Please contact support.",
+        description: "Your account is currently under review. Please contact support.",
       });
       setLoading(false);
       return;
+    }
+
+    if (profile.is_admin) {
+      toast.info("Admin detected. Please use the secure admin login panel for full access.");
     }
 
     navigate({ to: "/dashboard" });
