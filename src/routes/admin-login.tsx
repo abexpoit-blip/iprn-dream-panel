@@ -36,7 +36,7 @@ function AdminLogin() {
       // Check if is admin
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("is_admin")
+        .select("is_admin, role")
         .eq("id", data.user.id)
         .single();
 

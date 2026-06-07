@@ -36,10 +36,12 @@ function ClientLayout() {
   const location = useLocation();
 
   useEffect(() => {
-    (async () => {
+    const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate({ to: "/login" });
+        if (location.pathname !== "/login") {
+          navigate({ to: "/login" });
+        }
         return;
       }
       const { data: prof } = await supabase
@@ -47,12 +49,19 @@ function ClientLayout() {
         .select("*")
         .eq("id", session.user.id)
         .single();
-      if (!prof || prof.role !== "client") {
+      
+      if (!prof) {
+        navigate({ to: "/login" });
+        return;
+      }
+
+      if (prof.role !== "client") {
         navigate({ to: "/dashboard" });
         return;
       }
       setProfile(prof);
-    })();
+    };
+    checkUser();
   }, [location.pathname]);
 
   const menuItems: any[] = [

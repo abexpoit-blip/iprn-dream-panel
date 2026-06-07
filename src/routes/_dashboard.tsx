@@ -51,7 +51,9 @@ function DashboardLayout() {
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      navigate({ to: "/login" });
+      if (location.pathname !== "/login") {
+        navigate({ to: "/login" });
+      }
       return;
     }
     
@@ -62,11 +64,21 @@ function DashboardLayout() {
       .single();
     
     if (profile?.role === 'client') {
-      navigate({ to: "/client/dashboard" });
+      if (location.pathname.startsWith("/client")) {
+        setProfile(profile);
+      } else {
+        navigate({ to: "/client/dashboard" });
+      }
       return;
     }
 
-    setProfile(profile);
+    if (profile?.role === 'agent') {
+      if (location.pathname.startsWith("/client")) {
+        navigate({ to: "/dashboard" });
+      } else {
+        setProfile(profile);
+      }
+    }
 
     // Impersonation check
     const impersonatedId = sessionStorage.getItem('impersonated_agent_id');
@@ -93,7 +105,7 @@ function DashboardLayout() {
 
   useEffect(() => {
     checkUser();
-  }, [location.pathname]); // Change dependency to location.pathname to re-verify on route change
+  }, [location.pathname]);
 
   // Listen for storage changes (impersonation)
   useEffect(() => {
