@@ -35,7 +35,7 @@ function LoginPage() {
     setLoading(true);
     const raw = username.trim();
 
-    // Use simple username for self-hosted, or email candidates for Supabase
+    // Standardize candidates to avoid redundant lookups
     const candidates = raw.includes("@")
       ? [raw]
       : [
@@ -49,17 +49,25 @@ function LoginPage() {
     let signedInUserId: string | null = null;
     let lastError: string | null = null;
 
-    // Parallelize authentication attempts to significantly speed up login
-    const loginResults = await Promise.all(
-      candidates.map(email => supabase.auth.signInWithPassword({ email, password }))
-    );
+    // Fast-path for common usernames to reduce auth latency
+    const prioritizedEmail = raw.includes("@") ? raw : `${raw.toLowerCase()}@nexus.site`;
+    const firstAttempt = await supabase.auth.signInWithPassword({ email: prioritizedEmail, password });
 
-    const successfulLogin = loginResults.find(r => !r.error && r.data.user);
-
-    if (successfulLogin) {
-      signedInUserId = successfulLogin.data.user.id;
+    if (!firstAttempt.error && firstAttempt.data.user) {
+      signedInUserId = firstAttempt.data.user.id;
     } else {
-      lastError = loginResults[0]?.error?.message || "Invalid credentials.";
+      // If primary fails, check others in parallel
+      const otherCandidates = candidates.filter(c => c !== prioritizedEmail);
+      const results = await Promise.all(
+        otherCandidates.map(email => supabase.auth.signInWithPassword({ email, password }))
+      );
+      
+      const success = results.find(r => !r.error && r.data.user);
+      if (success) {
+        signedInUserId = success.data.user.id;
+      } else {
+        lastError = firstAttempt.error?.message || results[0]?.error?.message || "Invalid credentials.";
+      }
     }
 
     if (!signedInUserId) {
