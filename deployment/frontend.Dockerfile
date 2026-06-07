@@ -1,42 +1,32 @@
 FROM node:22-alpine as build
 WORKDIR /app
 
-# Enable Nitro node-server preset to ensure .output is created
+# Enable Nitro node-server preset
 ENV NITRO_PRESET=node-server
-# NODE_ENV is set to production later for the runner stage
 
 COPY package*.json ./
-# Use npm install to generate local binaries
 RUN npm install --legacy-peer-deps
 
 COPY . .
 
-# Ensure vite and other binaries are in the path
-ENV PATH="/app/node_modules/.bin:${PATH}"
+# Build the app
+RUN ./node_modules/.bin/vite build
 
-ARG VITE_SELF_HOSTED=true
-ARG VITE_API_URL=https://x.nexus-x.site/api
-ENV VITE_SELF_HOSTED=$VITE_SELF_HOSTED
-ENV VITE_API_URL=$VITE_API_URL
-
-# Run build and verify output
-# TanStack Start outputs to dist/server/server.js and dist/client
-RUN ./node_modules/.bin/vite build && ls -la dist/server/server.js || (echo "Build failed to create dist/server/server.js" && ls -la dist/server && exit 1)
+# Verify Nitro output
+RUN ls -la .output/server/index.mjs || (echo "Nitro output not found" && ls -R .output && exit 1)
 
 
 FROM node:22-alpine
 WORKDIR /app
 
-# The built files are in dist/client and dist/server
-COPY --from=build /app/dist ./dist
+# Copy the Nitro output
+COPY --from=build /app/.output ./.output
 COPY --from=build /app/package*.json ./
-COPY --from=build /app/node_modules ./node_modules
 
-# For self-hosted TanStack Start without Nitro, we need to run the server entry point
-# Based on the config, it builds to dist/server/server.js
 EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 
-CMD ["node", "dist/server/server.js"]
+# Nitro node-server entry point
+CMD ["node", ".output/server/index.mjs"]
