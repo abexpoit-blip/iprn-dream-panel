@@ -20,8 +20,8 @@ ENV VITE_SELF_HOSTED=$VITE_SELF_HOSTED
 ENV VITE_API_URL=$VITE_API_URL
 
 # Run build and verify output
-# TanStack Start with Nitro outputs to dist/server/index.mjs
-RUN ./node_modules/.bin/vite build && ls -la dist/server/index.mjs || (echo "Build failed to create dist/server/index.mjs" && ls -la dist/server && exit 1)
+# TanStack Start outputs to dist/server/server.js and dist/client
+RUN ./node_modules/.bin/vite build && ls -la dist/server/server.js || (echo "Build failed to create dist/server/server.js" && ls -la dist/server && exit 1)
 
 
 FROM node:22-alpine
@@ -38,4 +38,4 @@ ENV PORT=3000
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 
-CMD ["node", "dist/server/index.mjs"]
+CMD ["node", "dist/server/server.js"]
