@@ -173,7 +173,7 @@ export function BotsTab() {
           <TabsTrigger value="panels" className="text-[11px] font-black uppercase">Number Panels</TabsTrigger>
           <TabsTrigger value="pool" className="text-[11px] font-black uppercase">Number Pool</TabsTrigger>
           <TabsTrigger value="audit" className="text-[11px] font-black uppercase">Live OTP Audit</TabsTrigger>
-          <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Dashboard</TabsTrigger>
+          
           <TabsTrigger value="new-dashboard" asChild>
             <Button 
               variant="ghost" 

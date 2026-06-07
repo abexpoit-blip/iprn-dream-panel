@@ -74,22 +74,32 @@ function AdminDashboard() {
 
   const handleSyncVerify = async () => {
     setIsSyncing(true);
-    // Simulate end-to-end reconciliation for IMS/Shark
-    setTimeout(() => {
+    try {
+      // Fetch real totals from DB
+      const { data: logs } = await supabase.from('otp_audit_log').select('source');
+      const { data: cdr } = await supabase.from('sms_cdr').select('id');
+      
+      const scraped = logs?.length || 0;
+      const displayed = cdr?.length || 0;
+      const discrepancy = Math.abs(scraped - displayed);
+
       setSyncResults({
-        totalScraped: 12450,
-        totalDisplayed: 12448,
-        discrepancy: 2,
-        status: "Healthy",
+        totalScraped: scraped,
+        totalDisplayed: displayed,
+        discrepancy: discrepancy,
+        status: discrepancy === 0 ? "Perfect" : (discrepancy < 10 ? "Healthy" : "Check Needed"),
         ranges: [
-          { name: "IMS SMS", scraped: 8400, matched: 8400 },
-          { name: "Shark SMS", scraped: 4050, matched: 4048 }
+          { name: "IMS SMS", scraped: logs?.filter(l => l.source === 'IMS').length || 0, matched: 0 },
+          { name: "Shark SMS", scraped: logs?.filter(l => l.source === 'SHARK').length || 0, matched: 0 }
         ]
       });
       setIsSyncing(false);
       setShowSyncDialog(true);
-      toast.success("CDR Reconciliation Complete");
-    }, 1500);
+      toast.success("Real-time CDR Reconciliation Complete");
+    } catch (err) {
+      toast.error("Sync verification failed");
+      setIsSyncing(false);
+    }
   };
 
   const filteredAgents = agents.filter((a: any) => 
