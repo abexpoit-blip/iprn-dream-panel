@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-DOMAIN="X.nexus-x.site"
+DOMAIN="x.nexus-x.site"
 PROJECT_DIR="/opt/nexus"
 EMAIL="admin@nexus-x.site"
 
