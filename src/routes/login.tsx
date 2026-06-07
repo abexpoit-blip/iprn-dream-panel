@@ -54,6 +54,8 @@ function LoginPage() {
       
       if (user.role === "client") {
         navigate({ to: "/client/dashboard" });
+      } else if (user.is_admin) {
+        navigate({ to: "/admin" });
       } else {
         navigate({ to: "/dashboard" });
       }

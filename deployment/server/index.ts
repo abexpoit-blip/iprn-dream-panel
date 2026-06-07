@@ -86,7 +86,9 @@ app.post('/auth/login', async (c) => {
       return c.json({ error: 'Invalid credentials' }, 401);
     }
     
-    if (user.status !== 'approved' && user.status !== 'active') {
+    // Status can be active or approved
+    const isApproved = user.status === 'approved' || user.status === 'active' || user.is_admin;
+    if (!isApproved) {
       console.log(`[Auth] Login blocked: User status is ${user.status}`);
       return c.json({ error: 'Account pending approval or suspended' }, 403);
     }
@@ -196,13 +198,31 @@ app.get('/api/data/:table', async (c) => {
   }
 });
 
-app.post('/api/data/:table', async (c) => {
+app.post('/api/data/:table', async (c) =u003e {
   const table = c.req.param('table');
   const body = await c.req.json();
   try {
     // Ensure id is generated if missing
     if (!body.id) body.id = crypto.randomUUID();
+    
+    // Custom logic for profiles/clients to handle passwords
+    if ((table === 'profiles' || table === 'clients') && body.password) {
+      const salt = await bcrypt.genSalt(10);
+      body.password_hash = await bcrypt.hash(body.password, salt);
+      delete body.password;
+    }
+
     const results = await sql`INSERT INTO ${sql(table)} ${sql(body)} RETURNING *`;
+    
+    // If we just created a client, also create a profile for them so they can login
+    if (table === 'clients') {
+      await sql`
+        INSERT INTO profiles (id, username, password_hash, role, status)
+        VALUES (${body.id}, ${body.username}, ${body.password_hash}, 'client', 'approved')
+        ON CONFLICT (username) DO NOTHING
+      `;
+    }
+
     return c.json(results[0]);
   } catch (error) {
     console.error(`Error creating in ${table}:`, error);

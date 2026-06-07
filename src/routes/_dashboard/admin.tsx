@@ -39,8 +39,13 @@ function AdminDashboard() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase.from('profiles').select('*').eq('is_admin', false).order('created_at', { ascending: false });
-    setAgents(data || []);
+    try {
+      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      // Filter out self and handle admin view
+      setAgents(data?.filter((a: any) => a.role !== 'admin') || []);
+    } catch (err) {
+      console.error("Fetch agents error:", err);
+    }
     setLoading(false);
   };
 

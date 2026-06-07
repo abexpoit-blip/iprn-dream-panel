@@ -32,11 +32,6 @@ export const Route = createFileRoute("/_dashboard/clients")({
 });
 
 function ClientsPage() {
-  const createClientFn = async ({ data }: any) => {
-     const res = await supabase.from('clients').insert([{ ...data, status: 'Active' }]);
-     if (res.error) throw res.error;
-     return res;
-  };
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,13 +58,21 @@ function ClientsPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await createClientFn({ data: { 
-          username: newClient.username, 
-          email: newClient.email, 
-          skype_id: newClient.skype_id 
-      }});
+      // In self-hosted mode, we use direct insert since the server handles complexity
+      const { data: { session } } = await supabase.auth.getSession();
+      const { error } = await supabase.from('clients').insert([{
+          agent_id: session?.user?.id,
+          username: newClient.username,
+          email: newClient.email || null,
+          skype_id: newClient.skype_id || null,
+          password: newClient.password, // Server should hash this if possible, or we hash it here
+          status: 'Active'
+      }]);
+
+      if (error) throw error;
+
       toast.success("Client account created", {
-        description: `${newClient.username} can now log in with their password.`,
+        description: `${newClient.username} can now log in.`,
       });
       setIsAddDialogOpen(false);
       setNewClient({ username: "", email: "", skype_id: "", password: "" });

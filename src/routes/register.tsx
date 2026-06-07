@@ -21,48 +21,29 @@ function RegisterPage() {
     e.preventDefault();
     setLoading(true);
 
-    const email = `${username}@imssms.org`;
+    try {
+      // Direct registration via the profiles table (the API handles hashing)
+      const { error } = await supabase.from('profiles').insert([{
+        username,
+        password: password, // The self-hosted API will hash this
+        full_name: fullName,
+        role: 'agent',
+        status: 'pending'
+      }]);
 
-    // 1. Sign up the user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
-          full_name: fullName,
-        }
-      }
-    });
-
-    if (authError) {
-      toast.error("Registration failed", { description: authError.message });
-      setLoading(false);
-      return;
-    }
-
-    if (authData.user) {
-      // 2. Create the profile record
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          username,
-          full_name: fullName,
-          role: 'agent'
-        });
-
-      if (profileError) {
-        toast.error("Profile creation failed", { description: profileError.message });
+      if (error) {
+        toast.error("Registration failed", { description: error.message });
       } else {
         toast.success("Registration Successful", { 
           description: "Your account is pending approval. Please contact an administrator to activate your account." 
         });
         navigate({ to: "/login" });
       }
+    } catch (err: any) {
+       toast.error("Registration error", { description: err.message });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
