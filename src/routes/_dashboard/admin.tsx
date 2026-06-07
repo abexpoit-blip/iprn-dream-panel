@@ -91,6 +91,22 @@ function AdminDashboard() {
         </TabsList>
 
         <TabsContent value="agents" className="space-y-4 outline-none">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 w-full max-w-md">
+              <Input 
+                placeholder="Search agents by username or email..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 rounded-xl bg-white border-[#e3e6ec] shadow-sm"
+              />
+              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#69707a]" />
+            </div>
+            <div className="flex gap-2">
+               <Button variant="outline" size="sm" className="h-11 px-4 border-slate-200 text-slate-600 font-bold uppercase text-[10px] rounded-xl bg-white shadow-sm"><Filter size={14} className="mr-2" /> Filter</Button>
+               <Button variant="outline" size="sm" className="h-11 px-4 border-[#0061f2] text-[#0061f2] font-bold uppercase text-[10px] rounded-xl bg-white shadow-sm"><UserPlus size={14} className="mr-2" /> Add Agent</Button>
+            </div>
+          </div>
+
           <Card className="shadow-2xl border-[#e3e6ec] rounded-2xl overflow-hidden border-none">
              <CardContent className="p-0">
                <Table>
@@ -105,10 +121,10 @@ function AdminDashboard() {
                   <TableBody>
                     {loading ? (
                       <TableRow><TableCell colSpan={4} className="text-center py-20"><div className="w-8 h-8 border-4 border-[#0061f2] border-t-transparent rounded-full animate-spin mx-auto"></div></TableCell></TableRow>
-                    ) : agents.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-20 text-[#69707a] italic">No agents registered yet</TableCell></TableRow>
+                    ) : filteredAgents.length === 0 ? (
+                      <TableRow><TableCell colSpan={4} className="text-center py-20 text-[#69707a] italic">No agents match your criteria</TableCell></TableRow>
                     ) : (
-                      agents.map((agent) => (
+                      filteredAgents.map((agent) => (
                         <tr key={agent.id} className="border-b border-[#f2f4f8] hover:bg-[#f8f9fc]/50 transition-colors">
                           <td className="px-6 py-4">
                              <div className="flex items-center gap-3">
