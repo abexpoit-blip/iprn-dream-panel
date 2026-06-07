@@ -5,10 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Activity } from "lucide-react";
 
 export const Route = createFileRoute("/_dashboard/stats/cdr")({
   component: StatsCDRPage,
 });
+
 
 function StatsCDRPage() {
   const [searchTerm, setSearchTerm] = useState("");
