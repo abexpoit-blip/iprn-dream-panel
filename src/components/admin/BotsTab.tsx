@@ -444,39 +444,69 @@ export function BotsTab() {
           </div>
         </TabsContent>
 
+        <TabsContent value="config">
+           <div className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] p-6">
+              <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest mb-6 flex items-center gap-2">
+                 <Settings size={16} className="text-[#0061f2]" /> Global Scraper Configuration
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div className="space-y-6">
+                    <div>
+                       <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Shark SMS Bot Credentials</Label>
+                       <div className="mt-4 space-y-4">
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-bold uppercase">Username</Label>
+                             <Input defaultValue="mamun01" className="h-10 rounded-lg" />
+                          </div>
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-bold uppercase">Password</Label>
+                             <Input type="password" defaultValue="mamun@12#A" className="h-10 rounded-lg" />
+                          </div>
+                       </div>
+                    </div>
 
-          <div className="bg-[#1a1c23] rounded-xl shadow-2xl overflow-hidden border border-[#2d303e]">
-             <div className="px-4 py-2 border-b border-[#2d303e] bg-[#242731] flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">Live Logs</span>
-             </div>
-             <div className="overflow-x-auto">
-               <Table>
-                 <TableHeader><TableRow className="border-b border-[#2d303e] hover:bg-transparent"><TableHead className="text-[10px] font-bold text-white/40 uppercase">Timestamp</TableHead><TableHead className="text-[10px] font-bold text-white/40 uppercase">Number</TableHead><TableHead className="text-[10px] font-bold text-white/40 uppercase">Service</TableHead><TableHead className="text-[10px] font-bold text-white/40 uppercase">OTP</TableHead><TableHead className="text-[10px] font-bold text-white/40 uppercase">Outcome</TableHead></TableRow></TableHeader>
-                 <TableBody>
-                    {auditLogs.map(log => (
-                      <TableRow key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="px-4 py-2 font-mono text-[11px] text-white/60">{new Date(log.created_at).toLocaleTimeString()}</td>
-                        <td className="px-4 py-2 font-mono text-[11px] text-blue-400">{log.phone_number}</td>
-                        <td className="px-4 py-2 text-[10px] font-black text-white/80 uppercase tracking-tighter">{log.cli}</td>
-                        <td className="px-4 py-2 font-mono text-[11px] text-green-400 font-bold">{log.otp_code}</td>
-                        <td className="px-4 py-2">
-                           <span className={cn(
-                             "text-[9px] font-black uppercase px-1.5 py-0.5 rounded",
-                             log.outcome === 'billed' ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
-                           )}>{log.outcome}</span>
-                        </td>
-                      </TableRow>
-                    ))}
-                    {auditLogs.length === 0 && (
-                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-white/20 font-mono text-xs">Waiting for incoming OTP data...</TableCell></TableRow>
-                    )}
-                 </TableBody>
-               </Table>
-             </div>
-          </div>
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
+                       <h4 className="text-[11px] font-black uppercase text-blue-600">Session Controls</h4>
+                       <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold">Cookie Persistence</span>
+                          <Checkbox checked />
+                       </div>
+                       <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold">Auto-Refresh (15s)</span>
+                          <Checkbox checked />
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="space-y-6">
+                    <div>
+                       <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Delivery Safeguards</Label>
+                       <div className="mt-4 space-y-4">
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                             <div>
+                                <p className="text-[10px] font-black uppercase">Association Check</p>
+                                <p className="text-[9px] text-slate-500 italic">Verify number pool ownership before delivery</p>
+                             </div>
+                             <Checkbox checked />
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                             <div>
+                                <p className="text-[10px] font-black uppercase">Source Validation</p>
+                                <p className="text-[9px] text-slate-500 italic">Block duplicate source message IDs</p>
+                             </div>
+                             <Checkbox checked />
+                          </div>
+                       </div>
+                    </div>
+                    
+                    <Button className="w-full bg-[#0061f2] h-12 text-[11px] font-black uppercase rounded-xl shadow-lg">Save Configuration</Button>
+                 </div>
+              </div>
+           </div>
         </TabsContent>
       </Tabs>
+
 
       {/* Settings Dialog */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
