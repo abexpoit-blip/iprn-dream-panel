@@ -10,6 +10,7 @@ WORKDIR /app
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/init.sql ./init.sql
+COPY --from=build /app/migrations ./migrations
 
 # To be safe, just install production ones
 RUN npm install --omit=dev
