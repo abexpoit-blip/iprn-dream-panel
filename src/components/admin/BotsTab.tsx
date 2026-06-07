@@ -183,6 +183,29 @@ export function BotsTab() {
     }
   };
 
+  // Backward-compatible single-field update. Updates local state immediately and
+  // also persists to DB so legacy onChange call sites keep working.
+  const updateBotSetting = async (key: string, value: string, botId?: string) => {
+    // Find bot type from id (so local form state stays in sync) — fallback to selectedBot
+    const bot = bots.find(b => b.id === botId) || selectedBot;
+    if (bot?.bot_type) setField(bot.bot_type, key, value);
+
+    const targetBotId = botId || selectedBot?.id;
+    if (!targetBotId) {
+      console.warn("No bot selected for setting update:", key);
+      return;
+    }
+    const { error } = await supabase.from('bot_settings').upsert({
+      bot_id: targetBotId,
+      setting_key: key,
+      setting_value: value,
+    }, { onConflict: 'bot_id,setting_key' });
+    if (error) {
+      console.error("Setting update error:", error);
+      toast.error(error.message || "Failed to update setting");
+    }
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       if (typeof fetchData === 'function') fetchData();
