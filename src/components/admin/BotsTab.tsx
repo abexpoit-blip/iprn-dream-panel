@@ -264,19 +264,19 @@ export function BotsTab() {
                           <h4 className="text-[11px] font-black uppercase text-blue-600">Session Controls</h4>
                           <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Remember Me</span>
-                              <Checkbox onCheckedChange={(checked) => updateBotSetting('shark_remember_me', String(checked))} />
+                              <Checkbox onCheckedChange={(checked) => updateBotSetting('shark_remember_me', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                           </div>
                           <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Cookie Persistence</span>
-                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_cookie_persistence', String(checked))} />
+                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_cookie_persistence', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                           </div>
                           <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold">Auto-Refresh (15s)</span>
-                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_auto_refresh', String(checked))} />
+                              <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_auto_refresh', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                           </div>
                           <div className="space-y-1 pt-2">
                              <Label className="text-[10px] font-bold">Session Timeout (min)</Label>
-                             <Input type="number" defaultValue="60" className="h-8 text-xs" onChange={(e) => updateBotSetting('shark_session_timeout', e.target.value)} />
+                             <Input type="number" defaultValue="60" className="h-8 text-xs" onChange={(e) => updateBotSetting('shark_session_timeout', e.target.value, bots.find(b => b.bot_type === 'shark')?.id)} />
                           </div>
                         </div>
                     </div>
@@ -290,14 +290,14 @@ export function BotsTab() {
                                     <p className="text-[10px] font-black uppercase">Association Check</p>
                                     <p className="text-[9px] text-slate-500 italic">Verify number pool ownership before delivery</p>
                                 </div>
-                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_association_check', String(checked))} />
+                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_association_check', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                               <div className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>
                                     <p className="text-[10px] font-black uppercase">Source Validation</p>
                                     <p className="text-[9px] text-slate-500 italic">Block duplicate source message IDs</p>
                                 </div>
-                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_source_validation', String(checked))} />
+                                <Checkbox checked onCheckedChange={(checked) => updateBotSetting('shark_source_validation', String(checked), bots.find(b => b.bot_type === 'shark')?.id)} />
                               </div>
                           </div>
                         </div>
@@ -327,11 +327,11 @@ export function BotsTab() {
                         </div>
                         <div className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200">
                           <span className="text-[10px] font-bold">Remember Me</span>
-                          <Checkbox onCheckedChange={(checked) => updateBotSetting('ims_remember_me', String(checked))} />
+                          <Checkbox onCheckedChange={(checked) => updateBotSetting('ims_remember_me', String(checked), bots.find(b => b.bot_type === 'ims')?.id)} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] font-bold">Timeout (min)</Label>
-                          <Input type="number" defaultValue="30" className="h-8 text-xs" onChange={(e) => updateBotSetting('ims_session_timeout', e.target.value)} />
+                          <Input type="number" defaultValue="30" className="h-8 text-xs" onChange={(e) => updateBotSetting('ims_session_timeout', e.target.value, bots.find(b => b.bot_type === 'ims')?.id)} />
                         </div>
                       </div>
                     </div>
