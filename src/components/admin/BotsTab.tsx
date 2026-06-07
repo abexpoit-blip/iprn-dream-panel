@@ -62,7 +62,7 @@ export function BotsTab() {
         for (const bot of allBots) {
           const type = bot.bot_type;
           if (!next[type]) next[type] = {};
-          const settingsForBot = allSettings.filter(s => s.bot_id === bot.id);
+          const settingsForBot = allSettings.filter((s: any) => s.bot_id === bot.id);
           for (const s of settingsForBot) {
             if (next[type][s.setting_key] === undefined) {
               next[type][s.setting_key] = s.setting_value ?? '';
