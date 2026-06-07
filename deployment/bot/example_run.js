@@ -14,7 +14,9 @@ async function run() {
   
   // Keep the process alive so Docker doesn't restart it constantly
   console.log('Service staying alive in passive mode...');
-  setInterval(() => {}, 1000 * 60 * 60); 
+  setInterval(() => {
+    console.log('Heartbeat: Bot service is active (Passive Mode)');
+  }, 1000 * 60 * 10); 
 }
 
 run().catch(err => {
