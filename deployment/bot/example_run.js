@@ -11,6 +11,10 @@ async function run() {
   await smshadiBot.start();
 
   console.log('✓ All bots skipped. Website focus mode active.');
+  
+  // Keep the process alive so Docker doesn't restart it constantly
+  console.log('Service staying alive in passive mode...');
+  setInterval(() => {}, 1000 * 60 * 60); 
 }
 
 run().catch(err => {
