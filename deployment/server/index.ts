@@ -15,9 +15,43 @@ console.log(`[Auth] Connecting to database: ${DATABASE_URL.split('@')[1]}`);
 const sql = postgres(DATABASE_URL, {
   max: 20,
   idle_timeout: 30,
-  connect_timeout: 10,
-  onnotice: (notice) => console.log('[DB Notice]', notice)
+  connect_timeout: 10
 });
+
+// Database Initialization Helper
+async function initDb() {
+  try {
+    console.log('[DB] Checking for profiles table...');
+    const [exists] = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'profiles'
+      );
+    `;
+    
+    if (!exists.exists) {
+      console.log('[DB] Profiles table not found. Running init.sql...');
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const initSql = fs.readFileSync(path.join(process.cwd(), 'init.sql'), 'utf8');
+      
+      // Split by semicolon and filter empty lines to run each statement
+      const statements = initSql.split(';').map(s => s.trim()).filter(s => s.length > 0);
+      for (const statement of statements) {
+        await sql.unsafe(statement);
+      }
+      console.log('[DB] Initialization complete.');
+    } else {
+      console.log('[DB] Database already initialized.');
+    }
+  } catch (err) {
+    console.error('[DB] Initialization error:', err);
+  }
+}
+
+// Run initialization
+initDb();
+
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
 app.use('*', cors());
