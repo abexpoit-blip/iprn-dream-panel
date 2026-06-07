@@ -109,12 +109,15 @@ export function BotsTab() {
 
   const toggleAutomation = async (type: 'bot' | 'panel', id: string, field: string, value: boolean) => {
     const table = type === 'bot' ? 'bots' : 'number_panels';
-    // Use type assertion to avoid strict literal index signature errors
-    const { error } = await supabase.from(table as any).update({ [field]: value } as any).eq('id', id);
-    if (error) toast.error("Failed to update automation");
-    else {
+    try {
+      // Use type assertion to avoid strict literal index signature errors
+      const { error } = await supabase.from(table as any).update({ [field]: value } as any).eq('id', id);
+      if (error) throw error;
       toast.success("Automation setting updated");
       fetchData();
+    } catch (err: any) {
+      console.error("Update error:", err);
+      toast.error(err.message || "Failed to update automation");
     }
   };
 
