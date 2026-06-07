@@ -20,7 +20,7 @@ function StatsRangePage() {
 
       if (!ranges) return [];
 
-      const stats = await Promise.all(ranges.map(async (range) => {
+      const stats = await Promise.all(ranges.map(async (range: any) => {
         const { count } = await supabase
           .from('sms_logs')
           .select('*', { count: 'exact', head: true })
