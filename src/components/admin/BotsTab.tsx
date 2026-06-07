@@ -174,6 +174,15 @@ export function BotsTab() {
           <TabsTrigger value="pool" className="text-[11px] font-black uppercase">Number Pool</TabsTrigger>
           <TabsTrigger value="audit" className="text-[11px] font-black uppercase">Live OTP Audit</TabsTrigger>
           <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Dashboard</TabsTrigger>
+          <TabsTrigger value="new-dashboard" asChild>
+            <Button 
+              variant="ghost" 
+              className="h-9 px-3 text-[11px] font-black uppercase"
+              onClick={() => window.location.href = '/bot-dashboard'}
+            >
+              Standalone View
+            </Button>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="status">
@@ -214,9 +223,11 @@ export function BotsTab() {
                 </div>
 
                 <div className="flex gap-2 pt-2 border-t border-slate-100">
-                  <Button onClick={() => openSettings(bot)} variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200 hover:bg-slate-50">
-                    <Settings size={14} className="mr-1" /> Config
-                  </Button>
+                  <TabsTrigger value="config" asChild>
+                    <Button onClick={() => openSettings(bot)} variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200 hover:bg-slate-50">
+                      <Settings size={14} className="mr-1" /> Config
+                    </Button>
+                  </TabsTrigger>
                   <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200 text-blue-600 hover:bg-blue-50">
                     <RefreshCw size={14} className="mr-1" /> Force Login
                   </Button>

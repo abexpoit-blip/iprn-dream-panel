@@ -14,8 +14,12 @@ export function BannedWatchTab() {
 
   const fetchKeywords = async () => {
     setLoading(true);
-    const { data } = await supabase.from('banned_keywords').select('*').order('created_at', { ascending: false });
-    setKeywords(data || []);
+    try {
+      const { data } = await supabase.from('banned_keywords').select('*').order('created_at', { ascending: false });
+      setKeywords(data || []);
+    } catch (err) {
+      console.error("Fetch keywords error:", err);
+    }
     setLoading(false);
   };
 
@@ -77,19 +81,22 @@ export function BannedWatchTab() {
                <TableHead className="text-[10px] font-black uppercase px-6 text-center">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-               {keywords.map(k => (
-                 <TableRow key={k.id} className="border-b border-[#f2f4f8]">
-                    <td className="px-6 py-4 font-black text-[#e81500] text-[13px]">{k.keyword}</td>
-                    <td className="px-6 py-4 text-[12px] text-[#69707a] font-medium">{k.reason || '-'}</td>
-                    <td className="px-6 py-4 text-center">
-                       <Button onClick={() => handleDelete(k.id)} variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500 hover:bg-red-50">
-                          <Trash2 size={14} />
-                       </Button>
-                    </td>
-                 </TableRow>
-               ))}
-               {keywords.length === 0 && (
+               {loading ? (
+                 <TableRow><TableCell colSpan={3} className="text-center py-20"><div className="w-6 h-6 border-2 border-[#e81500] border-t-transparent rounded-full animate-spin mx-auto"></div></TableCell></TableRow>
+               ) : keywords.length === 0 ? (
                  <TableRow><TableCell colSpan={3} className="text-center py-20 text-[#69707a] italic">No keywords in watch list</TableCell></TableRow>
+               ) : (
+                 keywords.map(k => (
+                   <TableRow key={k.id} className="border-b border-[#f2f4f8]">
+                      <td className="px-6 py-4 font-black text-[#e81500] text-[13px]">{k.keyword}</td>
+                      <td className="px-6 py-4 text-[12px] text-[#69707a] font-medium">{k.reason || '-'}</td>
+                      <td className="px-6 py-4 text-center">
+                         <Button onClick={() => handleDelete(k.id)} variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500 hover:bg-red-50">
+                            <Trash2 size={14} />
+                         </Button>
+                      </td>
+                   </TableRow>
+                 ))
                )}
             </TableBody>
          </Table>

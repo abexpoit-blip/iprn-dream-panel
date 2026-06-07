@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Bot, RefreshCw, Settings, ShieldCheck, Activity, Plus } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
 export default function BotDashboard() {
   const [bots, setBots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchBots = async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -62,7 +64,12 @@ export default function BotDashboard() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200">
+                <Button 
+                  onClick={() => navigate({ to: '/admin', search: { tab: 'bots' } })}
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200"
+                >
                   <Settings size={14} className="mr-1" /> Config
                 </Button>
               </div>
