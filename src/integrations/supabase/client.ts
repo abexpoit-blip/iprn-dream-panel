@@ -43,62 +43,82 @@ function createSupabaseClient() {
           return { error: null };
         }
       },
-      from: (table: string) => ({
-        select: (query: string = '*') => ({
-          eq: (col: string, val: any) => ({
-            single: async () => {
-              try {
-                const res = await fetch(`${API_URL}/api/data/${table}?${col}=${val}`, {
-                  headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
-                });
-                const data = await res.json();
-                if (!res.ok) return { data: null, error: data.error || 'Fetch error' };
-                return { data: Array.isArray(data) ? data[0] : data, error: null };
-              } catch (e: any) {
-                return { data: null, error: e.message };
-              }
-            }
-          }),
-          order: (col: string, opt: any) => ({
-            limit: (n: number) => ({
-              then: async (cb: any) => {
-                try {
-                  const res = await fetch(`${API_URL}/api/data/${table}`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
-                  });
-                  const data = await res.json();
-                  return cb({ data, error: null });
-                } catch (e: any) {
-                  return cb({ data: null, error: e.message });
-                }
-              }
-            }),
-            then: async (cb: any) => {
-               try {
-                  const res = await fetch(`${API_URL}/api/data/${table}`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
-                  });
-                  const data = await res.json();
-                  return cb({ data, error: null });
-               } catch (e: any) {
-                  return cb({ data: null, error: e.message });
-               }
-            }
-          }),
-          then: async (cb: any) => {
+      from: (table: string) => {
+        const chain: any = {
+          _filters: {} as any,
+          _limit: 200,
+          _order: 'created_at.desc',
+          _count: null as string | null,
+          
+          select: function(query: string = '*', options: any = {}) {
+            if (options.count) this._count = options.count;
+            return this;
+          },
+          
+          eq: function(col: string, val: any) {
+            this._filters[col] = val;
+            return this;
+          },
+          
+          ilike: function(col: string, val: any) {
+            this._filters[col] = val;
+            return this;
+          },
+
+          gte: function(col: string, val: any) {
+             this._filters[col] = val;
+             return this;
+          },
+
+          lt: function(col: string, val: any) {
+             this._filters[col] = val;
+             return this;
+          },
+
+          order: function(col: string, options: any = {}) {
+            this._order = `${col}.${options.ascending ? 'asc' : 'desc'}`;
+            return this;
+          },
+          
+          limit: function(n: number) {
+            this._limit = n;
+            return this;
+          },
+
+          single: async function() {
+            const url = new URL(`${API_URL}/api/data/${table}`);
+            Object.keys(this._filters).forEach(k => url.searchParams.append(k, this._filters[k]));
+            url.searchParams.append('limit', '1');
+            
             try {
-              const res = await fetch(`${API_URL}/api/data/${table}`, {
+              const res = await fetch(url.toString(), {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
               });
               const data = await res.json();
-              return cb({ data, error: null });
+              if (!res.ok) return { data: null, error: data.error || 'Fetch error' };
+              return { data: Array.isArray(data) ? data[0] : data, error: null };
             } catch (e: any) {
-              return cb({ data: null, error: e.message });
+              return { data: null, error: e.message };
             }
-          }
-        }),
-        insert: (rows: any[]) => ({
-          then: async (cb: any) => {
+          },
+
+          delete: function() {
+             return {
+                eq: async (col: string, val: any) => {
+                   try {
+                     const res = await fetch(`${API_URL}/api/data/${table}?id=${val}`, {
+                       method: 'DELETE',
+                       headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
+                     });
+                     return { error: res.ok ? null : { message: 'Delete failed' } };
+                   } catch (e: any) {
+                     return { error: { message: e.message } };
+                   }
+                }
+             };
+          },
+
+          insert: async function(rows: any[]) {
             try {
               const res = await fetch(`${API_URL}/api/data/${table}`, {
                 method: 'POST',
@@ -109,33 +129,60 @@ function createSupabaseClient() {
                 }
               });
               const data = await res.json();
-              return cb({ data, error: null });
+              return { data, error: res.ok ? null : { message: data.error || 'Insert failed' } };
             } catch (e: any) {
-              return cb({ data: null, error: e.message });
+              return { data: null, error: { message: e.message } };
+            }
+          },
+
+          update: function(body: any) {
+            return {
+              eq: async (col: string, val: any) => {
+                try {
+                  const res = await fetch(`${API_URL}/api/data/${table}?id=${val}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(body),
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` 
+                    }
+                  });
+                  const data = await res.json();
+                  return { data, error: res.ok ? null : { message: data.error || 'Update failed' } };
+                } catch (e: any) {
+                  return { data: null, error: { message: e.message } };
+                }
+              }
+            };
+          },
+
+          then: async function(resolve: any) {
+            const url = new URL(`${API_URL}/api/data/${table}`);
+            Object.keys(this._filters).forEach(k => url.searchParams.append(k, this._filters[k]));
+            url.searchParams.append('limit', this._limit.toString());
+            url.searchParams.append('order', this._order);
+            if (this._count) url.searchParams.append('count', this._count);
+
+            try {
+              const res = await fetch(url.toString(), {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
+              });
+              const data = await res.json();
+              
+              let count = null;
+              if (this._count) {
+                 const range = res.headers.get('Content-Range');
+                 if (range) count = parseInt(range.split('/')[1]);
+              }
+
+              return resolve({ data, error: res.ok ? null : { message: 'Fetch failed' }, count });
+            } catch (e: any) {
+              return resolve({ data: null, error: { message: e.message } });
             }
           }
-        }),
-        update: (body: any) => ({
-          eq: (col: string, val: any) => ({
-            then: async (cb: any) => {
-              try {
-                const res = await fetch(`${API_URL}/api/data/${table}?id=${val}`, {
-                  method: 'PATCH',
-                  body: JSON.stringify(body),
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` 
-                  }
-                });
-                const data = await res.json();
-                return cb({ data, error: null });
-              } catch (e: any) {
-                return cb({ data: null, error: e.message });
-              }
-            }
-          })
-        })
-      })
+        };
+        return chain;
+      }
     } as any;
   }
 
