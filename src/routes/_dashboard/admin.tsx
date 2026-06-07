@@ -21,6 +21,10 @@ export const Route = createFileRoute("/_dashboard/admin")({
 function AdminDashboard() {
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [syncResults, setSyncResults] = useState<any>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
