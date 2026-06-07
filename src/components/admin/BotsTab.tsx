@@ -156,6 +156,7 @@ export function BotsTab() {
           <TabsTrigger value="config" className="text-[11px] font-black uppercase">Bot Config</TabsTrigger>
         </TabsList>
 
+
         <TabsContent value="status">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
