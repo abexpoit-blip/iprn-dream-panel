@@ -157,6 +157,7 @@ export function BotsTab() {
         </TabsList>
 
 
+
         <TabsContent value="status">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-black text-[#2b3a4a] uppercase text-xs tracking-widest flex items-center gap-2">
