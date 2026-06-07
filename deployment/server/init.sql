@@ -156,3 +156,50 @@ VALUES
     ('IMS Pool Panel', 'https://www.imssms.org/login', 'mamun99', 'mamun@12aa#', 'offline'),
     ('Hadi Pool Panel', 'http://2.59.169.96/ints/login', 'mamun999', 'mamun999', 'offline')
 ON CONFLICT DO NOTHING;
+
+-- SMS Ranges seeding
+CREATE TABLE IF NOT EXISTS sms_ranges (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefix TEXT UNIQUE NOT NULL,
+    name TEXT,
+    test_number TEXT,
+    currency TEXT DEFAULT 'USD',
+    payout_1_1 NUMERIC,
+    payout_7_1 NUMERIC,
+    payout_7_7 NUMERIC,
+    payout_30_45 NUMERIC,
+    memo TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- SMS Logs seeding (for stats and recent activity)
+CREATE TABLE IF NOT EXISTS sms_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id UUID REFERENCES profiles(id),
+    client_id UUID REFERENCES clients(id),
+    number TEXT NOT NULL,
+    otp_code TEXT,
+    payout NUMERIC DEFAULT 0,
+    status TEXT DEFAULT 'success',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- News seeding
+CREATE TABLE IF NOT EXISTS news (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    content TEXT,
+    category TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Active Rates seeding
+CREATE TABLE IF NOT EXISTS active_rates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    country TEXT,
+    provider TEXT,
+    type TEXT,
+    rate NUMERIC,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
