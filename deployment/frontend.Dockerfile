@@ -15,7 +15,7 @@ COPY . .
 ENV PATH="/app/node_modules/.bin:${PATH}"
 
 ARG VITE_SELF_HOSTED=true
-ARG VITE_API_URL=https://X.nexus-x.site/api
+ARG VITE_API_URL=https://x.nexus-x.site/api
 ENV VITE_SELF_HOSTED=$VITE_SELF_HOSTED
 ENV VITE_API_URL=$VITE_API_URL
 
