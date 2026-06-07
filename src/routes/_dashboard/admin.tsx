@@ -95,17 +95,55 @@ function AdminDashboard() {
       <div className="flex justify-between items-center bg-[#f8f9fc] p-6 rounded-2xl border border-[#e3e6ec] shadow-sm">
         <div className="flex items-center gap-4">
            <div className="bg-[#0061f2] p-3 rounded-xl shadow-lg shadow-blue-100">
-              <Users className="text-white" size={24} />
+              <ShieldCheck className="text-white" size={24} />
            </div>
            <div>
-              <h1 className="text-2xl font-black text-[#2b3a4a] tracking-tighter uppercase">Admin Central</h1>
-              <p className="text-[#69707a] text-[11px] font-black uppercase tracking-widest mt-1 opacity-70">Infrastructure & Logistics Control</p>
+              <h1 className="text-2xl font-black text-[#2b3a4a] tracking-tighter uppercase">Admin Logistics</h1>
+              <p className="text-[#69707a] text-[11px] font-black uppercase tracking-widest mt-1 opacity-70">Infrastructure & Data Control</p>
            </div>
         </div>
-        <Button onClick={handleExitAdmin} variant="outline" className="h-11 border-slate-200 text-slate-600 font-black uppercase text-[11px] px-6 rounded-xl hover:bg-white shadow-sm transition-all group">
-           <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" /> Exit to Dashboard
-        </Button>
+        <div className="flex gap-2">
+           <Button onClick={handleSyncVerify} variant="outline" className="h-11 border-blue-200 text-[#0061f2] font-black uppercase text-[11px] px-6 rounded-xl hover:bg-blue-50 shadow-sm transition-all group">
+              <Database size={16} className={cn("mr-2", isSyncing && "animate-spin")} /> {isSyncing ? "Syncing..." : "Verify Data Sync"}
+           </Button>
+           <Button onClick={handleExitAdmin} variant="outline" className="h-11 border-slate-200 text-slate-600 font-black uppercase text-[11px] px-6 rounded-xl hover:bg-white shadow-sm transition-all group">
+              <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" /> Exit to Dashboard
+           </Button>
+        </div>
       </div>
+
+      {showSyncDialog && (
+         <Card className="bg-blue-600 text-white p-6 rounded-2xl shadow-2xl animate-in slide-in-from-top duration-500 relative overflow-hidden border-none">
+            <div className="absolute right-[-20px] top-[-20px] opacity-10">
+               <Database size={160} />
+            </div>
+            <div className="flex justify-between items-start relative z-10">
+               <div>
+                  <h3 className="text-lg font-black uppercase tracking-widest">CDR Reconciliation Result</h3>
+                  <p className="text-blue-100 text-[10px] font-bold uppercase mt-1">End-to-End verification across all active workers</p>
+               </div>
+               <Button onClick={() => setShowSyncDialog(false)} variant="ghost" className="text-white hover:bg-white/10 h-8 w-8 p-0 rounded-full">×</Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8 relative z-10">
+               <div className="bg-white/10 p-4 rounded-xl border border-white/20">
+                  <span className="text-[10px] font-black uppercase opacity-60">Scraped Totals</span>
+                  <div className="text-2xl font-black">{syncResults?.totalScraped}</div>
+               </div>
+               <div className="bg-white/10 p-4 rounded-xl border border-white/20">
+                  <span className="text-[10px] font-black uppercase opacity-60">Displayed Totals</span>
+                  <div className="text-2xl font-black">{syncResults?.totalDisplayed}</div>
+               </div>
+               <div className="bg-white/10 p-4 rounded-xl border border-white/20">
+                  <span className="text-[10px] font-black uppercase opacity-60">Discrepancy</span>
+                  <div className={cn("text-2xl font-black", syncResults?.discrepancy > 0 ? "text-amber-300" : "text-green-300")}>{syncResults?.discrepancy}</div>
+               </div>
+               <div className="bg-white/10 p-4 rounded-xl border border-white/20">
+                  <span className="text-[10px] font-black uppercase opacity-60">Health Status</span>
+                  <div className="text-2xl font-black text-green-300">{syncResults?.status}</div>
+               </div>
+            </div>
+         </Card>
+      )}
 
       <Tabs defaultValue="agents" className="space-y-6">
         <TabsList className="bg-white border border-[#e3e6ec] p-1.5 h-14 rounded-2xl shadow-lg inline-flex w-full md:w-auto">
