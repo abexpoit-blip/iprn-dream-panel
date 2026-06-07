@@ -49,14 +49,11 @@ function LoginPage() {
         return;
       }
 
-      const user = result.data.user;
+      const { user } = result.data;
       console.log("[Login] Success, user profile:", user);
       
       if (user.role === "client") {
         navigate({ to: "/client/dashboard" });
-      } else if (user.is_admin) {
-        toast.info("Admin detected. Proceeding to dashboard.");
-        navigate({ to: "/dashboard" });
       } else {
         navigate({ to: "/dashboard" });
       }

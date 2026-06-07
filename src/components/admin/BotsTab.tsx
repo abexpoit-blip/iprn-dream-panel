@@ -33,16 +33,23 @@ export function BotsTab() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: botsData } = await supabase.from('bots').select('*');
-    const { data: panelsData } = await supabase.from('number_panels').select('*');
-    const { data: numbersData } = await supabase.from('number_pool').select('*, bots(name), number_panels(name), profiles(username)');
-    const { data: logsData } = await supabase.from('otp_audit_log').select('*').order('created_at', { ascending: false }).limit(20);
-    
-    setBots(botsData || []);
-    setPanels(panelsData || []);
-    setNumbers(numbersData || []);
-    setAuditLogs(logsData || []);
-    setLoading(false);
+    try {
+      const [botsData, panelsData, numbersData, logsData] = await Promise.all([
+        supabase.from('bots').select('*'),
+        supabase.from('number_panels').select('*'),
+        supabase.from('number_pool').select('*'),
+        supabase.from('otp_audit_log').select('*').limit(20).order('created_at', { ascending: false })
+      ]);
+      
+      setBots(botsData.data || []);
+      setPanels(panelsData.data || []);
+      setNumbers(numbersData.data || []);
+      setAuditLogs(logsData.data || []);
+    } catch (err) {
+      console.error("Fetch data error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -290,11 +297,11 @@ export function BotsTab() {
                     <td className="px-6 py-3 text-[11px] font-medium text-[#69707a]">
                        {n.status === 'reserved' ? (
                           <div className="flex flex-col">
-                             <span className="text-[9px] font-black text-[#0061f2] uppercase">Reserved for: {n.profiles?.username}</span>
-                             <span className="opacity-50 text-[9px]">Since: {new Date(n.reserved_at).toLocaleTimeString()}</span>
+                             <span className="text-[9px] font-black text-[#0061f2] uppercase">Reserved</span>
+                             <span className="opacity-50 text-[9px]">Since: {n.reserved_at ? new Date(n.reserved_at).toLocaleTimeString() : 'N/A'}</span>
                           </div>
                        ) : (
-                          n.number_panels?.name || n.bots?.name || 'Unassigned'
+                          'Unassigned'
                        )}
                     </td>
                     <td className="px-6 py-3">
@@ -306,7 +313,11 @@ export function BotsTab() {
                        )}>{n.status}</span>
                     </td>
                     <td className="px-6 py-3 text-center">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500 hover:bg-red-50">
+                      <Button onClick={async () => {
+                         const { error } = await supabase.from('number_pool').delete().eq('id', n.id);
+                         if (error) toast.error("Delete failed");
+                         else { toast.success("Number removed"); fetchData(); }
+                      }} variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500 hover:bg-red-50">
                         <Trash2 size={14} />
                       </Button>
                     </td>
