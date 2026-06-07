@@ -9,10 +9,14 @@ import bcrypt from 'bcryptjs';
 import 'dotenv/config';
 
 const app = new Hono();
-const sql = postgres(process.env.DATABASE_URL || 'postgres://nexus:nexus123@db:5432/nexus_panel', {
+const DATABASE_URL = process.env.DATABASE_URL || 'postgres://nexus:nexus123@db:5432/nexus_panel';
+console.log(`[Auth] Connecting to database: ${DATABASE_URL.split('@')[1]}`);
+
+const sql = postgres(DATABASE_URL, {
   max: 20,
   idle_timeout: 30,
-  connect_timeout: 10
+  connect_timeout: 10,
+  onnotice: (notice) => console.log('[DB Notice]', notice)
 });
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
