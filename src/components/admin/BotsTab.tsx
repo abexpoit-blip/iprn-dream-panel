@@ -285,8 +285,19 @@ export function BotsTab() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {bots.map(bot => (
-              <div key={bot.id} className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] p-5 space-y-4">
+            {bots.map(bot => {
+              const isOnline = bot.status === 'online';
+              const hasError = !!bot.last_error;
+              const lastSeenMin = bot.last_seen ? Math.floor((Date.now() - new Date(bot.last_seen).getTime()) / 60000) : null;
+              const staleAlert = lastSeenMin !== null && lastSeenMin > 5 && !isOnline;
+              return (
+              <div key={bot.id} className={cn(
+                "bg-white rounded-xl shadow-lg border p-5 space-y-4 relative",
+                hasError || staleAlert ? "border-red-300 ring-1 ring-red-100" : "border-[#e3e6ec]"
+              )}>
+                {(hasError || staleAlert) && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow animate-pulse">⚠ Alert</span>
+                )}
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-black text-[#2b3a4a] text-sm uppercase tracking-tight">{bot.name}</h4>
@@ -294,20 +305,27 @@ export function BotsTab() {
                   </div>
                   <span className={cn(
                     "px-2 py-0.5 rounded text-[9px] font-black uppercase",
-                    bot.status === 'online' ? "bg-green-100 text-green-600 border border-green-200" : "bg-slate-100 text-slate-500 border border-slate-200"
+                    isOnline ? "bg-green-100 text-green-600 border border-green-200" : "bg-slate-100 text-slate-500 border border-slate-200"
                   )}>{bot.status}</span>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase text-[#69707a]">
-                    <div className="bg-slate-50 p-2 rounded border border-slate-100">Last Seen: <span className="text-[#2b3a4a] block">{bot.last_seen ? new Date(bot.last_seen).toLocaleTimeString() : 'Never'}</span></div>
-                    <div className="bg-slate-50 p-2 rounded border border-slate-100">Status: <span className="text-[#2b3a4a] block">{bot.status}</span></div>
+                    <div className="bg-slate-50 p-2 rounded border border-slate-100">Last Attempt: <span className="text-[#2b3a4a] block normal-case">{bot.last_seen ? new Date(bot.last_seen).toLocaleString() : 'Never'}</span></div>
+                    <div className="bg-slate-50 p-2 rounded border border-slate-100">State: <span className={cn("block", isOnline ? "text-green-600" : "text-red-500")}>{bot.status}</span></div>
                   </div>
-                  
+
+                  {hasError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-[10px] text-red-700 font-medium leading-snug">
+                      <span className="font-black uppercase text-[9px] tracking-wider block mb-0.5">Last Error</span>
+                      {bot.last_error}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
                     <span className="text-[9px] font-black uppercase text-slate-500">Auto Re-login</span>
-                    <Checkbox 
-                      checked={bot.auto_relogin} 
+                    <Checkbox
+                      checked={bot.auto_relogin}
                       onCheckedChange={(checked) => toggleAutomation('bot', bot.id, 'auto_relogin', !!checked)}
                     />
                   </div>
@@ -322,7 +340,7 @@ export function BotsTab() {
                   </Button>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </TabsContent>
 
@@ -775,6 +793,33 @@ export function BotsTab() {
                            />
                         </div>
                      </div>
+
+                     {selectedBot?.bot_type === 'shark' && (
+                       <div className="space-y-3 pt-3 border-t border-slate-100">
+                         <h4 className="text-[11px] font-black text-orange-600 uppercase tracking-widest">Captcha Bypass (Shark)</h4>
+                         <div className="space-y-1">
+                           <Label className="text-[10px] font-bold text-slate-600">Session Cookie (recommended)</Label>
+                           <textarea
+                             key={`${selectedBot?.id}-session_cookie`}
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'session_cookie')?.setting_value || ''}
+                             onBlur={(e) => updateBotSetting('session_cookie', e.target.value, selectedBot?.id)}
+                             placeholder="PHPSESSID=abc123; XSRF-TOKEN=..."
+                             className="w-full h-16 text-[11px] font-mono border border-slate-200 rounded p-2"
+                           />
+                           <p className="text-[9px] text-slate-400 italic">Paste browser cookies — bot will skip login form entirely.</p>
+                         </div>
+                         <div className="space-y-1">
+                           <Label className="text-[10px] font-bold text-slate-600">Manual Captcha Token</Label>
+                           <Input
+                             key={`${selectedBot?.id}-captcha_token`}
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'captcha_token')?.setting_value || ''}
+                             onBlur={(e) => updateBotSetting('captcha_token', e.target.value, selectedBot?.id)}
+                             placeholder="Solved captcha value"
+                             className="h-9 text-xs"
+                           />
+                         </div>
+                       </div>
+                     )}
                   </div>
                   <div className="space-y-4">
                      <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Terminal size={14} /> Polling Behavior</h4>
@@ -784,7 +829,7 @@ export function BotsTab() {
                            <Input
                              key={`${selectedBot?.id}-interval`}
                              type="number"
-                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'interval')?.setting_value || '15'}
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'interval')?.setting_value || '20'}
                              onBlur={(e) => updateBotSetting('interval', e.target.value, selectedBot?.id)}
                              className="h-9 text-xs"
                            />
