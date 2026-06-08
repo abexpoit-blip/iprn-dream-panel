@@ -32,14 +32,18 @@ function StatsCDRPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sms_cdr")
-        .select("*, clients(name)")
+        .select(
+          "id,received_at,number,prefix,message,payout,status,client_id,clients(name)"
+        )
         .gte("received_at", new Date(appliedStart).toISOString())
         .lte("received_at", new Date(appliedEnd).toISOString())
         .order("received_at", { ascending: false })
-        .limit(5000);
+        .limit(1000);
       if (error) throw error;
       return data as (CDR & { clients: { name: string } | null })[];
     },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const columns: IMSColumn<CDR & { clients: { name: string } | null }>[] = [
