@@ -155,63 +155,52 @@ async function login() {
 
 async function scrapeSms() {
     if (!isActive) return;
-    
-    const url = 'http://65.109.111.158/agent/sms/cdr'; // Detailed SMS Logs
+
+    // Derive CDR URL from login URL: replace /login → /agent/SMSCDRStats
+    const loginUrl = await getSetting(BOT_ID, 'portal_url', 'http://65.109.111.158/ints/login');
+    const defaultCdr = loginUrl.replace(/\/login\/?$/, '/agent/SMSCDRStats');
+    const url = await getSetting(BOT_ID, 'cdr_url', defaultCdr);
+    const referer = loginUrl.replace(/\/login\/?$/, '/agent/SMSDashboard');
+
     try {
-        const res = await client.get(url);
-        console.log(`[shark-bot] Scraped logs, searching for new messages...`);
-        
-        // Use regex to find table rows with data (Date, Range, Number, CLI, Message/OTP)
-        // Format: <td>2026-06-07 15:12:27</td>...<td>Number</td><td>CLI</td><td>Message</td>
+        const res = await client.get(url, { validateStatus: () => true, headers: { 'Referer': referer } });
+        if (res.status !== 200) {
+            const reason = `Scrape HTTP ${res.status} at ${url}`;
+            console.error(`[shark-bot] ${reason}`);
+            await updateBotStatus('error', reason);
+            if (res.status === 401 || res.status === 302) await login();
+            return;
+        }
+        const body = typeof res.data === 'string' ? res.data : '';
+        console.log(`[shark-bot] Scraped logs OK (len=${body.length}) from ${url}`);
+        await updateBotStatus('online', null);
+
         const rowRegex = /<tr>\s*<td>([\d-: ]+)<\/td>\s*<td>([^<]+)<\/td>\s*<td>(\+?\d+)<\/td>\s*<td>([^<]*)<\/td>[\s\S]*?<td>([^<]*)<\/td>/gi;
         let match;
-        
-        while ((match = rowRegex.exec(res.data)) !== null) {
+        while ((match = rowRegex.exec(body)) !== null) {
             const [_, dateStr, range, phone, cli, fullText] = match;
             const sourceMsgId = `${dateStr}_${phone}_${cli}`.replace(/\s+/g, '');
-            
-            // 1. Seen Check
             if (await hasSeenSourceMessage('shark', sourceMsgId)) continue;
-
-            // 2. Association Safeguard (Find user who owns this number)
-            const allocation = await findMatchingAllocation({
-                provider: 'shark',
-                phone: phone,
-                panelRange: range
-            });
-            
+            const allocation = await findMatchingAllocation({ provider: 'shark', phone, panelRange: range });
             if (!allocation) {
                 console.log(`[shark-bot] [SAFEGUARD] Unassociated message for ${phone} (Range: ${range}). Skipping.`);
                 continue;
             }
-
-            // 3. OTP Extraction
             const otpMatch = fullText.match(/\b(\d{4,8})\b/);
             const otpCode = otpMatch ? otpMatch[1] : null;
-
-            // 4. Delivery Validation
             await logOtpAudit({
-                source: 'shark',
-                source_msg_id: sourceMsgId,
-                phone_number: phone,
-                cli: cli,
-                otp_code: otpCode,
-                sms_text: fullText,
-                user_id: allocation.user_id,
-                outcome: otpCode ? 'billed' : 'mismatch',
-                amount_bdt: 0 // Will be calculated by system later
+                source: 'shark', source_msg_id: sourceMsgId, phone_number: phone, cli,
+                otp_code: otpCode, sms_text: fullText, user_id: allocation.user_id,
+                outcome: otpCode ? 'billed' : 'mismatch', amount_bdt: 0,
             });
-
             console.log(`[shark-bot] [DELIVERED] ${phone} -> User ${allocation.user_id} | OTP: ${otpCode || 'None'}`);
         }
     } catch (err) {
         console.error(`[shark-bot] Scrape error:`, err.message);
-        // Auto re-login if session expired
-        if (err.response && (err.response.status === 401 || err.response.status === 302)) {
-            await login();
-        }
+        await updateBotStatus('error', `Scrape error: ${err.message}`);
     }
 }
+
 
 async function start() {
     isActive = true;
