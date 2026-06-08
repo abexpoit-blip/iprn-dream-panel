@@ -24,6 +24,16 @@ function getAttr(tag, name) {
     return m ? m[1] : '';
 }
 
+function parseCookieString(cookieStr, urlOrigin) {
+    if (!cookieStr) return 0;
+    const parts = cookieStr.split(';').map(s => s.trim()).filter(Boolean);
+    let count = 0;
+    for (const part of parts) {
+        try { jar.setCookieSync(part, urlOrigin); count++; } catch (_) {}
+    }
+    return count;
+}
+
 function extractLoginFormDetails(html, pageUrl) {
     const formHtml = (html.match(/<form[\s\S]*?<\/form>/i) || [html])[0];
     const formOpen = (formHtml.match(/<form[^>]*>/i) || [''])[0];
