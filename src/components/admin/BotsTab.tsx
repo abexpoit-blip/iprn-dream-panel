@@ -48,12 +48,12 @@ export function BotsTab() {
         supabase.from('bot_settings').select('*'),
       ]);
 
-      const allBots = botsData.data || [];
-      const allSettings = settingsData.data || [];
+      const allBots = Array.isArray(botsData.data) ? botsData.data : [];
+      const allSettings = Array.isArray(settingsData.data) ? settingsData.data : [];
       setBots(allBots);
-      setPanels(panelsData.data || []);
-      setNumbers(numbersData.data || []);
-      setAuditLogs(logsData.data || []);
+      setPanels(Array.isArray(panelsData.data) ? panelsData.data : []);
+      setNumbers(Array.isArray(numbersData.data) ? numbersData.data : []);
+      setAuditLogs(Array.isArray(logsData.data) ? logsData.data : []);
       setBotSettings(allSettings);
 
       // Hydrate form state from DB, but don't overwrite fields the user is currently editing
