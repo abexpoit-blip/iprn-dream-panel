@@ -51,6 +51,12 @@ function looksLikeHtmlPage(value) {
     return /<!doctype html|<html\b|<head\b|<body\b/i.test(String(value || ''));
 }
 
+function looksLikeLoginPage(value) {
+    const text = String(value || '');
+    if (!looksLikeHtmlPage(text)) return false;
+    return /<title[^>]*>[^<]*login|\baccount login\b|\bsign\s*in\b/i.test(text) && !/my numbers|sms dashboard/i.test(text);
+}
+
 function extractNumbersFromJsonPayload(payload) {
     const found = new Set();
 
@@ -104,53 +110,61 @@ function isValidUrlPath(raw) {
 }
 
 function extractAjaxCandidates(html, pageUrl) {
-    const candidates = new Set();
+    const candidates = [];
+    const seen = new Set();
     const source = String(html || '');
     // Only scan <script>...</script> blocks — body HTML produces garbage matches
     const scripts = source.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
     const scope = scripts.length > 0 ? scripts.join('\n') : source;
 
+    function addCandidate(raw, kind) {
+        if (!isValidUrlPath(raw)) return;
+        try {
+            const resolved = new URL(raw.trim(), pageUrl).toString();
+            if (seen.has(resolved)) return;
+            seen.add(resolved);
+            candidates.push({ url: resolved, kind });
+        } catch (_) {}
+    }
+
     const patterns = [
+        [/sAjaxSource\s*:\s*["']([^"']+)["']/gi, 'datatable'],
         /["']ajax["']\s*:\s*["']([^"']+)["']/gi,
-        /ajax\s*:\s*\{\s*url\s*:\s*["']([^"']+)["']/gi,
-        /\burl\s*:\s*["']([^"']+)["']/gi,
-        /\$\.(?:get|post|ajax)\(\s*["']([^"']+)["']/gi,
-        /fetch\(\s*["']([^"']+)["']/gi,
+        [/ajax\s*:\s*\{\s*url\s*:\s*["']([^"']+)["']/gi, 'datatable'],
+        [/fetch\(\s*["']([^"']+)["']/gi, 'generic'],
     ];
 
-    for (const pattern of patterns) {
+    for (const entry of patterns) {
+        const pattern = Array.isArray(entry) ? entry[0] : entry;
+        const kind = Array.isArray(entry) ? entry[1] : 'datatable';
         let match;
         while ((match = pattern.exec(scope)) !== null) {
-            const raw = match[1].trim();
-            if (!isValidUrlPath(raw)) continue;
-            try {
-                const resolved = new URL(raw, pageUrl).toString();
-                candidates.add(resolved);
-            } catch (_) {}
+            addCandidate(match[1], kind);
         }
     }
 
-    // Common Laravel/DataTables endpoint guesses
-    try {
-        const u = new URL(pageUrl);
-        const base = u.origin + u.pathname.replace(/\/[^/]*$/, '');
-        const leaf = u.pathname.split('/').pop() || '';
-        const guesses = [
-            `${pageUrl}/data`,
-            `${pageUrl}Ajax`,
-            `${pageUrl}List`,
-            `${pageUrl}Data`,
-            `${base}/get${leaf}`,
-            `${base}/${leaf}Data`,
-            `${base}/${leaf}List`,
-            `${base}/load${leaf}`,
-            `${base}/getDID`,
-            `${base}/getNumbers`,
-        ];
-        for (const g of guesses) candidates.add(g);
-    } catch (_) {}
+    if (candidates.length === 0) {
+        try {
+            const u = new URL(pageUrl);
+            const base = u.origin + u.pathname.replace(/\/[^/]*$/, '');
+            const guesses = [`${base}/res/data_numbers.php?frange=&fclient=`, `${pageUrl}/data`];
+            for (const g of guesses) addCandidate(g, 'guess');
+        } catch (_) {}
+    }
 
-    return [...candidates].slice(0, 30);
+    return candidates.slice(0, 10);
+}
+
+function extractJsonRecordCount(payload) {
+    try {
+        const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
+        const total = parsed?.iTotalDisplayRecords ?? parsed?.iTotalRecords ?? parsed?.recordsFiltered ?? parsed?.recordsTotal;
+        if (total === undefined || total === null || total === '') return null;
+        const count = Number(total);
+        return Number.isFinite(count) ? count : null;
+    } catch (_) {
+        return null;
+    }
 }
 
 function withDataTableParams(candidate) {
@@ -169,6 +183,9 @@ async function scrapePanelNumbers({ client, url, referer }) {
         headers: { 'Referer': referer, 'X-Requested-With': 'XMLHttpRequest' },
     });
     const body = typeof page.data === 'string' ? page.data : JSON.stringify(page.data || '');
+    if (looksLikeLoginPage(body)) {
+        return { status: 401, bodyLength: body.length, numbers: new Set(), sourceUrl: url, attempts: ['page returned login screen'] };
+    }
     const direct = extractNumbersFromHtml(body);
     if (page.status !== 200 || direct.size > 0) {
         return { status: page.status, bodyLength: body.length, numbers: direct, sourceUrl: url, attempts: [] };
@@ -184,15 +201,23 @@ async function scrapePanelNumbers({ client, url, referer }) {
 
     for (const candidate of extractAjaxCandidates(body, url)) {
         for (const method of ['get', 'post']) {
-            const requestUrl = method === 'get' ? withDataTableParams(candidate) : candidate;
+            const requestUrl = method === 'get' ? withDataTableParams(candidate.url) : candidate.url;
             const res = method === 'get'
                 ? await client.get(requestUrl, { validateStatus: () => true, headers })
                 : await client.post(requestUrl, form, { validateStatus: () => true, headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' } });
             const payload = typeof res.data === 'string' ? res.data : JSON.stringify(res.data || '');
+            if (looksLikeLoginPage(payload)) {
+                attempts.push(`${method.toUpperCase()} ${candidate.url} -> ${res.status}/${payload.length}/login-page`);
+                continue;
+            }
             const numbers = extractNumbersFromJsonPayload(payload);
-            attempts.push(`${method.toUpperCase()} ${candidate} -> ${res.status}/${payload.length}/${numbers.size}`);
+            const totalRows = extractJsonRecordCount(res.data);
+            attempts.push(`${method.toUpperCase()} ${candidate.url} -> ${res.status}/${payload.length}/${numbers.size}${totalRows !== null ? `/rows=${totalRows}` : ''}`);
             if (res.status === 200 && numbers.size > 0) {
-                return { status: 200, bodyLength: payload.length, numbers, sourceUrl: candidate, attempts };
+                return { status: 200, bodyLength: payload.length, numbers, sourceUrl: candidate.url, attempts };
+            }
+            if (res.status === 200 && totalRows === 0 && candidate.kind === 'datatable') {
+                return { status: 200, bodyLength: payload.length, numbers: new Set(), sourceUrl: candidate.url, attempts };
             }
         }
     }
