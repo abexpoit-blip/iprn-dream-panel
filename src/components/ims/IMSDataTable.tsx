@@ -54,7 +54,7 @@ export function IMSDataTable<T>({
   exportName = "export",
   filters,
   rightSlot,
-  defaultPageSize = 10,
+  defaultPageSize = 25,
   rowKey,
 }: Props<T>) {
   const [pageSize, setPageSize] = useState<number | "all">(defaultPageSize);
