@@ -745,71 +745,77 @@ export function BotsTab() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="space-y-4">
                     <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><ShieldCheck size={14} /> Portal Credentials</h4>
-                    <div className="space-y-3">
-                       <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-slate-600">Portal URL</Label>
-                          <Input 
-                            defaultValue={botSettings.find(s => s.setting_key === 'portal_url')?.setting_value || ''} 
-                            onBlur={(e) => updateBotSetting('portal_url', e.target.value)}
-                            placeholder="https://imssms.org/login" className="h-9 text-xs" 
-                          />
-                       </div>
-                       <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-slate-600">Username</Label>
-                          <Input 
-                            defaultValue={botSettings.find(s => s.setting_key === 'username')?.setting_value || ''} 
-                            onBlur={(e) => updateBotSetting('username', e.target.value)}
-                            className="h-9 text-xs" 
-                          />
-                       </div>
-                       <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-slate-600">Password</Label>
-                          <Input 
-                            type="password"
-                            defaultValue={botSettings.find(s => s.setting_key === 'password')?.setting_value || ''} 
-                            onBlur={(e) => updateBotSetting('password', e.target.value)}
-                            className="h-9 text-xs" 
-                          />
-                       </div>
-                    </div>
-                 </div>
-                 <div className="space-y-4">
-                    <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Terminal size={14} /> Polling Behavior</h4>
-                    <div className="space-y-3">
-                       <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-slate-600">Interval (Seconds)</Label>
-                          <Input 
-                            type="number"
-                            defaultValue={botSettings.find(s => s.setting_key === 'interval')?.setting_value || '15'} 
-                            onBlur={(e) => updateBotSetting('interval', e.target.value)}
-                            className="h-9 text-xs" 
-                          />
-                       </div>
-                       <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-slate-600">Cookie Override</Label>
-                          <Input 
-                            placeholder="Optional PHPSESSID"
-                            defaultValue={botSettings.find(s => s.setting_key === 'cookie_override')?.setting_value || ''} 
-                            onBlur={(e) => updateBotSetting('cookie_override', e.target.value)}
-                            className="h-9 text-xs" 
-                          />
-                          <p className="text-[8px] text-slate-400 italic">Enforced: HttpOnly; Secure; SameSite=Strict</p>
-                       </div>
-                       <div className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200">
-                          <span className="text-[10px] font-bold">Remember Me</span>
-                          <Checkbox onCheckedChange={(checked) => updateBotSetting('remember_me', String(checked))} />
-                       </div>
-                       <div className="space-y-1">
-                          <Label className="text-[10px] font-bold">Session TTL (Min)</Label>
-                          <Input 
-                            type="number"
-                            defaultValue={botSettings.find(s => s.setting_key === 'session_timeout')?.setting_value || '60'}
-                            onBlur={(e) => updateBotSetting('session_timeout', e.target.value)}
-                            className="h-9 text-xs" 
-                          />
-                       </div>
-                    </div>
-                 </div>
+                     <div className="space-y-3">
+                        <div className="space-y-1">
+                           <Label className="text-[10px] font-bold text-slate-600">Portal URL</Label>
+                           <Input
+                             key={`${selectedBot?.id}-portal_url`}
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'portal_url')?.setting_value || ''}
+                             onBlur={(e) => updateBotSetting('portal_url', e.target.value, selectedBot?.id)}
+                             placeholder="https://imssms.org/login" className="h-9 text-xs"
+                           />
+                        </div>
+                        <div className="space-y-1">
+                           <Label className="text-[10px] font-bold text-slate-600">Username</Label>
+                           <Input
+                             key={`${selectedBot?.id}-username`}
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'username')?.setting_value || ''}
+                             onBlur={(e) => updateBotSetting('username', e.target.value, selectedBot?.id)}
+                             className="h-9 text-xs"
+                           />
+                        </div>
+                        <div className="space-y-1">
+                           <Label className="text-[10px] font-bold text-slate-600">Password</Label>
+                           <Input
+                             key={`${selectedBot?.id}-password`}
+                             type="password"
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'password')?.setting_value || ''}
+                             onBlur={(e) => updateBotSetting('password', e.target.value, selectedBot?.id)}
+                             className="h-9 text-xs"
+                           />
+                        </div>
+                     </div>
+                  </div>
+                  <div className="space-y-4">
+                     <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Terminal size={14} /> Polling Behavior</h4>
+                     <div className="space-y-3">
+                        <div className="space-y-1">
+                           <Label className="text-[10px] font-bold text-slate-600">Interval (Seconds)</Label>
+                           <Input
+                             key={`${selectedBot?.id}-interval`}
+                             type="number"
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'interval')?.setting_value || '15'}
+                             onBlur={(e) => updateBotSetting('interval', e.target.value, selectedBot?.id)}
+                             className="h-9 text-xs"
+                           />
+                        </div>
+                        <div className="space-y-1">
+                           <Label className="text-[10px] font-bold text-slate-600">Cookie Override</Label>
+                           <Input
+                             key={`${selectedBot?.id}-cookie_override`}
+                             placeholder="Optional PHPSESSID"
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'cookie_override')?.setting_value || ''}
+                             onBlur={(e) => updateBotSetting('cookie_override', e.target.value, selectedBot?.id)}
+                             className="h-9 text-xs"
+                           />
+                           <p className="text-[8px] text-slate-400 italic">Enforced: HttpOnly; Secure; SameSite=Strict</p>
+                        </div>
+                        <div className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200">
+                           <span className="text-[10px] font-bold">Remember Me</span>
+                           <Checkbox onCheckedChange={(checked) => updateBotSetting('remember_me', String(checked), selectedBot?.id)} />
+                        </div>
+                        <div className="space-y-1">
+                           <Label className="text-[10px] font-bold">Session TTL (Min)</Label>
+                           <Input
+                             key={`${selectedBot?.id}-session_timeout`}
+                             type="number"
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'session_timeout')?.setting_value || '60'}
+                             onBlur={(e) => updateBotSetting('session_timeout', e.target.value, selectedBot?.id)}
+                             className="h-9 text-xs"
+                           />
+                        </div>
+                     </div>
+                  </div>
               </div>
            </div>
         </DialogContent>
