@@ -154,11 +154,30 @@ CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 
 
 -- Seeding from previous Lovable configuration
+-- IMPORTANT: use FIXED UUIDs so re-running init.sql does not duplicate bots
 INSERT INTO bots (id, name, bot_type, status)
 VALUES 
     ('36fae619-2d83-4416-b243-8f7af4c33100', 'IMS Main Agent', 'ims', 'offline'),
-    (uuid_generate_v4(), 'SMS Hadi Agent', 'smshadi', 'offline')
-ON CONFLICT DO NOTHING;
+    ('95280089-8b3e-4c88-9e49-be5fe93330a9', 'SMS Hadi Agent', 'smshadi', 'offline'),
+    ('5c21b595-4260-4b83-a402-34a9e031afcf', 'Shark SMS Agent', 'shark', 'offline')
+ON CONFLICT (id) DO NOTHING;
+
+-- One-time cleanup: remove duplicate bot rows created by previous init runs
+-- (keeps the canonical fixed-UUID row, deletes any extras with the same bot_type)
+DELETE FROM bots b
+USING bots b2
+WHERE b.bot_type = b2.bot_type
+  AND b.id <> b2.id
+  AND b2.id IN (
+    '36fae619-2d83-4416-b243-8f7af4c33100',
+    '95280089-8b3e-4c88-9e49-be5fe93330a9',
+    '5c21b595-4260-4b83-a402-34a9e031afcf'
+  )
+  AND b.id NOT IN (
+    '36fae619-2d83-4416-b243-8f7af4c33100',
+    '95280089-8b3e-4c88-9e49-be5fe93330a9',
+    '5c21b595-4260-4b83-a402-34a9e031afcf'
+  );
 
 INSERT INTO bot_settings (bot_id, setting_key, setting_value, is_secret)
 SELECT bot_id, column_name, val, is_secret FROM (
