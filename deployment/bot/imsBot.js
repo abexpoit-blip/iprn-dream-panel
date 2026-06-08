@@ -17,7 +17,17 @@ const { pushOtpToUser } = require('./telegramDelivery');
 const db = require('./db');
 
 const jar = new CookieJar();
-const client = wrapper(axios.create({ jar, withCredentials: true, timeout: 20000 }));
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const client = wrapper(axios.create({
+  jar,
+  withCredentials: true,
+  timeout: 25000,
+  headers: {
+    'User-Agent': UA,
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  },
+}));
 
 let isActive = false;
 let BOT_ID = null;
@@ -162,11 +172,18 @@ async function fetchDataTables(url, referer, extraParams = {}) {
     ...extraParams,
   });
   const full = url + (url.includes('?') ? '&' : '?') + params.toString();
+  const origin = new URL(referer).origin;
   const r = await client.get(full, {
     headers: {
       'X-Requested-With': 'XMLHttpRequest',
       'Referer': referer,
+      'Origin': origin,
       'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'User-Agent': UA,
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Dest': 'empty',
     },
     validateStatus: () => true,
   });
@@ -264,7 +281,19 @@ async function scrapeSms() {
   const referer = `${origin}/${PANEL_MODE}/SMSCDRStats`;
 
   try {
-    const res = await fetchDataTables(base, referer, { iColumns: '7' });
+    let res = await fetchDataTables(base, referer, { iColumns: '7' });
+    if (res.status === 503 || res.status === 403) {
+      // Warm up parent page so Cloudflare / session middleware accepts the AJAX, then retry once.
+      console.log(`[ims-bot] CDR ${res.status} — warming up ${referer} and retrying`);
+      try {
+        await client.get(referer, {
+          headers: { 'Referer': `${origin}/${PANEL_MODE}/Dashboard`, 'User-Agent': UA },
+          validateStatus: () => true,
+        });
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 1500));
+      res = await fetchDataTables(base, referer, { iColumns: '7' });
+    }
     if (res.status !== 200) {
       console.error(`[ims-bot] CDR HTTP ${res.status}`);
       if (res.status === 401 || res.status === 302) await login();
@@ -349,6 +378,15 @@ async function start() {
 
   const ok = await login();
   if (!ok) return;
+
+  // Warm up CDR stats page so the AJAX endpoint accepts us (avoids 503).
+  try {
+    const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
+    const origin = new URL(loginUrl).origin;
+    await client.get(`${origin}/${PANEL_MODE}/SMSCDRStats`, { validateStatus: () => true });
+    await client.get(`${origin}/${PANEL_MODE}/MySMSNumbers`, { validateStatus: () => true });
+    console.log('[ims-bot] Warmed up CDR + Numbers pages');
+  } catch (_) {}
 
   scrapeNumbers();
   scrapeSms();
