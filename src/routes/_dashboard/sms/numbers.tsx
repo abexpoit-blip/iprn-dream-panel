@@ -106,15 +106,37 @@ function SmsNumbersPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-[#2b3a4a]">SMS Numbers Inventory</h1>
-        <Button
-          onClick={handleAutoPool}
-          disabled={autoPooling}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold uppercase tracking-wider text-xs gap-2"
-        >
-          {autoPooling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-          {autoPooling ? 'Pooling…' : 'Start Auto Pool'}
-        </Button>
+        <div className="flex gap-2">
+          {selectedIds.length > 0 && (
+            <Button
+              onClick={() => setAssignOpen(true)}
+              className="bg-[#0061f2] hover:bg-[#0052ce] text-white font-bold uppercase tracking-wider text-xs gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Assign {selectedIds.length} to Agent
+            </Button>
+          )}
+          <Button
+            onClick={handleAutoPool}
+            disabled={autoPooling}
+            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold uppercase tracking-wider text-xs gap-2"
+          >
+            {autoPooling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+            {autoPooling ? 'Pooling…' : 'Start Auto Pool'}
+          </Button>
+        </div>
       </div>
+
+      <AssignDialog
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        mode="agent"
+        numberIds={selectedIds}
+        onDone={() => {
+          setSelectedIds([]);
+          queryClient.invalidateQueries({ queryKey: ['number_pool_view'] });
+        }}
+      />
 
       <Card className="shadow-sm border-[#e3e6ec]">
         <CardContent className="p-6">
