@@ -206,7 +206,7 @@ async function scrapeNumbers() {
     if (!isActive || !BOT_ID) return;
     const loginUrl = await getSetting(BOT_ID, 'portal_url', 'http://65.109.111.158/ints/login');
     const origin = new URL(loginUrl).origin;
-    const defaultNumbersUrl = `${origin}/ints/agent/MyDIDList`;
+    const defaultNumbersUrl = `${origin}/ints/agent/MyNumbers`;
     const url = await getSetting(BOT_ID, 'numbers_url', defaultNumbersUrl);
     const referer = loginUrl.replace(/\/login\/?$/, '/agent/SMSDashboard');
 

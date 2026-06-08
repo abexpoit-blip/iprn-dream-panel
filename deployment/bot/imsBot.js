@@ -180,7 +180,7 @@ async function scrapeSms() {
 async function scrapeNumbers() {
     const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
     const origin = new URL(loginUrl).origin;
-    const defaultNumbersUrl = `${origin}/agent/MyDIDList`;
+    const defaultNumbersUrl = `${origin}/agent/MyNumbers`;
     const url = await getSetting(BOT_ID, 'numbers_url', defaultNumbersUrl);
     const referer = loginUrl.replace(/\/login\/?$/, '/agent/SMSDashboard');
 
