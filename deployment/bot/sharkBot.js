@@ -14,22 +14,80 @@ let BOT_ID = null; // Resolved from DB at start()
 const BOT_NAME = 'Shark SMS Bot';
 const BOT_TYPE = 'shark';
 
+async function updateBotStatus(status, error = null) {
+    if (!BOT_ID) return;
+    try {
+        await db.prepare("UPDATE bots SET status = ?, last_seen = NOW(), last_error = ? WHERE id = ?")
+            .run(status, error, BOT_ID);
+    } catch (e) { /* ignore */ }
+}
+
+function parseCookieString(cookieStr, urlOrigin) {
+    // Accepts "key1=val1; key2=val2" — injects each into jar
+    if (!cookieStr) return 0;
+    const parts = cookieStr.split(';').map(s => s.trim()).filter(Boolean);
+    let count = 0;
+    for (const part of parts) {
+        try {
+            jar.setCookieSync(part, urlOrigin);
+            count++;
+        } catch (_) { /* ignore bad cookie */ }
+    }
+    return count;
+}
+
 async function login() {
     const user = await getSetting(BOT_ID, 'username', 'mamun01');
     const pass = await getSetting(BOT_ID, 'password', 'mamun@12#A');
     const url = await getSetting(BOT_ID, 'portal_url', 'http://65.109.111.158/ints/login');
-    
+    const sessionCookie = await getSetting(BOT_ID, 'session_cookie', '');
+    const manualCaptcha = await getSetting(BOT_ID, 'captcha_token', '');
+
+    const origin = new URL(url).origin;
+
+    // OPTION A — User pasted a valid session cookie: skip login entirely
+    if (sessionCookie && sessionCookie.trim().length > 5) {
+        const n = parseCookieString(sessionCookie.trim(), origin);
+        console.log(`[shark-bot] Using pasted session cookie (${n} entries) — skipping login form`);
+        // Verify session by hitting a protected page
+        try {
+            const check = await client.get(`${origin}/ints/agent`, { validateStatus: () => true, maxRedirects: 0 });
+            if (check.status === 200) {
+                console.log(`[shark-bot] Session cookie verified — logged in via paste`);
+                await updateBotStatus('online', null);
+                return true;
+            }
+            const reason = `Pasted session cookie rejected (status=${check.status}). Paste a fresh cookie.`;
+            console.error(`[shark-bot] ${reason}`);
+            await updateBotStatus('offline', reason);
+            return false;
+        } catch (e) {
+            await updateBotStatus('offline', `Cookie verify failed: ${e.message}`);
+            return false;
+        }
+    }
+
     console.log(`[shark-bot] Attempting login for ${user} at ${url}...`);
     try {
         const loginPage = await client.get(url, { validateStatus: () => true });
         const pageBody = typeof loginPage.data === 'string' ? loginPage.data : '';
 
-        const captchaMatch = pageBody.match(/(\d+)\s*\+\s*(\d+)\s*=/);
-        let captchaResult = '0';
-        if (captchaMatch) {
-            captchaResult = (parseInt(captchaMatch[1]) + parseInt(captchaMatch[2])).toString();
-        } else {
-            console.warn(`[shark-bot] Captcha pattern not found on login page (status=${loginPage.status}, len=${pageBody.length})`);
+        // Detect captcha presence
+        const hasCaptchaImg = /<img[^>]+captcha/i.test(pageBody) || /name=["']captcha["']/i.test(pageBody);
+        const mathMatch = pageBody.match(/(\d+)\s*\+\s*(\d+)\s*=/);
+
+        let captchaResult = '';
+        if (manualCaptcha && manualCaptcha.trim()) {
+            captchaResult = manualCaptcha.trim();
+            console.log(`[shark-bot] Using manual captcha token from settings: "${captchaResult}"`);
+        } else if (mathMatch) {
+            captchaResult = (parseInt(mathMatch[1]) + parseInt(mathMatch[2])).toString();
+            console.log(`[shark-bot] Solved math captcha: ${mathMatch[1]}+${mathMatch[2]}=${captchaResult}`);
+        } else if (hasCaptchaImg) {
+            const reason = 'Image captcha detected — paste session_cookie or captcha_token in Login Info';
+            console.error(`[shark-bot] ${reason}`);
+            await updateBotStatus('offline', reason);
+            return false;
         }
 
         const res = await client.post(url, new URLSearchParams({
@@ -37,7 +95,7 @@ async function login() {
             password: pass,
             captcha: captchaResult
         }), {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Referer': url },
             maxRedirects: 5,
             validateStatus: () => true,
         });
@@ -53,16 +111,16 @@ async function login() {
 
         if (success) {
             console.log(`[shark-bot] Login successful (status=${res.status}, path=${finalPath})`);
-            await db.prepare("UPDATE bots SET status = ?, last_seen = NOW() WHERE name = ?")
-                .run('online', BOT_NAME);
+            await updateBotStatus('online', null);
             return true;
         }
-        console.error(
-            `[shark-bot] Login failed. status=${res.status} path=${finalPath} captcha=${captchaResult} bodyLen=${body.length} snippet=${body.slice(0, 200).replace(/\s+/g, ' ')}`
-        );
+        const reason = `Login rejected (status=${res.status}). Captcha may be wrong — paste session_cookie instead.`;
+        console.error(`[shark-bot] ${reason} captcha=${captchaResult} bodyLen=${body.length}`);
+        await updateBotStatus('offline', reason);
         return false;
     } catch (err) {
         console.error(`[shark-bot] Login error:`, err.message);
+        await updateBotStatus('offline', `Network error: ${err.message}`);
         return false;
     }
 }
