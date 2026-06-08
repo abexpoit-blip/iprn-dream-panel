@@ -44,9 +44,11 @@ CREATE TABLE IF NOT EXISTS bot_settings (
     setting_key TEXT NOT NULL,
     setting_value TEXT NOT NULL,
     is_secret BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     UNIQUE(bot_id, setting_key)
 );
+ALTER TABLE bot_settings ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT now();
 
 -- Number Panels
 CREATE TABLE IF NOT EXISTS number_panels (
