@@ -1,7 +1,7 @@
-// IMS SMS Bot — CLIENT-mode scraper.
-// Logs in as an IMS client (e.g. Shovonkhan) and pulls:
-//   - Numbers from /client/res/data_smsnumbers.php → number_pool
-//   - OTPs    from /client/res/data_smscdr.php    → otp_audit_log
+// IMS SMS Bot — AGENT-mode scraper.
+// Logs in as an IMS agent account and pulls:
+//   - Numbers from /agent/res/data_smsnumbers.php → number_pool
+//   - OTPs    from /agent/res/data_smscdr.php    → otp_audit_log
 // Both endpoints are DataTables server-side JSON. Same shape as Shark.
 //
 // CDR columns (7): [Date, Range, Number, CLI, SMS, Currency, MyPayout]
@@ -33,7 +33,7 @@ let isActive = false;
 let BOT_ID = null;
 const BOT_NAME = 'IMS Main Agent';
 const BOT_TYPE = 'ims';
-const PANEL_MODE = 'client'; // /client/...
+const PANEL_MODE = 'agent'; // /agent/...
 
 // IMS blocks if CDR refresh < ~16s
 const IMS_MIN_INTERVAL_MS = 20000;
@@ -84,7 +84,7 @@ function extractLoginForm(html, pageUrl) {
 async function verifySession(origin) {
   const probe = `${origin}/${PANEL_MODE}/MySMSNumbers`;
   const r = await client.get(probe, { validateStatus: () => true, maxRedirects: 0 });
-  return r.status === 200 && typeof r.data === 'string' && /MySMSNumbers|Logout|client/i.test(r.data);
+  return r.status === 200 && typeof r.data === 'string' && /MySMSNumbers|Logout|agent|Dashboard/i.test(r.data);
 }
 
 async function login() {
@@ -369,7 +369,7 @@ async function scrapeSms() {
 // ---------- BOOTSTRAP ----------
 async function start() {
   isActive = true;
-  console.log('[ims-bot] Bot starting (CLIENT mode)...');
+  console.log('[ims-bot] Bot starting (AGENT mode)...');
 
   try {
     let existing = await db.prepare('SELECT id FROM bots WHERE bot_type = ? LIMIT 1').get(BOT_TYPE);
