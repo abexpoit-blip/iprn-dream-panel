@@ -1,7 +1,8 @@
 const db = require('./db');
 
 /**
- * outcome ∈ 'billed' | 'duplicate' | 'resend' | 'mismatch' | 'error'
+ * Logs an OTP event and (when outcome='billed') runs the commission split
+ * across the Admin → Agent → Client allocation chain.
  */
 async function logOtpAudit({
   source, source_msg_id = null, phone_number = null, cli = null,
@@ -9,28 +10,39 @@ async function logOtpAudit({
   outcome, miss_reason = null, amount_bdt = null, is_fake = 0,
 }) {
   try {
-    // Note: The table schema found in PSQL (otp_audit_log) has different column names:
-    // id, bot_id, source, source_msg_id, phone_number, cli, otp_code, sms_text, outcome, amount_earned, created_at
-    // We map amount_bdt to amount_earned and skip missing columns like allocation_id/user_id for now if they don't exist.
-    
     const query = `
-      INSERT INTO otp_audit_log 
+      INSERT INTO otp_audit_log
         (source, source_msg_id, phone_number, cli, otp_code, sms_text, outcome, amount_earned)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING id
     `;
-    
     const info = await db.prepare(query).run(
-      String(source), 
+      String(source),
       source_msg_id ? String(source_msg_id) : null,
-      phone_number, 
-      cli, 
+      phone_number,
+      cli,
       otp_code,
       sms_text ? String(sms_text).slice(0, 1000) : null,
       String(outcome),
       amount_bdt || 0
     );
-    
-    return info.lastInsertRowid || null;
+
+    const auditId = info.lastInsertRowid || null;
+
+    // On a successful (billed) OTP, split commission across the allocation chain.
+    if (String(outcome) === 'billed' && phone_number) {
+      try {
+        const { splitCommissionForOtp } = require('./commission');
+        const r = await splitCommissionForOtp({ otp_audit_id: auditId, phone_number });
+        if (r && r.ok) {
+          console.log(`[commission] ${phone_number} → admin=${r.admin_earn} agent=${r.agent_earn} client_pay=${r.client_pay}`);
+        }
+      } catch (e) {
+        console.error('[commission] hook failed:', e.message);
+      }
+    }
+
+    return auditId;
   } catch (e) {
     console.error('[otp-audit] write failed:', e.message);
     return null;
