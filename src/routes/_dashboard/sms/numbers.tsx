@@ -41,16 +41,27 @@ function SmsNumbersPage() {
     }
   });
 
-  const filteredNumbers = numbers?.filter((num: any) => 
-    (filterRange === "All Ranges" || num.service_tag === filterRange) &&
-    (num.number?.includes(searchTerm) || num.service_tag?.toLowerCase().includes(searchTerm.toLowerCase()))
+  const rangeOptions = Array.from(
+    new Set((numbers || []).map((n: any) => n.range_name).filter(Boolean))
+  ).sort() as string[];
+
+  const filteredNumbers = numbers?.filter((num: any) =>
+    (filterRange === "All Ranges" || num.range_name === filterRange) &&
+    (
+      num.number?.includes(searchTerm) ||
+      num.range_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      num.country?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   ) || [];
 
   const handleExport = () => {
-    const headers = ["Number", "Service", "Status", "Last Update"];
+    const headers = ["Number", "Country", "Range", "Prefix", "Payout", "Status", "Last Update"];
     const csvData = filteredNumbers.map((num: any) => [
       num.number,
-      num.service_tag || 'Global',
+      num.country || '-',
+      num.range_name || '-',
+      num.prefix || '-',
+      num.panel_payout ?? '-',
       num.status,
       new Date(num.updated_at || num.created_at).toLocaleString()
     ]);
@@ -110,17 +121,14 @@ function SmsNumbersPage() {
             
             <div className="ml-auto flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase text-[#69707a]">Service:</span>
+                <span className="text-[10px] font-black uppercase text-[#69707a]">Range:</span>
                 <select 
                   value={filterRange}
                   onChange={(e) => setFilterRange(e.target.value)}
                   className="h-8 border border-[#c5ccd6] rounded-md px-2 text-xs focus:ring-1 focus:ring-[#0061f2] outline-none"
                 >
                   <option>All Ranges</option>
-                  <option>Facebook</option>
-                  <option>WhatsApp</option>
-                  <option>Telegram</option>
-                  <option>Google</option>
+                  {rangeOptions.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div className="flex items-center gap-2">
@@ -139,7 +147,10 @@ function SmsNumbersPage() {
               <TableHeader className="bg-gray-50 border-b border-[#e3e6ec]">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Phone Number</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Service</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Country</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Range</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Prefix</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Payout</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Status</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Last Update</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto">Action</TableHead>
@@ -148,17 +159,20 @@ function SmsNumbersPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-gray-500 text-sm italic">Loading numbers...</TableCell>
+                    <TableCell colSpan={8} className="text-center py-10 text-gray-500 text-sm italic">Loading numbers...</TableCell>
                   </TableRow>
                 ) : filteredNumbers?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-gray-500 text-sm italic">No matching numbers found</TableCell>
+                    <TableCell colSpan={8} className="text-center py-10 text-gray-500 text-sm italic">No matching numbers found</TableCell>
                   </TableRow>
                 ) : (
                   filteredNumbers.map((num: any) => (
                     <TableRow key={num.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
                       <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.number}</TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.service_tag || 'Global'}</TableCell>
+                      <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.country || '—'}</TableCell>
+                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.range_name || '—'}</TableCell>
+                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.prefix ? `+${num.prefix}` : '—'}</TableCell>
+                      <TableCell className="text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">{num.panel_payout != null ? Number(num.panel_payout).toFixed(2) : '—'}</TableCell>
                       <TableCell className="py-3 border-r border-[#e3e6ec]">
                         <span className={cn(
                           "px-2 py-0.5 text-white text-[10px] font-bold rounded uppercase",

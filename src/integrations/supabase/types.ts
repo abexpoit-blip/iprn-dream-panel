@@ -226,12 +226,16 @@ export type Database = {
         Row: {
           allocation_id: string | null
           bot_id: string | null
+          country: string | null
           created_at: string | null
           expires_at: string | null
           id: string
           number: string
           number_panel_id: string | null
+          panel_payout: number | null
           payout_rate: number | null
+          prefix: string | null
+          range_name: string | null
           reserved_at: string | null
           reserved_for: string | null
           service_tag: string | null
@@ -242,12 +246,16 @@ export type Database = {
         Insert: {
           allocation_id?: string | null
           bot_id?: string | null
+          country?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
           number: string
           number_panel_id?: string | null
+          panel_payout?: number | null
           payout_rate?: number | null
+          prefix?: string | null
+          range_name?: string | null
           reserved_at?: string | null
           reserved_for?: string | null
           service_tag?: string | null
@@ -258,12 +266,16 @@ export type Database = {
         Update: {
           allocation_id?: string | null
           bot_id?: string | null
+          country?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
           number?: string
           number_panel_id?: string | null
+          panel_payout?: number | null
           payout_rate?: number | null
+          prefix?: string | null
+          range_name?: string | null
           reserved_at?: string | null
           reserved_for?: string | null
           service_tag?: string | null
