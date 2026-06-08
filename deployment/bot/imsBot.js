@@ -172,11 +172,18 @@ async function fetchDataTables(url, referer, extraParams = {}) {
     ...extraParams,
   });
   const full = url + (url.includes('?') ? '&' : '?') + params.toString();
+  const origin = new URL(referer).origin;
   const r = await client.get(full, {
     headers: {
       'X-Requested-With': 'XMLHttpRequest',
       'Referer': referer,
+      'Origin': origin,
       'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'User-Agent': UA,
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Dest': 'empty',
     },
     validateStatus: () => true,
   });
