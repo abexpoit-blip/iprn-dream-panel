@@ -328,6 +328,203 @@ app.post('/api/numbers/auto-pool', async (c) => {
   }
 });
 
+// =========================================================================
+// Allocation chain: Admin → Agent → Client
+// =========================================================================
+
+// Helper — read JWT payload (Hono jwt middleware stores it under c.get('jwtPayload'))
+function caller(c: any) {
+  return c.get('jwtPayload') || {};
+}
+
+// POST /api/allocations/assign-agent  (admin only)
+// body: { number_ids: string[], agent_id: string, markup: number }
+app.post('/api/allocations/assign-agent', async (c) => {
+  const me = caller(c);
+  if (!me.is_admin && me.role !== 'admin') return c.json({ error: 'Admin only' }, 403);
+
+  const body = await c.req.json().catch(() => ({}));
+  const ids: string[] = Array.isArray(body.number_ids) ? body.number_ids : [];
+  const agentId: string = body.agent_id;
+  const markup = Number(body.markup) || 0;
+  if (!ids.length || !agentId) return c.json({ error: 'number_ids and agent_id required' }, 400);
+
+  try {
+    // Confirm the agent exists & is a real agent profile
+    const agent = await sql`SELECT id FROM profiles WHERE id = ${agentId} LIMIT 1`;
+    if (!agent.length) return c.json({ error: 'Agent not found' }, 404);
+
+    let assigned = 0;
+    for (const nid of ids) {
+      const rows = await sql`
+        SELECT id, panel_payout FROM number_pool WHERE id = ${nid} LIMIT 1
+      `;
+      if (!rows.length) continue;
+      const base = Number(rows[0].panel_payout) || 0;
+      const finalRate = base + markup;
+
+      // Release any prior active agent allocation for this number
+      await sql`
+        UPDATE number_allocations
+        SET status = 'released', released_at = now()
+        WHERE number_pool_id = ${nid} AND tier = 'agent' AND status = 'active'
+      `;
+      // Also release any active client allocation since ownership chain restarts
+      await sql`
+        UPDATE number_allocations
+        SET status = 'released', released_at = now()
+        WHERE number_pool_id = ${nid} AND tier = 'client' AND status = 'active'
+      `;
+
+      await sql`
+        INSERT INTO number_allocations
+          (number_pool_id, tier, from_user_id, to_user_id, base_rate, markup, final_rate)
+        VALUES
+          (${nid}, 'agent', ${me.id}, ${agentId}, ${base}, ${markup}, ${finalRate})
+      `;
+
+      await sql`
+        UPDATE number_pool
+        SET assigned_agent = ${agentId},
+            assigned_client = NULL,
+            agent_rate = ${finalRate},
+            client_rate = NULL,
+            updated_at = now()
+        WHERE id = ${nid}
+      `;
+      assigned++;
+    }
+    return c.json({ success: true, assigned, agent_id: agentId, markup });
+  } catch (err: any) {
+    console.error('[assign-agent]', err);
+    return c.json({ error: err.message || 'assign-agent failed' }, 500);
+  }
+});
+
+// POST /api/allocations/assign-client  (agent only)
+// body: { number_ids: string[], client_id: string, markup: number }
+app.post('/api/allocations/assign-client', async (c) => {
+  const me = caller(c);
+  if (!me.id) return c.json({ error: 'Auth required' }, 401);
+
+  const body = await c.req.json().catch(() => ({}));
+  const ids: string[] = Array.isArray(body.number_ids) ? body.number_ids : [];
+  const clientId: string = body.client_id;
+  const markup = Number(body.markup) || 0;
+  if (!ids.length || !clientId) return c.json({ error: 'number_ids and client_id required' }, 400);
+
+  try {
+    // Confirm the client belongs to this agent (or caller is admin)
+    const cli = await sql`SELECT id, agent_id FROM clients WHERE id = ${clientId} LIMIT 1`;
+    if (!cli.length) return c.json({ error: 'Client not found' }, 404);
+    if (!me.is_admin && cli[0].agent_id !== me.id) {
+      return c.json({ error: 'This client is not under your account' }, 403);
+    }
+
+    let assigned = 0;
+    for (const nid of ids) {
+      const rows = await sql`
+        SELECT id, assigned_agent, agent_rate, panel_payout
+        FROM number_pool WHERE id = ${nid} LIMIT 1
+      `;
+      if (!rows.length) continue;
+      const n = rows[0];
+      // Caller must own the number at agent tier (admin override OK)
+      if (!me.is_admin && n.assigned_agent !== me.id) continue;
+
+      const base = Number(n.agent_rate ?? n.panel_payout) || 0;
+      const finalRate = base + markup;
+
+      // Release prior client allocation if any
+      await sql`
+        UPDATE number_allocations
+        SET status = 'released', released_at = now()
+        WHERE number_pool_id = ${nid} AND tier = 'client' AND status = 'active'
+      `;
+
+      await sql`
+        INSERT INTO number_allocations
+          (number_pool_id, tier, from_user_id, to_client_id, base_rate, markup, final_rate)
+        VALUES
+          (${nid}, 'client', ${me.id}, ${clientId}, ${base}, ${markup}, ${finalRate})
+      `;
+
+      await sql`
+        UPDATE number_pool
+        SET assigned_client = ${clientId},
+            client_rate = ${finalRate},
+            updated_at = now()
+        WHERE id = ${nid}
+      `;
+      assigned++;
+    }
+    return c.json({ success: true, assigned, client_id: clientId, markup });
+  } catch (err: any) {
+    console.error('[assign-client]', err);
+    return c.json({ error: err.message || 'assign-client failed' }, 500);
+  }
+});
+
+// POST /api/allocations/release   body: { number_ids: string[], tier: 'agent'|'client' }
+app.post('/api/allocations/release', async (c) => {
+  const me = caller(c);
+  const body = await c.req.json().catch(() => ({}));
+  const ids: string[] = Array.isArray(body.number_ids) ? body.number_ids : [];
+  const tier: string = body.tier;
+  if (!ids.length || !['agent', 'client'].includes(tier)) {
+    return c.json({ error: 'number_ids[] and tier required' }, 400);
+  }
+  if (tier === 'agent' && !me.is_admin) return c.json({ error: 'Admin only' }, 403);
+
+  try {
+    for (const nid of ids) {
+      await sql`
+        UPDATE number_allocations
+        SET status = 'released', released_at = now()
+        WHERE number_pool_id = ${nid} AND tier = ${tier} AND status = 'active'
+      `;
+      if (tier === 'agent') {
+        await sql`UPDATE number_pool SET assigned_agent = NULL, assigned_client = NULL, agent_rate = NULL, client_rate = NULL, updated_at = now() WHERE id = ${nid}`;
+        await sql`UPDATE number_allocations SET status='released', released_at=now() WHERE number_pool_id=${nid} AND tier='client' AND status='active'`;
+      } else {
+        await sql`UPDATE number_pool SET assigned_client = NULL, client_rate = NULL, updated_at = now() WHERE id = ${nid}`;
+      }
+    }
+    return c.json({ success: true, released: ids.length, tier });
+  } catch (err: any) {
+    console.error('[release]', err);
+    return c.json({ error: err.message || 'release failed' }, 500);
+  }
+});
+
+// GET /api/allocations/agents  → list of agent profiles for admin assign dialog
+app.get('/api/allocations/agents', async (c) => {
+  try {
+    const rows = await sql`
+      SELECT id, username, full_name, balance
+      FROM profiles
+      WHERE COALESCE(is_admin,false)=false AND COALESCE(role,'agent') IN ('agent','user')
+      ORDER BY username
+    `;
+    return c.json(rows);
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// GET /api/allocations/my-clients  → clients owned by current agent
+app.get('/api/allocations/my-clients', async (c) => {
+  const me = caller(c);
+  try {
+    const rows = me.is_admin
+      ? await sql`SELECT id, username, email, agent_id FROM clients ORDER BY username`
+      : await sql`SELECT id, username, email, agent_id FROM clients WHERE agent_id = ${me.id} ORDER BY username`;
+    return c.json(rows);
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
 const port = 3005;
 console.log(`🚀 API Server starting on port ${port}...`);
 
