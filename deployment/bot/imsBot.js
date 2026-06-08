@@ -24,6 +24,16 @@ function getAttr(tag, name) {
     return m ? m[1] : '';
 }
 
+function parseCookieString(cookieStr, urlOrigin) {
+    if (!cookieStr) return 0;
+    const parts = cookieStr.split(';').map(s => s.trim()).filter(Boolean);
+    let count = 0;
+    for (const part of parts) {
+        try { jar.setCookieSync(part, urlOrigin); count++; } catch (_) {}
+    }
+    return count;
+}
+
 function extractLoginFormDetails(html, pageUrl) {
     const formHtml = (html.match(/<form[\s\S]*?<\/form>/i) || [html])[0];
     const formOpen = (formHtml.match(/<form[^>]*>/i) || [''])[0];
@@ -51,6 +61,29 @@ async function login() {
     const user = await getSetting(BOT_ID, 'username', 'mamun99');
     const pass = await getSetting(BOT_ID, 'password', 'mamun@12aa#');
     const url = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
+    const sessionCookie = await getSetting(BOT_ID, 'session_cookie', '');
+    const origin = new URL(url).origin;
+
+    // OPTION A — User pasted a valid session cookie: skip login form
+    if (sessionCookie && sessionCookie.trim().length > 5) {
+        const n = parseCookieString(sessionCookie.trim(), origin);
+        console.log(`[ims-bot] Using pasted session cookie (${n} entries) — skipping login form`);
+        try {
+            const check = await client.get(`${origin}/agent/SMSDashboard`, { validateStatus: () => true, maxRedirects: 0 });
+            if (check.status === 200) {
+                console.log(`[ims-bot] Session cookie verified — logged in via paste`);
+                await updateBotStatus('online', null);
+                return true;
+            }
+            const reason = `Pasted session cookie rejected (status=${check.status}). Paste a fresh cookie.`;
+            console.error(`[ims-bot] ${reason}`);
+            await updateBotStatus('offline', reason);
+            return false;
+        } catch (e) {
+            await updateBotStatus('offline', `Cookie verify failed: ${e.message}`);
+            return false;
+        }
+    }
 
     console.log(`[ims-bot] Attempting login for ${user} at ${url}...`);
     try {
@@ -143,6 +176,50 @@ async function scrapeSms() {
     }
 }
 
+// Scrape the panel's DID/number list and upsert into number_pool
+async function scrapeNumbers() {
+    const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
+    const origin = new URL(loginUrl).origin;
+    const defaultNumbersUrl = `${origin}/agent/MyDIDList`;
+    const url = await getSetting(BOT_ID, 'numbers_url', defaultNumbersUrl);
+    const referer = loginUrl.replace(/\/login\/?$/, '/agent/SMSDashboard');
+
+    try {
+        const res = await client.get(url, { validateStatus: () => true, headers: { 'Referer': referer } });
+        if (res.status !== 200) {
+            console.error(`[ims-bot] Numbers scrape HTTP ${res.status} at ${url}`);
+            if (res.status === 401 || res.status === 302) await login();
+            return;
+        }
+        const body = typeof res.data === 'string' ? res.data : '';
+        // Extract phone-like tokens (8-15 digits, optional +) from table cells
+        const phoneRegex = /<td[^>]*>\s*(\+?\d{8,15})\s*<\/td>/gi;
+        const seen = new Set();
+        let m;
+        while ((m = phoneRegex.exec(body)) !== null) {
+            const number = m[1].replace(/\D/g, '');
+            if (!number || seen.has(number)) continue;
+            seen.add(number);
+        }
+        if (seen.size === 0) {
+            console.log(`[ims-bot] Numbers scrape: 0 phones parsed from ${url} (len=${body.length}). Set numbers_url in Login Info to the exact DID list page.`);
+            return;
+        }
+        let inserted = 0;
+        for (const number of seen) {
+            try {
+                const r = await db.prepare(
+                    `INSERT INTO number_pool (number, status, bot_id) VALUES (?, 'available', ?) ON CONFLICT (number) DO UPDATE SET bot_id = EXCLUDED.bot_id, updated_at = NOW()`
+                ).run(number, BOT_ID);
+                if (r.changes) inserted++;
+            } catch (e) { /* ignore per-row */ }
+        }
+        console.log(`[ims-bot] Numbers scrape: ${seen.size} parsed, ${inserted} upserted into number_pool`);
+    } catch (err) {
+        console.error(`[ims-bot] Numbers scrape error:`, err.message);
+    }
+}
+
 
 async function start() {
     isActive = true;
@@ -151,6 +228,9 @@ async function start() {
     if (ok) {
         // Honor IMS rate limit — never below 16s. Default 20s.
         setInterval(scrapeSms, IMS_MIN_INTERVAL_MS);
+        // Refresh number pool every 60s
+        scrapeNumbers();
+        setInterval(scrapeNumbers, 60000);
     }
 }
 
