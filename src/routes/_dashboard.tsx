@@ -19,7 +19,9 @@ import {
   ShieldCheck,
   UserCheck,
   ChevronRight,
-  Bot
+  Bot,
+  Activity
+
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -97,6 +99,9 @@ function DashboardLayout() {
   const menuItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { label: "Bot Dashboard", icon: Bot, href: "/bot-dashboard" },
+    ...(profile?.is_admin && !impersonatedAgent
+      ? [{ label: "Bot Health", icon: Activity, href: "/bot-health" }]
+      : []),
     { 
       label: "SMS Module", 
       icon: MessageSquare, 
