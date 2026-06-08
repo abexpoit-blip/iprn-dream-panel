@@ -61,6 +61,29 @@ async function login() {
     const user = await getSetting(BOT_ID, 'username', 'mamun99');
     const pass = await getSetting(BOT_ID, 'password', 'mamun@12aa#');
     const url = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
+    const sessionCookie = await getSetting(BOT_ID, 'session_cookie', '');
+    const origin = new URL(url).origin;
+
+    // OPTION A — User pasted a valid session cookie: skip login form
+    if (sessionCookie && sessionCookie.trim().length > 5) {
+        const n = parseCookieString(sessionCookie.trim(), origin);
+        console.log(`[ims-bot] Using pasted session cookie (${n} entries) — skipping login form`);
+        try {
+            const check = await client.get(`${origin}/agent/SMSDashboard`, { validateStatus: () => true, maxRedirects: 0 });
+            if (check.status === 200) {
+                console.log(`[ims-bot] Session cookie verified — logged in via paste`);
+                await updateBotStatus('online', null);
+                return true;
+            }
+            const reason = `Pasted session cookie rejected (status=${check.status}). Paste a fresh cookie.`;
+            console.error(`[ims-bot] ${reason}`);
+            await updateBotStatus('offline', reason);
+            return false;
+        } catch (e) {
+            await updateBotStatus('offline', `Cookie verify failed: ${e.message}`);
+            return false;
+        }
+    }
 
     console.log(`[ims-bot] Attempting login for ${user} at ${url}...`);
     try {
