@@ -24,7 +24,7 @@ function AdminLogin() {
     setLoading(true);
 
     try {
-      console.log("[AdminLogin] Attempting admin sign in...");
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: username.trim(),
         password,
