@@ -335,3 +335,33 @@ CREATE TABLE IF NOT EXISTS active_rates (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- =========================================================================
+-- Performance indexes for SMS CDR / Stats / OTP pages
+-- (Safe to re-run; IF NOT EXISTS and column-add guards.)
+-- =========================================================================
+ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS received_at TIMESTAMP WITH TIME ZONE DEFAULT now();
+ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS number TEXT;
+ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS prefix TEXT;
+ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS message TEXT;
+ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS payout NUMERIC DEFAULT 0;
+ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS agent_id UUID;
+ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS client_id UUID;
+
+CREATE INDEX IF NOT EXISTS idx_sms_cdr_received_at  ON sms_cdr(received_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sms_cdr_client_id    ON sms_cdr(client_id);
+CREATE INDEX IF NOT EXISTS idx_sms_cdr_agent_id     ON sms_cdr(agent_id);
+CREATE INDEX IF NOT EXISTS idx_sms_cdr_prefix       ON sms_cdr(prefix);
+
+CREATE INDEX IF NOT EXISTS idx_otp_audit_created_at ON otp_audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_otp_audit_outcome    ON otp_audit_log(outcome);
+CREATE INDEX IF NOT EXISTS idx_otp_audit_bot_id     ON otp_audit_log(bot_id);
+CREATE INDEX IF NOT EXISTS idx_otp_audit_phone      ON otp_audit_log(phone_number);
+
+CREATE INDEX IF NOT EXISTS idx_number_pool_updated_at ON number_pool(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_number_pool_country    ON number_pool(country);
+CREATE INDEX IF NOT EXISTS idx_number_pool_range_name ON number_pool(range_name);
+
+-- clients.name compatibility column (UI joins clients(name))
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS name TEXT;
+UPDATE clients SET name = COALESCE(name, username) WHERE name IS NULL;
+

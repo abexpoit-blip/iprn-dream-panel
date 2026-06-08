@@ -36,17 +36,15 @@ function SmsRateCardPage() {
   const fmt = (v: number | null) =>
     v == null || Number(v) === 0 ? "NA" : `$${Number(v).toFixed(4)}`;
 
+  // Only show payout tiers that actually exist as columns in sms_ranges.
+  // Schema has: payout_1_1, payout_7_1, payout_7_7, payout_30_45.
+  // Showing duplicates (15/15 = 7/7, 30/15 = 7/1, etc.) misrepresented values.
   const payoutCols: IMSColumn<Rate>[] = (
     [
       ["1/1", "payout_1_1"],
       ["7/1", "payout_7_1"],
       ["7/7", "payout_7_7"],
-      ["15/15", "payout_7_7"],
-      ["15/30", "payout_30_45"],
-      ["30/15", "payout_7_1"],
-      ["30/30", "payout_30_45"],
       ["30/45", "payout_30_45"],
-      ["30/60", "payout_30_45"],
     ] as const
   ).map(([label, k]) => ({
     key: `p_${label}`,

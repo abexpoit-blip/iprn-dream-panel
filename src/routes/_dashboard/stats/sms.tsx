@@ -23,9 +23,11 @@ function StatsSmsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sms_cdr")
-        .select("*, clients(name)")
+        .select(
+          "received_at,prefix,number,message,payout,clients(name)"
+        )
         .order("received_at", { ascending: false })
-        .limit(2000);
+        .limit(1000);
       if (error) throw error;
       return (data ?? []).map((r: any) => ({
         date: new Date(r.received_at).toLocaleString(),
@@ -37,6 +39,8 @@ function StatsSmsPage() {
         payout: Number(r.payout ?? 0),
       })) as Row[];
     },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const columns: IMSColumn<Row>[] = [
