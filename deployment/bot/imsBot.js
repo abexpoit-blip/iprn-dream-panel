@@ -121,14 +121,28 @@ async function scrapeSms() {
     }
     lastScrapeTime = Date.now();
 
-    const url = 'https://www.imssms.org/agent/sms/logs';
+    // Derive CDR URL from login URL: replace /login with /agent/SMSCDRStats
+    const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
+    const defaultCdr = loginUrl.replace(/\/login\/?$/, '/agent/SMSCDRStats');
+    const url = await getSetting(BOT_ID, 'cdr_url', defaultCdr);
+
     try {
-        const res = await client.get(url);
-        console.log(`[ims-bot] Scraped logs (status=${res.status}), searching for new messages...`);
+        const res = await client.get(url, { validateStatus: () => true, headers: { 'Referer': loginUrl.replace(/\/login\/?$/, '/agent/SMSDashboard') } });
+        if (res.status !== 200) {
+            const reason = `Scrape HTTP ${res.status} at ${url}`;
+            console.error(`[ims-bot] ${reason}`);
+            await updateBotStatus('error', reason);
+            if (res.status === 401 || res.status === 302) await login();
+            return;
+        }
+        console.log(`[ims-bot] Scraped logs OK (len=${(res.data||'').length}) from ${url}`);
+        await updateBotStatus('online', null);
     } catch (err) {
         console.error(`[ims-bot] Scrape error:`, err.message);
+        await updateBotStatus('error', `Scrape error: ${err.message}`);
     }
 }
+
 
 async function start() {
     isActive = true;
