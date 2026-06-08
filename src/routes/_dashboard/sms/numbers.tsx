@@ -121,17 +121,14 @@ function SmsNumbersPage() {
             
             <div className="ml-auto flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase text-[#69707a]">Service:</span>
+                <span className="text-[10px] font-black uppercase text-[#69707a]">Range:</span>
                 <select 
                   value={filterRange}
                   onChange={(e) => setFilterRange(e.target.value)}
                   className="h-8 border border-[#c5ccd6] rounded-md px-2 text-xs focus:ring-1 focus:ring-[#0061f2] outline-none"
                 >
                   <option>All Ranges</option>
-                  <option>Facebook</option>
-                  <option>WhatsApp</option>
-                  <option>Telegram</option>
-                  <option>Google</option>
+                  {rangeOptions.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div className="flex items-center gap-2">
