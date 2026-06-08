@@ -94,27 +94,63 @@ function extractNumbersFromJsonPayload(payload) {
     return found;
 }
 
+function isValidUrlPath(raw) {
+    if (!raw || raw.length > 200) return false;
+    if (/[<>\s"'`{}\\]/.test(raw)) return false;
+    if (/&[a-z]+;/i.test(raw)) return false;
+    if (raw.startsWith('#') || /^javascript:/i.test(raw)) return false;
+    if (/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?|ttf)(\?|$)/i.test(raw)) return false;
+    return /^(https?:\/\/|\/|[a-zA-Z0-9_\-./?=&%]+$)/.test(raw);
+}
+
 function extractAjaxCandidates(html, pageUrl) {
     const candidates = new Set();
+    const source = String(html || '');
+    // Only scan <script>...</script> blocks — body HTML produces garbage matches
+    const scripts = source.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
+    const scope = scripts.length > 0 ? scripts.join('\n') : source;
+
     const patterns = [
-        /ajax\s*:\s*["']([^"']+)["']/gi,
-        /url\s*:\s*["']([^"']+)["']/gi,
-        /["']([^"']*(?:MyNumbers|Number|Numbers|DID|Sim)[^"']*)["']/gi,
+        /["']ajax["']\s*:\s*["']([^"']+)["']/gi,
+        /ajax\s*:\s*\{\s*url\s*:\s*["']([^"']+)["']/gi,
+        /\burl\s*:\s*["']([^"']+)["']/gi,
+        /\$\.(?:get|post|ajax)\(\s*["']([^"']+)["']/gi,
+        /fetch\(\s*["']([^"']+)["']/gi,
     ];
 
     for (const pattern of patterns) {
         let match;
-        while ((match = pattern.exec(String(html || ''))) !== null) {
-            const raw = decodeHtml(match[1] || '').trim();
-            if (!raw || raw.startsWith('#') || /^javascript:/i.test(raw) || /\.(css|js|png|jpg|jpeg|gif|svg)$/i.test(raw)) continue;
+        while ((match = pattern.exec(scope)) !== null) {
+            const raw = match[1].trim();
+            if (!isValidUrlPath(raw)) continue;
             try {
                 const resolved = new URL(raw, pageUrl).toString();
-                if (/number|did|sim|mynumbers/i.test(resolved) || resolved === pageUrl) candidates.add(resolved);
-            } catch (_) { /* ignore malformed script fragments */ }
+                candidates.add(resolved);
+            } catch (_) {}
         }
     }
 
-    return [...candidates].slice(0, 12);
+    // Common Laravel/DataTables endpoint guesses
+    try {
+        const u = new URL(pageUrl);
+        const base = u.origin + u.pathname.replace(/\/[^/]*$/, '');
+        const leaf = u.pathname.split('/').pop() || '';
+        const guesses = [
+            `${pageUrl}/data`,
+            `${pageUrl}Ajax`,
+            `${pageUrl}List`,
+            `${pageUrl}Data`,
+            `${base}/get${leaf}`,
+            `${base}/${leaf}Data`,
+            `${base}/${leaf}List`,
+            `${base}/load${leaf}`,
+            `${base}/getDID`,
+            `${base}/getNumbers`,
+        ];
+        for (const g of guesses) candidates.add(g);
+    } catch (_) {}
+
+    return [...candidates].slice(0, 30);
 }
 
 function withDataTableParams(candidate) {
