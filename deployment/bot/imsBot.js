@@ -379,6 +379,15 @@ async function start() {
   const ok = await login();
   if (!ok) return;
 
+  // Warm up CDR stats page so the AJAX endpoint accepts us (avoids 503).
+  try {
+    const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
+    const origin = new URL(loginUrl).origin;
+    await client.get(`${origin}/${PANEL_MODE}/SMSCDRStats`, { validateStatus: () => true });
+    await client.get(`${origin}/${PANEL_MODE}/MySMSNumbers`, { validateStatus: () => true });
+    console.log('[ims-bot] Warmed up CDR + Numbers pages');
+  } catch (_) {}
+
   scrapeNumbers();
   scrapeSms();
 
