@@ -194,34 +194,45 @@ async function scrapeNumbers() {
     const rows = Array.isArray(data.aaData) ? data.aaData : [];
 
     // Columns: [Range, Prefix, Number, Payterm, Payout, Limits]
-    const numbers = [];
+    const items = [];
     for (const row of rows) {
       if (!Array.isArray(row) || row.length < 3) continue;
-      const prefix = digitsOnly(stripHtml(row[1]));
-      const num    = digitsOnly(stripHtml(row[2]));
+      const rangeName = stripHtml(row[0]);
+      const prefix    = digitsOnly(stripHtml(row[1]));
+      const num       = digitsOnly(stripHtml(row[2]));
+      const payout    = parseFloat(stripHtml(row[4] || '').replace(/[^\d.]/g, '')) || null;
       if (!num) continue;
       const full = num.startsWith(prefix) ? num : (prefix + num);
-      if (full.length >= 6) numbers.push(full);
+      if (full.length < 6) continue;
+      // Country: take the first token of the Range string (e.g. "UK-EE" → "UK", "Bangladesh GP" → "Bangladesh")
+      const country = (rangeName || '').split(/[-_ /|]/)[0].trim() || null;
+      items.push({ number: full, range_name: rangeName || null, prefix: prefix || null, country, panel_payout: payout });
     }
 
-    if (numbers.length === 0) {
+    if (items.length === 0) {
       console.log(`[shark-bot] Numbers scrape: 0 rows from ${url} (panel has no numbers yet)`);
       return;
     }
 
     let inserted = 0;
-    for (const n of numbers) {
+    for (const it of items) {
       try {
         const r = await db.prepare(
-          `INSERT INTO number_pool (number, status, bot_id)
-           VALUES (?, 'available', ?)
-           ON CONFLICT (number) DO UPDATE SET bot_id = EXCLUDED.bot_id, updated_at = NOW()
+          `INSERT INTO number_pool (number, status, bot_id, range_name, prefix, country, panel_payout)
+           VALUES (?, 'available', ?, ?, ?, ?, ?)
+           ON CONFLICT (number) DO UPDATE SET
+             bot_id = EXCLUDED.bot_id,
+             range_name = COALESCE(EXCLUDED.range_name, number_pool.range_name),
+             prefix = COALESCE(EXCLUDED.prefix, number_pool.prefix),
+             country = COALESCE(EXCLUDED.country, number_pool.country),
+             panel_payout = COALESCE(EXCLUDED.panel_payout, number_pool.panel_payout),
+             updated_at = NOW()
            RETURNING number`
-        ).run(n, BOT_ID);
+        ).run(it.number, BOT_ID, it.range_name, it.prefix, it.country, it.panel_payout);
         if (r.changes) inserted++;
       } catch (_) {}
     }
-    console.log(`[shark-bot] Numbers scrape: ${numbers.length} parsed, ${inserted} upserted into number_pool`);
+    console.log(`[shark-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted into number_pool (with country/range/payout)`);
   } catch (err) {
     console.error(`[shark-bot] Numbers scrape error:`, err.message);
   }
