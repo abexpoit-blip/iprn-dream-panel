@@ -35,6 +35,7 @@ import { Route as DashboardStatsCdrRouteImport } from './routes/_dashboard/stats
 import { Route as DashboardSmsRatecardRouteImport } from './routes/_dashboard/sms/ratecard'
 import { Route as DashboardSmsRangesRouteImport } from './routes/_dashboard/sms/ranges'
 import { Route as DashboardSmsNumbersRouteImport } from './routes/_dashboard/sms/numbers'
+import { Route as DashboardAgentNumbersRouteImport } from './routes/_dashboard/agent/numbers'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -165,6 +166,11 @@ const DashboardSmsNumbersRoute = DashboardSmsNumbersRouteImport.update({
   path: '/sms/numbers',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAgentNumbersRoute = DashboardAgentNumbersRouteImport.update({
+  id: '/agent/numbers',
+  path: '/agent/numbers',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/test-panel': typeof DashboardTestPanelRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/news': typeof ClientNewsRoute
+  '/agent/numbers': typeof DashboardAgentNumbersRoute
   '/sms/numbers': typeof DashboardSmsNumbersRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
   '/sms/ratecard': typeof DashboardSmsRatecardRoute
@@ -208,6 +215,7 @@ export interface FileRoutesByTo {
   '/test-panel': typeof DashboardTestPanelRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/news': typeof ClientNewsRoute
+  '/agent/numbers': typeof DashboardAgentNumbersRoute
   '/sms/numbers': typeof DashboardSmsNumbersRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
   '/sms/ratecard': typeof DashboardSmsRatecardRoute
@@ -237,6 +245,7 @@ export interface FileRoutesById {
   '/_dashboard/test-panel': typeof DashboardTestPanelRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/news': typeof ClientNewsRoute
+  '/_dashboard/agent/numbers': typeof DashboardAgentNumbersRoute
   '/_dashboard/sms/numbers': typeof DashboardSmsNumbersRoute
   '/_dashboard/sms/ranges': typeof DashboardSmsRangesRoute
   '/_dashboard/sms/ratecard': typeof DashboardSmsRatecardRoute
@@ -266,6 +275,7 @@ export interface FileRouteTypes {
     | '/test-panel'
     | '/client/dashboard'
     | '/client/news'
+    | '/agent/numbers'
     | '/sms/numbers'
     | '/sms/ranges'
     | '/sms/ratecard'
@@ -293,6 +303,7 @@ export interface FileRouteTypes {
     | '/test-panel'
     | '/client/dashboard'
     | '/client/news'
+    | '/agent/numbers'
     | '/sms/numbers'
     | '/sms/ranges'
     | '/sms/ratecard'
@@ -321,6 +332,7 @@ export interface FileRouteTypes {
     | '/_dashboard/test-panel'
     | '/client/dashboard'
     | '/client/news'
+    | '/_dashboard/agent/numbers'
     | '/_dashboard/sms/numbers'
     | '/_dashboard/sms/ranges'
     | '/_dashboard/sms/ratecard'
@@ -528,6 +540,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSmsNumbersRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/agent/numbers': {
+      id: '/_dashboard/agent/numbers'
+      path: '/agent/numbers'
+      fullPath: '/agent/numbers'
+      preLoaderRoute: typeof DashboardAgentNumbersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -538,6 +557,7 @@ interface DashboardRouteChildren {
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardNewsRoute: typeof DashboardNewsRoute
   DashboardTestPanelRoute: typeof DashboardTestPanelRoute
+  DashboardAgentNumbersRoute: typeof DashboardAgentNumbersRoute
   DashboardSmsNumbersRoute: typeof DashboardSmsNumbersRoute
   DashboardSmsRangesRoute: typeof DashboardSmsRangesRoute
   DashboardSmsRatecardRoute: typeof DashboardSmsRatecardRoute
@@ -555,6 +575,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardNewsRoute: DashboardNewsRoute,
   DashboardTestPanelRoute: DashboardTestPanelRoute,
+  DashboardAgentNumbersRoute: DashboardAgentNumbersRoute,
   DashboardSmsNumbersRoute: DashboardSmsNumbersRoute,
   DashboardSmsRangesRoute: DashboardSmsRangesRoute,
   DashboardSmsRatecardRoute: DashboardSmsRatecardRoute,
