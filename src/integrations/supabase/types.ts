@@ -180,6 +180,116 @@ export type Database = {
           },
         ]
       }
+      commission_ledger: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string | null
+          id: string
+          number_pool_id: string | null
+          otp_audit_id: string | null
+          phone_number: string | null
+          tier: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          number_pool_id?: string | null
+          otp_audit_id?: string | null
+          phone_number?: string | null
+          tier: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          number_pool_id?: string | null
+          otp_audit_id?: string | null
+          phone_number?: string | null
+          tier?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      number_allocations: {
+        Row: {
+          base_rate: number | null
+          created_at: string | null
+          final_rate: number | null
+          from_user_id: string | null
+          id: string
+          markup: number | null
+          number_pool_id: string
+          released_at: string | null
+          status: string | null
+          tier: string
+          to_client_id: string | null
+          to_user_id: string | null
+        }
+        Insert: {
+          base_rate?: number | null
+          created_at?: string | null
+          final_rate?: number | null
+          from_user_id?: string | null
+          id?: string
+          markup?: number | null
+          number_pool_id: string
+          released_at?: string | null
+          status?: string | null
+          tier: string
+          to_client_id?: string | null
+          to_user_id?: string | null
+        }
+        Update: {
+          base_rate?: number | null
+          created_at?: string | null
+          final_rate?: number | null
+          from_user_id?: string | null
+          id?: string
+          markup?: number | null
+          number_pool_id?: string
+          released_at?: string | null
+          status?: string | null
+          tier?: string
+          to_client_id?: string | null
+          to_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "number_allocations_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "number_allocations_number_pool_id_fkey"
+            columns: ["number_pool_id"]
+            isOneToOne: false
+            referencedRelation: "number_pool"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "number_allocations_to_client_id_fkey"
+            columns: ["to_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "number_allocations_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       number_panels: {
         Row: {
           auto_relogin: boolean | null
@@ -224,8 +334,12 @@ export type Database = {
       }
       number_pool: {
         Row: {
+          agent_rate: number | null
           allocation_id: string | null
+          assigned_agent: string | null
+          assigned_client: string | null
           bot_id: string | null
+          client_rate: number | null
           country: string | null
           created_at: string | null
           expires_at: string | null
@@ -244,8 +358,12 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          agent_rate?: number | null
           allocation_id?: string | null
+          assigned_agent?: string | null
+          assigned_client?: string | null
           bot_id?: string | null
+          client_rate?: number | null
           country?: string | null
           created_at?: string | null
           expires_at?: string | null
@@ -264,8 +382,12 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          agent_rate?: number | null
           allocation_id?: string | null
+          assigned_agent?: string | null
+          assigned_client?: string | null
           bot_id?: string | null
+          client_rate?: number | null
           country?: string | null
           created_at?: string | null
           expires_at?: string | null
@@ -284,6 +406,20 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "number_pool_assigned_agent_fkey"
+            columns: ["assigned_agent"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "number_pool_assigned_client_fkey"
+            columns: ["assigned_client"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "number_pool_bot_id_fkey"
             columns: ["bot_id"]
