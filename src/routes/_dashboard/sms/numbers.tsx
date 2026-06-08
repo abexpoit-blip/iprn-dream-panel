@@ -172,45 +172,71 @@ function SmsNumbersPage() {
             <Table>
               <TableHeader className="bg-gray-50 border-b border-[#e3e6ec]">
                 <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-10 py-4 h-auto border-r border-[#e3e6ec]">
+                    <Checkbox
+                      checked={filteredNumbers.length > 0 && filteredNumbers.every((n: any) => selectedIds.includes(n.id))}
+                      onCheckedChange={(v) => {
+                        if (v) setSelectedIds(filteredNumbers.map((n: any) => n.id));
+                        else setSelectedIds([]);
+                      }}
+                    />
+                  </TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Phone Number</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Country</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Range</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Prefix</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Payout</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Panel</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Agent Rate</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Client Rate</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Assignment</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Status</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Last Update</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto">Action</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto">Updated</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10 text-gray-500 text-sm italic">Loading numbers...</TableCell>
+                    <TableCell colSpan={11} className="text-center py-10 text-gray-500 text-sm italic">Loading numbers...</TableCell>
                   </TableRow>
                 ) : filteredNumbers?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10 text-gray-500 text-sm italic">No matching numbers found</TableCell>
+                    <TableCell colSpan={11} className="text-center py-10 text-gray-500 text-sm italic">No matching numbers found</TableCell>
                   </TableRow>
                 ) : (
-                  filteredNumbers.map((num: any) => (
-                    <TableRow key={num.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
-                      <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.number}</TableCell>
-                      <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.country || '—'}</TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.range_name || '—'}</TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.prefix ? `+${num.prefix}` : '—'}</TableCell>
-                      <TableCell className="text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">{num.panel_payout != null ? Number(num.panel_payout).toFixed(2) : '—'}</TableCell>
-                      <TableCell className="py-3 border-r border-[#e3e6ec]">
-                        <span className={cn(
-                          "px-2 py-0.5 text-white text-[10px] font-bold rounded uppercase",
-                          num.status === 'available' ? "bg-green-500" : num.status === 'reserved' ? "bg-amber-500" : "bg-slate-500"
-                        )}>{num.status}</span>
-                      </TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{new Date(num.updated_at || num.created_at).toLocaleString()}</TableCell>
-                      <TableCell className="py-3 text-center">
-                         <Button variant="ghost" size="sm" className="h-7 text-[#0061f2] hover:bg-blue-50 text-[10px] font-bold uppercase">Details</Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredNumbers.map((num: any) => {
+                    const checked = selectedIds.includes(num.id);
+                    return (
+                      <TableRow key={num.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
+                        <TableCell className="py-3 border-r border-[#e3e6ec]">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              setSelectedIds((prev) => v ? [...prev, num.id] : prev.filter(x => x !== num.id));
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.number}</TableCell>
+                        <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.country || '—'}</TableCell>
+                        <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.range_name || '—'}</TableCell>
+                        <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.prefix ? `+${num.prefix}` : '—'}</TableCell>
+                        <TableCell className="text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">{num.panel_payout != null ? Number(num.panel_payout).toFixed(2) : '—'}</TableCell>
+                        <TableCell className="text-xs font-bold text-emerald-600 py-3 border-r border-[#e3e6ec]">{num.agent_rate != null ? Number(num.agent_rate).toFixed(2) : '—'}</TableCell>
+                        <TableCell className="text-xs font-bold text-purple-600 py-3 border-r border-[#e3e6ec]">{num.client_rate != null ? Number(num.client_rate).toFixed(2) : '—'}</TableCell>
+                        <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">
+                          {num.assigned_client ? <span className="text-purple-700 font-bold">→ Client</span>
+                            : num.assigned_agent ? <span className="text-emerald-700 font-bold">→ Agent</span>
+                            : <span className="text-gray-400">Unassigned</span>}
+                        </TableCell>
+                        <TableCell className="py-3 border-r border-[#e3e6ec]">
+                          <span className={cn(
+                            "px-2 py-0.5 text-white text-[10px] font-bold rounded uppercase",
+                            num.status === 'available' ? "bg-green-500" : num.status === 'reserved' ? "bg-amber-500" : "bg-slate-500"
+                          )}>{num.status}</span>
+                        </TableCell>
+                        <TableCell className="text-xs text-[#69707a] py-3">{new Date(num.updated_at || num.created_at).toLocaleString()}</TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
