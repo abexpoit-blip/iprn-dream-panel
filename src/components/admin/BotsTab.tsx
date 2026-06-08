@@ -793,6 +793,33 @@ export function BotsTab() {
                            />
                         </div>
                      </div>
+
+                     {selectedBot?.bot_type === 'shark' && (
+                       <div className="space-y-3 pt-3 border-t border-slate-100">
+                         <h4 className="text-[11px] font-black text-orange-600 uppercase tracking-widest">Captcha Bypass (Shark)</h4>
+                         <div className="space-y-1">
+                           <Label className="text-[10px] font-bold text-slate-600">Session Cookie (recommended)</Label>
+                           <textarea
+                             key={`${selectedBot?.id}-session_cookie`}
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'session_cookie')?.setting_value || ''}
+                             onBlur={(e) => updateBotSetting('session_cookie', e.target.value, selectedBot?.id)}
+                             placeholder="PHPSESSID=abc123; XSRF-TOKEN=..."
+                             className="w-full h-16 text-[11px] font-mono border border-slate-200 rounded p-2"
+                           />
+                           <p className="text-[9px] text-slate-400 italic">Paste browser cookies — bot will skip login form entirely.</p>
+                         </div>
+                         <div className="space-y-1">
+                           <Label className="text-[10px] font-bold text-slate-600">Manual Captcha Token</Label>
+                           <Input
+                             key={`${selectedBot?.id}-captcha_token`}
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'captcha_token')?.setting_value || ''}
+                             onBlur={(e) => updateBotSetting('captcha_token', e.target.value, selectedBot?.id)}
+                             placeholder="Solved captcha value"
+                             className="h-9 text-xs"
+                           />
+                         </div>
+                       </div>
+                     )}
                   </div>
                   <div className="space-y-4">
                      <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Terminal size={14} /> Polling Behavior</h4>
@@ -802,7 +829,7 @@ export function BotsTab() {
                            <Input
                              key={`${selectedBot?.id}-interval`}
                              type="number"
-                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'interval')?.setting_value || '15'}
+                             defaultValue={botSettings.find(s => s.bot_id === selectedBot?.id && s.setting_key === 'interval')?.setting_value || '20'}
                              onBlur={(e) => updateBotSetting('interval', e.target.value, selectedBot?.id)}
                              className="h-9 text-xs"
                            />
