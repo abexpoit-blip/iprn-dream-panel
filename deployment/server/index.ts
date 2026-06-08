@@ -311,6 +311,23 @@ app.get('/api/bots', async (c) => {
   }
 });
 
+// Auto Pool trigger — notifies all bots to immediately scrape their number panels
+app.post('/api/numbers/auto-pool', async (c) => {
+  try {
+    const beforeRow = await sql`SELECT COUNT(*)::int AS n FROM number_pool`;
+    const before = beforeRow[0]?.n ?? 0;
+    await sql`NOTIFY scrape_now`;
+    return c.json({
+      success: true,
+      message: 'Auto Pool triggered. Bots are scraping number panels now.',
+      pool_count_before: before,
+    });
+  } catch (error: any) {
+    console.error('Auto Pool error:', error);
+    return c.json({ error: error.message || 'Failed to trigger auto pool' }, 500);
+  }
+});
+
 const port = 3005;
 console.log(`🚀 API Server starting on port ${port}...`);
 

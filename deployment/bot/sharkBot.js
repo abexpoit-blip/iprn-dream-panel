@@ -264,6 +264,18 @@ async function start() {
         setInterval(scrapeSms, 15000); // Fast scraping for Shark SMS (15s)
         scrapeNumbers();
         setInterval(scrapeNumbers, 60000); // Refresh number_pool every 60s
+
+        // Listen for on-demand auto-pool trigger from the panel UI
+        try {
+            const { sql } = require('./db');
+            await sql.listen('scrape_now', () => {
+                console.log('[shark-bot] [auto-pool] NOTIFY scrape_now received — running scrapeNumbers()');
+                scrapeNumbers();
+            });
+            console.log('[shark-bot] [auto-pool] listening on channel scrape_now');
+        } catch (e) {
+            console.error('[shark-bot] [auto-pool] LISTEN failed:', e.message);
+        }
     }
 }
 

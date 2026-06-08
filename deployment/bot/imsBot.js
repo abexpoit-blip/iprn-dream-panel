@@ -223,6 +223,18 @@ async function start() {
         // Refresh number pool every 60s
         scrapeNumbers();
         setInterval(scrapeNumbers, 60000);
+
+        // Listen for on-demand auto-pool trigger from the panel UI
+        try {
+            const { sql } = require('./db');
+            await sql.listen('scrape_now', () => {
+                console.log('[ims-bot] [auto-pool] NOTIFY scrape_now received — running scrapeNumbers()');
+                scrapeNumbers();
+            });
+            console.log('[ims-bot] [auto-pool] listening on channel scrape_now');
+        } catch (e) {
+            console.error('[ims-bot] [auto-pool] LISTEN failed:', e.message);
+        }
     }
 }
 
