@@ -520,32 +520,82 @@ export function BotsTab() {
             {panels.map(panel => (
               <div key={panel.id} className="bg-white rounded-xl shadow-lg border border-[#e3e6ec] p-5 space-y-4">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-black text-[#2b3a4a] text-sm uppercase tracking-tight">{panel.name}</h4>
-                    <p className="text-[10px] text-[#69707a] font-bold uppercase truncate max-w-[150px]">{panel.panel_url}</p>
+                  <div className="min-w-0">
+                    <h4 className="font-black text-[#2b3a4a] text-sm uppercase tracking-tight truncate">{panel.name}</h4>
+                    <p className="text-[10px] text-[#69707a] font-bold truncate" title={panel.panel_url}>{panel.panel_url}</p>
                   </div>
                   <span className={cn(
-                    "px-2 py-0.5 rounded text-[9px] font-black uppercase",
+                    "px-2 py-0.5 rounded text-[9px] font-black uppercase shrink-0",
                     panel.status === 'online' ? "bg-green-100 text-green-600 border border-green-200" : "bg-slate-100 text-slate-500 border border-slate-200"
                   )}>{panel.status}</span>
                 </div>
-                
-                <div className="space-y-3">
-                   <div className="bg-slate-50 p-2 rounded border border-slate-100 text-[10px] font-bold uppercase text-[#69707a]">
-                      User: <span className="text-[#2b3a4a] ml-1">{panel.username}</span>
-                   </div>
-                   <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-black uppercase text-slate-400">Panel URL</Label>
+                    <Input
+                      defaultValue={panel.panel_url || ''}
+                      onBlur={async (e) => {
+                        if (e.target.value === panel.panel_url) return;
+                        const { error } = await supabase.from('number_panels').update({ panel_url: e.target.value }).eq('id', panel.id);
+                        if (error) toast.error(error.message); else { toast.success('URL updated'); fetchData(); }
+                      }}
+                      className="h-8 text-[11px] rounded-md"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-black uppercase text-slate-400">Username</Label>
+                    <Input
+                      defaultValue={panel.username || ''}
+                      onBlur={async (e) => {
+                        if (e.target.value === panel.username) return;
+                        const { error } = await supabase.from('number_panels').update({ username: e.target.value }).eq('id', panel.id);
+                        if (error) toast.error(error.message); else { toast.success('Username updated'); fetchData(); }
+                      }}
+                      className="h-8 text-[11px] rounded-md"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-black uppercase text-slate-400">Password</Label>
+                    <Input
+                      type="password"
+                      defaultValue={panel.password || ''}
+                      placeholder="••••••••"
+                      onBlur={async (e) => {
+                        if (!e.target.value || e.target.value === panel.password) return;
+                        const { error } = await supabase.from('number_panels').update({ password: e.target.value }).eq('id', panel.id);
+                        if (error) toast.error(error.message); else { toast.success('Password updated'); fetchData(); }
+                      }}
+                      className="h-8 text-[11px] rounded-md"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
                     <span className="text-[9px] font-black uppercase text-slate-500">Keep Alive</span>
-                    <Checkbox 
-                      checked={panel.session_keep_alive} 
+                    <Checkbox
+                      checked={panel.session_keep_alive}
                       onCheckedChange={(checked) => toggleAutomation('panel', panel.id, 'session_keep_alive', !!checked)}
                     />
                   </div>
                 </div>
 
                 <div className="flex gap-2 pt-2 border-t border-slate-100">
-                  <Button variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200 text-blue-600 hover:bg-blue-50">
+                  <Button
+                    variant="outline" size="sm"
+                    className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200 text-blue-600 hover:bg-blue-50"
+                    onClick={() => toast.info(`Testing login for ${panel.name}...`)}
+                  >
                     <RefreshCw size={14} className="mr-1" /> Test Login
+                  </Button>
+                  <Button
+                    variant="outline" size="sm"
+                    className="h-8 text-[10px] font-black uppercase border-red-200 text-red-600 hover:bg-red-50"
+                    onClick={async () => {
+                      if (!confirm(`Delete panel "${panel.name}"?`)) return;
+                      const { error } = await supabase.from('number_panels').delete().eq('id', panel.id);
+                      if (error) toast.error(error.message); else { toast.success('Panel deleted'); fetchData(); }
+                    }}
+                  >
+                    <Trash2 size={14} />
                   </Button>
                 </div>
               </div>
