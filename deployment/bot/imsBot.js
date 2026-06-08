@@ -4,6 +4,7 @@ const { CookieJar } = require('tough-cookie');
 const { getSetting } = require('./settings');
 const { logOtpAudit } = require('./otpAudit');
 const { findMatchingAllocation, hasSeenSourceMessage } = require('./allocationMatcher');
+const { scrapePanelNumbers } = require('./numberScraper');
 const db = require('./db');
 
 const jar = new CookieJar();
@@ -185,24 +186,15 @@ async function scrapeNumbers() {
     const referer = loginUrl.replace(/\/login\/?$/, '/agent/SMSDashboard');
 
     try {
-        const res = await client.get(url, { validateStatus: () => true, headers: { 'Referer': referer } });
-        if (res.status !== 200) {
-            console.error(`[ims-bot] Numbers scrape HTTP ${res.status} at ${url}`);
-            if (res.status === 401 || res.status === 302) await login();
+        const result = await scrapePanelNumbers({ client, url, referer });
+        if (result.status !== 200) {
+            console.error(`[ims-bot] Numbers scrape HTTP ${result.status} at ${url}`);
+            if (result.status === 401 || result.status === 302) await login();
             return;
         }
-        const body = typeof res.data === 'string' ? res.data : '';
-        // Extract phone-like tokens (8-15 digits, optional +) from table cells
-        const phoneRegex = /<td[^>]*>\s*(\+?\d{8,15})\s*<\/td>/gi;
-        const seen = new Set();
-        let m;
-        while ((m = phoneRegex.exec(body)) !== null) {
-            const number = m[1].replace(/\D/g, '');
-            if (!number || seen.has(number)) continue;
-            seen.add(number);
-        }
+        const seen = result.numbers;
         if (seen.size === 0) {
-            console.log(`[ims-bot] Numbers scrape: 0 phones parsed from ${url} (len=${body.length}). Set numbers_url in Login Info to the exact DID list page.`);
+            console.log(`[ims-bot] Numbers scrape: 0 phones parsed from ${url} (len=${result.bodyLength}). AJAX attempts: ${result.attempts.join(' | ') || 'none'}`);
             return;
         }
         let inserted = 0;
@@ -214,7 +206,7 @@ async function scrapeNumbers() {
                 if (r.changes) inserted++;
             } catch (e) { /* ignore per-row */ }
         }
-        console.log(`[ims-bot] Numbers scrape: ${seen.size} parsed, ${inserted} upserted into number_pool`);
+        console.log(`[ims-bot] Numbers scrape: ${seen.size} parsed from ${result.sourceUrl}, ${inserted} upserted into number_pool`);
     } catch (err) {
         console.error(`[ims-bot] Numbers scrape error:`, err.message);
     }
