@@ -29,6 +29,8 @@ function SmsNumbersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRange, setFilterRange] = useState("All Ranges");
   const [autoPooling, setAutoPooling] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [assignOpen, setAssignOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: numbers, isLoading } = useQuery({
