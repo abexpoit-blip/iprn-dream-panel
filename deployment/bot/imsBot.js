@@ -33,7 +33,7 @@ let isActive = false;
 let BOT_ID = null;
 const BOT_NAME = 'IMS Main Agent';
 const BOT_TYPE = 'ims';
-const PANEL_MODE = 'agent'; // /agent/...
+const PANEL_MODE = 'client'; // /client/... — these are client-panel accounts
 
 // IMS blocks if CDR refresh < ~16s
 const IMS_MIN_INTERVAL_MS = 20000;
@@ -369,7 +369,7 @@ async function scrapeSms() {
 // ---------- BOOTSTRAP ----------
 async function start() {
   isActive = true;
-  console.log('[ims-bot] Bot starting (AGENT mode)...');
+  console.log('[ims-bot] Bot starting (CLIENT mode)...');
 
   try {
     let existing = await db.prepare('SELECT id FROM bots WHERE bot_type = ? LIMIT 1').get(BOT_TYPE);
