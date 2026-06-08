@@ -147,7 +147,10 @@ function SmsNumbersPage() {
               <TableHeader className="bg-gray-50 border-b border-[#e3e6ec]">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Phone Number</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Service</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Country</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Range</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Prefix</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Payout</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Status</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Last Update</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto">Action</TableHead>
@@ -156,17 +159,20 @@ function SmsNumbersPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-gray-500 text-sm italic">Loading numbers...</TableCell>
+                    <TableCell colSpan={8} className="text-center py-10 text-gray-500 text-sm italic">Loading numbers...</TableCell>
                   </TableRow>
                 ) : filteredNumbers?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-gray-500 text-sm italic">No matching numbers found</TableCell>
+                    <TableCell colSpan={8} className="text-center py-10 text-gray-500 text-sm italic">No matching numbers found</TableCell>
                   </TableRow>
                 ) : (
                   filteredNumbers.map((num: any) => (
                     <TableRow key={num.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
                       <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.number}</TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.service_tag || 'Global'}</TableCell>
+                      <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.country || '—'}</TableCell>
+                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.range_name || '—'}</TableCell>
+                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.prefix ? `+${num.prefix}` : '—'}</TableCell>
+                      <TableCell className="text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">{num.panel_payout != null ? Number(num.panel_payout).toFixed(2) : '—'}</TableCell>
                       <TableCell className="py-3 border-r border-[#e3e6ec]">
                         <span className={cn(
                           "px-2 py-0.5 text-white text-[10px] font-bold rounded uppercase",
