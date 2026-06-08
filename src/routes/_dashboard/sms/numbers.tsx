@@ -41,9 +41,17 @@ function SmsNumbersPage() {
     }
   });
 
-  const filteredNumbers = numbers?.filter((num: any) => 
-    (filterRange === "All Ranges" || num.service_tag === filterRange) &&
-    (num.number?.includes(searchTerm) || num.service_tag?.toLowerCase().includes(searchTerm.toLowerCase()))
+  const rangeOptions = Array.from(
+    new Set((numbers || []).map((n: any) => n.range_name).filter(Boolean))
+  ).sort() as string[];
+
+  const filteredNumbers = numbers?.filter((num: any) =>
+    (filterRange === "All Ranges" || num.range_name === filterRange) &&
+    (
+      num.number?.includes(searchTerm) ||
+      num.range_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      num.country?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   ) || [];
 
   const handleExport = () => {
