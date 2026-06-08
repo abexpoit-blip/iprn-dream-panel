@@ -47,10 +47,13 @@ function SmsNumbersPage() {
   ) || [];
 
   const handleExport = () => {
-    const headers = ["Number", "Service", "Status", "Last Update"];
+    const headers = ["Number", "Country", "Range", "Prefix", "Payout", "Status", "Last Update"];
     const csvData = filteredNumbers.map((num: any) => [
       num.number,
-      num.service_tag || 'Global',
+      num.country || '-',
+      num.range_name || '-',
+      num.prefix || '-',
+      num.panel_payout ?? '-',
       num.status,
       new Date(num.updated_at || num.created_at).toLocaleString()
     ]);
