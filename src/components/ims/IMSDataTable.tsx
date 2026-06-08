@@ -1,7 +1,4 @@
 import { useMemo, useState, type ReactNode } from "react";
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -128,32 +125,45 @@ export function IMSDataTable<T>({
     URL.revokeObjectURL(url);
   };
 
-  const doExcel = () => {
-    const matrix = buildMatrix();
-    const ws = XLSX.utils.aoa_to_sheet(matrix);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Data");
-    XLSX.writeFile(wb, `${exportName}.xlsx`);
+  const doExcel = async () => {
+    try {
+      const XLSX = await import("xlsx");
+      const matrix = buildMatrix();
+      const ws = XLSX.utils.aoa_to_sheet(matrix);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Data");
+      XLSX.writeFile(wb, `${exportName}.xlsx`);
+    } catch {
+      toast.error("Excel export failed");
+    }
   };
 
-  const doPDF = () => {
-    const matrix = buildMatrix(false);
-    const head = [
-      columns
-        .filter((c) => c.exportable !== false)
-        .map((c) => (typeof c.header === "string" ? c.header : c.key)),
-    ];
-    const pdf = new jsPDF({ orientation: "landscape" });
-    pdf.setFontSize(14);
-    pdf.text(title || exportName, 14, 14);
-    autoTable(pdf, {
-      head,
-      body: matrix,
-      startY: 20,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [0, 97, 242] },
-    });
-    pdf.save(`${exportName}.pdf`);
+  const doPDF = async () => {
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+      const matrix = buildMatrix(false);
+      const head = [
+        columns
+          .filter((c) => c.exportable !== false)
+          .map((c) => (typeof c.header === "string" ? c.header : c.key)),
+      ];
+      const pdf = new jsPDF({ orientation: "landscape" });
+      pdf.setFontSize(14);
+      pdf.text(title || exportName, 14, 14);
+      autoTable(pdf, {
+        head,
+        body: matrix,
+        startY: 20,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [0, 97, 242] },
+      });
+      pdf.save(`${exportName}.pdf`);
+    } catch {
+      toast.error("PDF export failed");
+    }
   };
 
   const doPrint = () => {

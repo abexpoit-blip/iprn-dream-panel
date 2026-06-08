@@ -36,7 +36,7 @@ function LoginPage() {
     const raw = username.trim();
 
     try {
-      console.log("[Login] Attempting sign in for:", raw);
+      
       // Attempt login by email first, then try appending @ims.sms if it's a simple username
       let loginEmail = raw;
       if (!raw.includes('@')) {
@@ -56,7 +56,7 @@ function LoginPage() {
       }
 
       const { user } = result.data;
-      console.log("[Login] Success, user profile:", user);
+      
       
       if (user.role === "client") {
         navigate({ to: "/client/dashboard" });
