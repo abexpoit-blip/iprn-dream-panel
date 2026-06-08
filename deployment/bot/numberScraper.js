@@ -30,8 +30,26 @@ function extractPhoneTokens(value) {
     return phones;
 }
 
+function addStrictPhone(set, value) {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (digits.length >= 8 && digits.length <= 15 && !/^(\d)\1+$/.test(digits)) set.add(digits);
+}
+
 function addPhones(set, value) {
     for (const phone of extractPhoneTokens(value)) set.add(phone);
+}
+
+function addPrefixNumber(set, prefixValue, numberValue) {
+    const prefix = cleanCell(prefixValue).replace(/\D/g, '');
+    const number = cleanCell(numberValue).replace(/\D/g, '');
+    if (!prefix || !number) return;
+    addStrictPhone(set, number.startsWith(prefix) ? number : `${prefix}${number}`);
+}
+
+function addPanelRowPhones(set, row) {
+    if (!Array.isArray(row) || row.length < 4) return;
+    addPhones(set, row[3]); // MyNumbers table: checkbox, range, prefix, number
+    addPrefixNumber(set, row[2], row[3]);
 }
 
 function extractNumbersFromHtml(html) {
@@ -40,8 +58,7 @@ function extractNumbersFromHtml(html) {
 
     for (const row of rows) {
         const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(m => m[1]);
-        if (cells.length >= 4) addPhones(found, cells[3]); // MyNumbers table: checkbox, range, prefix, number
-        for (const cell of cells) addPhones(found, cell);
+        addPanelRowPhones(found, cells);
     }
 
     return found;
@@ -62,12 +79,16 @@ function extractNumbersFromJsonPayload(payload) {
 
     function parseRow(row) {
         if (Array.isArray(row)) {
-            if (row.length >= 4) addPhones(found, row[3]);
+            addPanelRowPhones(found, row);
             return;
         }
         if (!row || typeof row !== 'object') return;
+        const prefixEntry = Object.entries(row).find(([key]) => /^prefix$/i.test(key));
         for (const [key, value] of Object.entries(row)) {
-            if (/number|phone|mobile|msisdn|did/i.test(key)) addPhones(found, value);
+            if (/number|phone|mobile|msisdn|did/i.test(key)) {
+                addPhones(found, value);
+                if (prefixEntry) addPrefixNumber(found, prefixEntry[1], value);
+            }
         }
     }
 
@@ -127,6 +148,16 @@ function extractAjaxCandidates(html, pageUrl) {
         } catch (_) {}
     }
 
+    try {
+        const u = new URL(pageUrl);
+        const directory = u.pathname.endsWith('/') ? u.pathname.slice(0, -1) : u.pathname.replace(/\/[^/]*$/, '');
+        const base = u.origin + directory;
+        // MyNumbers uses a separate DataTables endpoint; add it even when the page also mentions aj_ranges.php.
+        addCandidate(`${base}/res/data_numbers.php?frange=&fclient=`, 'datatable');
+        addCandidate(`${base}/res/data_numbers.php`, 'datatable');
+        addCandidate(`${base}/res/aj_numbers.php?frange=&fclient=`, 'datatable');
+    } catch (_) {}
+
     const patterns = [
         [/sAjaxSource\s*:\s*["']([^"']+)["']/gi, 'datatable'],
         /["']ajax["']\s*:\s*["']([^"']+)["']/gi,
@@ -146,7 +177,8 @@ function extractAjaxCandidates(html, pageUrl) {
     if (candidates.length === 0) {
         try {
             const u = new URL(pageUrl);
-            const base = u.origin + u.pathname.replace(/\/[^/]*$/, '');
+            const directory = u.pathname.endsWith('/') ? u.pathname.slice(0, -1) : u.pathname.replace(/\/[^/]*$/, '');
+            const base = u.origin + directory;
             const guesses = [`${base}/res/data_numbers.php?frange=&fclient=`, `${pageUrl}/data`];
             for (const g of guesses) addCandidate(g, 'guess');
         } catch (_) {}
@@ -174,7 +206,26 @@ function withDataTableParams(candidate) {
     if (!next.searchParams.has('length')) next.searchParams.set('length', '500');
     next.searchParams.set('search[value]', '');
     next.searchParams.set('search[regex]', 'false');
+    if (!next.searchParams.has('sEcho')) next.searchParams.set('sEcho', '1');
+    if (!next.searchParams.has('iDisplayStart')) next.searchParams.set('iDisplayStart', '0');
+    if (!next.searchParams.has('iDisplayLength')) next.searchParams.set('iDisplayLength', '500');
+    if (!next.searchParams.has('sSearch')) next.searchParams.set('sSearch', '');
     return next.toString();
+}
+
+function dataTableForm(candidate) {
+    const params = new URL(candidate).searchParams;
+    const form = new URLSearchParams(params);
+    if (!form.has('draw')) form.set('draw', '1');
+    if (!form.has('start')) form.set('start', '0');
+    if (!form.has('length')) form.set('length', '500');
+    form.set('search[value]', '');
+    form.set('search[regex]', 'false');
+    if (!form.has('sEcho')) form.set('sEcho', '1');
+    if (!form.has('iDisplayStart')) form.set('iDisplayStart', '0');
+    if (!form.has('iDisplayLength')) form.set('iDisplayLength', '500');
+    if (!form.has('sSearch')) form.set('sSearch', '');
+    return form;
 }
 
 async function scrapePanelNumbers({ client, url, referer }) {
@@ -197,11 +248,11 @@ async function scrapePanelNumbers({ client, url, referer }) {
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json, text/javascript, */*; q=0.01',
     };
-    const form = new URLSearchParams({ draw: '1', start: '0', length: '500', 'search[value]': '', 'search[regex]': 'false' });
 
     for (const candidate of extractAjaxCandidates(body, url)) {
         for (const method of ['get', 'post']) {
             const requestUrl = method === 'get' ? withDataTableParams(candidate.url) : candidate.url;
+            const form = dataTableForm(candidate.url);
             const res = method === 'get'
                 ? await client.get(requestUrl, { validateStatus: () => true, headers })
                 : await client.post(requestUrl, form, { validateStatus: () => true, headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' } });
