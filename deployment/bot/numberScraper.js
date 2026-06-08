@@ -44,8 +44,11 @@ function extractNumbersFromHtml(html) {
         for (const cell of cells) addPhones(found, cell);
     }
 
-    if (found.size === 0) addPhones(found, html);
     return found;
+}
+
+function looksLikeHtmlPage(value) {
+    return /<!doctype html|<html\b|<head\b|<body\b/i.test(String(value || ''));
 }
 
 function extractNumbersFromJsonPayload(payload) {
@@ -85,14 +88,14 @@ function extractNumbersFromJsonPayload(payload) {
     try {
         walk(typeof payload === 'string' ? JSON.parse(payload) : payload);
     } catch (_) {
-        return extractNumbersFromHtml(payload);
+        return looksLikeHtmlPage(payload) ? new Set() : extractNumbersFromHtml(payload);
     }
 
     return found;
 }
 
 function extractAjaxCandidates(html, pageUrl) {
-    const candidates = new Set([pageUrl]);
+    const candidates = new Set();
     const patterns = [
         /ajax\s*:\s*["']([^"']+)["']/gi,
         /url\s*:\s*["']([^"']+)["']/gi,
