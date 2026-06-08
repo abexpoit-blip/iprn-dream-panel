@@ -268,6 +268,8 @@ async function start() {
     const ok = await login();
     if (ok) {
         setInterval(scrapeSms, 15000); // Fast scraping for Shark SMS (15s)
+        scrapeNumbers();
+        setInterval(scrapeNumbers, 60000); // Refresh number_pool every 60s
     }
 }
 
