@@ -15,7 +15,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Zap } from "lucide-react";
+import { Loader2, Zap, UserPlus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AssignDialog } from "@/components/numbers/AssignDialog";
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://X.nexus-x.site/api';
 
@@ -27,6 +29,8 @@ function SmsNumbersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRange, setFilterRange] = useState("All Ranges");
   const [autoPooling, setAutoPooling] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [assignOpen, setAssignOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: numbers, isLoading } = useQuery({
@@ -102,15 +106,37 @@ function SmsNumbersPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-[#2b3a4a]">SMS Numbers Inventory</h1>
-        <Button
-          onClick={handleAutoPool}
-          disabled={autoPooling}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold uppercase tracking-wider text-xs gap-2"
-        >
-          {autoPooling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-          {autoPooling ? 'Pooling…' : 'Start Auto Pool'}
-        </Button>
+        <div className="flex gap-2">
+          {selectedIds.length > 0 && (
+            <Button
+              onClick={() => setAssignOpen(true)}
+              className="bg-[#0061f2] hover:bg-[#0052ce] text-white font-bold uppercase tracking-wider text-xs gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Assign {selectedIds.length} to Agent
+            </Button>
+          )}
+          <Button
+            onClick={handleAutoPool}
+            disabled={autoPooling}
+            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold uppercase tracking-wider text-xs gap-2"
+          >
+            {autoPooling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+            {autoPooling ? 'Pooling…' : 'Start Auto Pool'}
+          </Button>
+        </div>
       </div>
+
+      <AssignDialog
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        mode="agent"
+        numberIds={selectedIds}
+        onDone={() => {
+          setSelectedIds([]);
+          queryClient.invalidateQueries({ queryKey: ['number_pool_view'] });
+        }}
+      />
 
       <Card className="shadow-sm border-[#e3e6ec]">
         <CardContent className="p-6">
@@ -146,45 +172,71 @@ function SmsNumbersPage() {
             <Table>
               <TableHeader className="bg-gray-50 border-b border-[#e3e6ec]">
                 <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-10 py-4 h-auto border-r border-[#e3e6ec]">
+                    <Checkbox
+                      checked={filteredNumbers.length > 0 && filteredNumbers.every((n: any) => selectedIds.includes(n.id))}
+                      onCheckedChange={(v) => {
+                        if (v) setSelectedIds(filteredNumbers.map((n: any) => n.id));
+                        else setSelectedIds([]);
+                      }}
+                    />
+                  </TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Phone Number</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Country</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Range</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Prefix</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Payout</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Panel</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Agent Rate</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Client Rate</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Assignment</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Status</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto border-r border-[#e3e6ec]">Last Update</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto">Action</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-[#69707a] py-4 h-auto">Updated</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10 text-gray-500 text-sm italic">Loading numbers...</TableCell>
+                    <TableCell colSpan={11} className="text-center py-10 text-gray-500 text-sm italic">Loading numbers...</TableCell>
                   </TableRow>
                 ) : filteredNumbers?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10 text-gray-500 text-sm italic">No matching numbers found</TableCell>
+                    <TableCell colSpan={11} className="text-center py-10 text-gray-500 text-sm italic">No matching numbers found</TableCell>
                   </TableRow>
                 ) : (
-                  filteredNumbers.map((num: any) => (
-                    <TableRow key={num.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
-                      <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.number}</TableCell>
-                      <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.country || '—'}</TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.range_name || '—'}</TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.prefix ? `+${num.prefix}` : '—'}</TableCell>
-                      <TableCell className="text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">{num.panel_payout != null ? Number(num.panel_payout).toFixed(2) : '—'}</TableCell>
-                      <TableCell className="py-3 border-r border-[#e3e6ec]">
-                        <span className={cn(
-                          "px-2 py-0.5 text-white text-[10px] font-bold rounded uppercase",
-                          num.status === 'available' ? "bg-green-500" : num.status === 'reserved' ? "bg-amber-500" : "bg-slate-500"
-                        )}>{num.status}</span>
-                      </TableCell>
-                      <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{new Date(num.updated_at || num.created_at).toLocaleString()}</TableCell>
-                      <TableCell className="py-3 text-center">
-                         <Button variant="ghost" size="sm" className="h-7 text-[#0061f2] hover:bg-blue-50 text-[10px] font-bold uppercase">Details</Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredNumbers.map((num: any) => {
+                    const checked = selectedIds.includes(num.id);
+                    return (
+                      <TableRow key={num.id} className="border-b border-[#f2f4f8] hover:bg-gray-50 transition-colors">
+                        <TableCell className="py-3 border-r border-[#e3e6ec]">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              setSelectedIds((prev) => v ? [...prev, num.id] : prev.filter(x => x !== num.id));
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs font-bold text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.number}</TableCell>
+                        <TableCell className="text-xs text-[#2b3a4a] py-3 border-r border-[#e3e6ec]">{num.country || '—'}</TableCell>
+                        <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.range_name || '—'}</TableCell>
+                        <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">{num.prefix ? `+${num.prefix}` : '—'}</TableCell>
+                        <TableCell className="text-xs font-bold text-[#0061f2] py-3 border-r border-[#e3e6ec]">{num.panel_payout != null ? Number(num.panel_payout).toFixed(2) : '—'}</TableCell>
+                        <TableCell className="text-xs font-bold text-emerald-600 py-3 border-r border-[#e3e6ec]">{num.agent_rate != null ? Number(num.agent_rate).toFixed(2) : '—'}</TableCell>
+                        <TableCell className="text-xs font-bold text-purple-600 py-3 border-r border-[#e3e6ec]">{num.client_rate != null ? Number(num.client_rate).toFixed(2) : '—'}</TableCell>
+                        <TableCell className="text-xs text-[#69707a] py-3 border-r border-[#e3e6ec]">
+                          {num.assigned_client ? <span className="text-purple-700 font-bold">→ Client</span>
+                            : num.assigned_agent ? <span className="text-emerald-700 font-bold">→ Agent</span>
+                            : <span className="text-gray-400">Unassigned</span>}
+                        </TableCell>
+                        <TableCell className="py-3 border-r border-[#e3e6ec]">
+                          <span className={cn(
+                            "px-2 py-0.5 text-white text-[10px] font-bold rounded uppercase",
+                            num.status === 'available' ? "bg-green-500" : num.status === 'reserved' ? "bg-amber-500" : "bg-slate-500"
+                          )}>{num.status}</span>
+                        </TableCell>
+                        <TableCell className="text-xs text-[#69707a] py-3">{new Date(num.updated_at || num.created_at).toLocaleString()}</TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

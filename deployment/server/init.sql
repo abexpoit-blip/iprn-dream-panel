@@ -153,6 +153,60 @@ ON CONFLICT (username) DO UPDATE SET status = 'approved', is_admin = true, role 
 CREATE INDEX IF NOT EXISTS idx_number_pool_status ON number_pool(status);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 
+-- =========================================================================
+-- Admin → Agent → Client allocation chain
+-- =========================================================================
+-- Panel metadata captured by bots (idempotent)
+ALTER TABLE number_pool ADD COLUMN IF NOT EXISTS range_name TEXT;
+ALTER TABLE number_pool ADD COLUMN IF NOT EXISTS prefix TEXT;
+ALTER TABLE number_pool ADD COLUMN IF NOT EXISTS country TEXT;
+ALTER TABLE number_pool ADD COLUMN IF NOT EXISTS panel_payout NUMERIC;
+
+-- Direct ownership pointers (fast filtering)
+ALTER TABLE number_pool ADD COLUMN IF NOT EXISTS assigned_agent UUID REFERENCES profiles(id) ON DELETE SET NULL;
+ALTER TABLE number_pool ADD COLUMN IF NOT EXISTS assigned_client UUID REFERENCES clients(id) ON DELETE SET NULL;
+ALTER TABLE number_pool ADD COLUMN IF NOT EXISTS agent_rate NUMERIC;   -- price the agent pays (panel_payout + admin markup)
+ALTER TABLE number_pool ADD COLUMN IF NOT EXISTS client_rate NUMERIC;  -- price the client pays (agent_rate + agent markup)
+
+CREATE INDEX IF NOT EXISTS idx_number_pool_assigned_agent ON number_pool(assigned_agent);
+CREATE INDEX IF NOT EXISTS idx_number_pool_assigned_client ON number_pool(assigned_client);
+
+-- Allocation ledger: full chain history (one row per assignment event)
+CREATE TABLE IF NOT EXISTS number_allocations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    number_pool_id UUID NOT NULL REFERENCES number_pool(id) ON DELETE CASCADE,
+    tier TEXT NOT NULL CHECK (tier IN ('agent','client')),
+    from_user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,  -- assigner (admin or agent)
+    to_user_id   UUID REFERENCES profiles(id) ON DELETE SET NULL,  -- agent profile (tier='agent')
+    to_client_id UUID REFERENCES clients(id)  ON DELETE SET NULL,  -- client row    (tier='client')
+    base_rate NUMERIC,    -- the inbound rate this tier received the number at
+    markup NUMERIC,       -- profit added at this tier
+    final_rate NUMERIC,   -- base_rate + markup (what the next tier pays)
+    status TEXT DEFAULT 'active' CHECK (status IN ('active','released')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    released_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_alloc_number ON number_allocations(number_pool_id);
+CREATE INDEX IF NOT EXISTS idx_alloc_agent  ON number_allocations(to_user_id) WHERE tier='agent' AND status='active';
+CREATE INDEX IF NOT EXISTS idx_alloc_client ON number_allocations(to_client_id) WHERE tier='client' AND status='active';
+
+-- Commission ledger: per-OTP profit split across tiers
+CREATE TABLE IF NOT EXISTS commission_ledger (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    otp_audit_id UUID,           -- soft FK to otp_audit_log.id
+    number_pool_id UUID,
+    phone_number TEXT,
+    tier TEXT NOT NULL,          -- 'admin' | 'agent' | 'client_charge'
+    user_id UUID,                -- recipient (profile id) or NULL for client_charge debit row
+    client_id UUID,              -- when tier='client_charge'
+    amount NUMERIC NOT NULL,     -- credited to user_id (or debited from client when tier='client_charge')
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_commission_user ON commission_ledger(user_id);
+CREATE INDEX IF NOT EXISTS idx_commission_client ON commission_ledger(client_id);
+CREATE INDEX IF NOT EXISTS idx_commission_number ON commission_ledger(number_pool_id);
+
 
 
 -- Seeding from previous Lovable configuration
