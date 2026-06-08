@@ -17,7 +17,17 @@ const { pushOtpToUser } = require('./telegramDelivery');
 const db = require('./db');
 
 const jar = new CookieJar();
-const client = wrapper(axios.create({ jar, withCredentials: true, timeout: 20000 }));
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const client = wrapper(axios.create({
+  jar,
+  withCredentials: true,
+  timeout: 25000,
+  headers: {
+    'User-Agent': UA,
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  },
+}));
 
 let isActive = false;
 let BOT_ID = null;
