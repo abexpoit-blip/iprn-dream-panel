@@ -23,7 +23,7 @@ let isActive = false;
 let BOT_ID = null;
 const BOT_NAME = 'Shark SMS Bot';
 const BOT_TYPE = 'shark';
-const PANEL_MODE = 'agent'; // /ints/agent/...
+const PANEL_MODE = 'client'; // /ints/client/... — these are client-panel accounts
 
 async function updateBotStatus(status, error = null) {
   if (!BOT_ID) return;
@@ -336,7 +336,7 @@ async function scrapeSms() {
 // ---------- BOOTSTRAP ----------
 async function start() {
   isActive = true;
-  console.log('[shark-bot] Bot starting (AGENT mode)...');
+  console.log('[shark-bot] Bot starting (CLIENT mode)...');
 
   try {
     let existing = await db.prepare('SELECT id FROM bots WHERE bot_type = ? LIMIT 1').get(BOT_TYPE);

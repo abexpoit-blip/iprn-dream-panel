@@ -256,11 +256,12 @@ SELECT bot_id, column_name, val, is_secret FROM (
 WHERE val IS NOT NULL
 ON CONFLICT (bot_id, setting_key) DO NOTHING;
 
--- IMS/Shark upstream accounts are agent-panel accounts; force scraper routes to agent mode.
+-- IMS/Shark upstream accounts are CLIENT-panel accounts (easier to maintain).
+-- Agent-panel design is mirrored only inside our own dashboard UI.
 INSERT INTO bot_settings (bot_id, setting_key, setting_value, is_secret)
 VALUES
-    ('36fae619-2d83-4416-b243-8f7af4c33100', 'panel_mode', 'agent', false),
-    ('5c21b595-4260-4b83-a402-34a9e031afcf', 'panel_mode', 'agent', false)
+    ('36fae619-2d83-4416-b243-8f7af4c33100', 'panel_mode', 'client', false),
+    ('5c21b595-4260-4b83-a402-34a9e031afcf', 'panel_mode', 'client', false)
 ON CONFLICT (bot_id, setting_key) DO UPDATE SET
     setting_value = EXCLUDED.setting_value,
     updated_at = NOW();
