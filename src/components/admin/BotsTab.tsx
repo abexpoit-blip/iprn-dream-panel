@@ -314,8 +314,8 @@ export function BotsTab() {
                 </div>
 
                 <div className="flex gap-2 pt-2 border-t border-slate-100">
-                  <Button onClick={() => window.location.href = '/bot-dashboard'} variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200 hover:bg-slate-50">
-                    <Settings size={14} className="mr-1" /> Config
+                  <Button onClick={() => openSettings(bot)} variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase border-slate-200 hover:bg-slate-50">
+                    <Settings size={14} className="mr-1" /> Login Info
                   </Button>
                   <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase border-slate-200 text-blue-600 hover:bg-blue-50">
                     <RefreshCw size={14} className="mr-1" /> Force Login
