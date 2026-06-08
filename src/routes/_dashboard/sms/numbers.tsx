@@ -63,10 +63,42 @@ function SmsNumbersPage() {
     toast.success("Export started");
   };
 
+  const handleAutoPool = async () => {
+    setAutoPooling(true);
+    try {
+      const token = localStorage.getItem('nexus_token');
+      const res = await fetch(`${API_URL}/api/numbers/auto-pool`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Auto Pool failed');
+      toast.success(data.message || 'Auto Pool started — scraping number panels...');
+      // Bots scrape async; refetch after a few seconds, then again to catch slower panels
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['number_pool_view'] }), 4000);
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['number_pool_view'] }), 12000);
+    } catch (e: any) {
+      toast.error(`Auto Pool failed: ${e.message}`);
+    } finally {
+      setTimeout(() => setAutoPooling(false), 4000);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-[#2b3a4a]">SMS Numbers Inventory</h1>
+        <Button
+          onClick={handleAutoPool}
+          disabled={autoPooling}
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold uppercase tracking-wider text-xs gap-2"
+        >
+          {autoPooling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+          {autoPooling ? 'Pooling…' : 'Start Auto Pool'}
+        </Button>
       </div>
 
       <Card className="shadow-sm border-[#e3e6ec]">
@@ -74,6 +106,7 @@ function SmsNumbersPage() {
           <div className="flex flex-wrap gap-2 mb-6 border-b border-[#e3e6ec] pb-6">
             <Button onClick={handleExport} variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">CSV</Button>
             <Button onClick={handleExport} variant="outline" size="sm" className="bg-[#0061f2] text-white hover:bg-[#0052ce] border-none px-4 font-bold text-[10px] uppercase tracking-wider">Excel</Button>
+            
             
             <div className="ml-auto flex items-center gap-3">
               <div className="flex items-center gap-2">
