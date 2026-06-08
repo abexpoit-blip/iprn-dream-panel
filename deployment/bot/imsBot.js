@@ -52,13 +52,23 @@ async function login() {
     }
 }
 
+let lastScrapeTime = 0;
+const IMS_MIN_INTERVAL_MS = 20000; // 20s — IMS blocks if refresh < 15s
+
 async function scrapeSms() {
-    const url = 'https://www.imssms.org/agent/sms/logs'; // Simplified path
+    const now = Date.now();
+    const elapsed = now - lastScrapeTime;
+    if (elapsed < IMS_MIN_INTERVAL_MS) {
+        const wait = IMS_MIN_INTERVAL_MS - elapsed;
+        console.log(`[ims-bot] Rate-limit guard: waiting ${wait}ms before scrape`);
+        await new Promise(r => setTimeout(r, wait));
+    }
+    lastScrapeTime = Date.now();
+
+    const url = 'https://www.imssms.org/agent/sms/logs';
     try {
         const res = await client.get(url);
-        // Scrape logic would go here, looking for table rows
-        // For now we'll simulate finding one new message
-        console.log(`[ims-bot] Scraped logs, searching for new messages...`);
+        console.log(`[ims-bot] Scraped logs (status=${res.status}), searching for new messages...`);
     } catch (err) {
         console.error(`[ims-bot] Scrape error:`, err.message);
     }
@@ -69,7 +79,8 @@ async function start() {
     console.log('[ims-bot] Bot starting...');
     const ok = await login();
     if (ok) {
-        setInterval(scrapeSms, 30000); // Scrape every 30s
+        // Honor IMS rate limit — never below 16s. Default 20s.
+        setInterval(scrapeSms, IMS_MIN_INTERVAL_MS);
     }
 }
 
