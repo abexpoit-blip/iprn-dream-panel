@@ -19,16 +19,32 @@ async function updateBotStatus(status, error = null) {
     } catch (e) { /* ignore */ }
 }
 
-function extractCsrfToken(html) {
-    // Laravel-style: <input ... name="_token" value="...">
-    let m = html.match(/name=["']_token["'][^>]*value=["']([^"']+)["']/i);
-    if (m) return { name: '_token', value: m[1] };
-    m = html.match(/value=["']([^"']+)["'][^>]*name=["']_token["']/i);
-    if (m) return { name: '_token', value: m[1] };
-    // Meta tag fallback
-    m = html.match(/<meta[^>]+name=["']csrf-token["'][^>]+content=["']([^"']+)["']/i);
-    if (m) return { name: '_token', value: m[1] };
-    return null;
+function getAttr(tag, name) {
+    const m = tag.match(new RegExp(`${name}=["']([^"']*)["']`, 'i'));
+    return m ? m[1] : '';
+}
+
+function extractLoginFormDetails(html, pageUrl) {
+    const formHtml = (html.match(/<form[\s\S]*?<\/form>/i) || [html])[0];
+    const formOpen = (formHtml.match(/<form[^>]*>/i) || [''])[0];
+    const action = getAttr(formOpen, 'action') || pageUrl;
+    const postUrl = new URL(action, pageUrl).toString();
+    const fields = {};
+    const inputTags = formHtml.match(/<input\b[^>]*>/gi) || [];
+
+    for (const input of inputTags) {
+        const name = getAttr(input, 'name');
+        if (!name) continue;
+        const type = (getAttr(input, 'type') || '').toLowerCase();
+        if (type === 'hidden') fields[name] = getAttr(input, 'value');
+    }
+
+    const csrf = fields._token || fields.csrf_token || fields.csrf || fields.etkk || '';
+    const captchaMatch = formHtml.match(/(?:what\s+is\s*)?(\d+)\s*\+\s*(\d+)\s*=\s*\?/i) || html.match(/(?:what\s+is\s*)?(\d+)\s*\+\s*(\d+)\s*=\s*\?/i);
+    const captchaField = inputTags.map(input => getAttr(input, 'name')).find(name => ['capt', 'captcha'].includes(name));
+    if (captchaField && captchaMatch) fields[captchaField] = String(parseInt(captchaMatch[1], 10) + parseInt(captchaMatch[2], 10));
+
+    return { postUrl, fields, csrf };
 }
 
 async function login() {
@@ -38,26 +54,26 @@ async function login() {
 
     console.log(`[ims-bot] Attempting login for ${user} at ${url}...`);
     try {
-        // Step 1: GET login page to capture CSRF token + cookies
+        // Step 1: GET login page to capture hidden login token/cookies/captcha
         const pageRes = await client.get(url, { validateStatus: () => true });
         const pageHtml = typeof pageRes.data === 'string' ? pageRes.data : '';
-        const csrf = extractCsrfToken(pageHtml);
+        const loginForm = extractLoginFormDetails(pageHtml, url);
 
-        if (!csrf) {
-            const reason = `CSRF _token not found on login page (status=${pageRes.status}, len=${pageHtml.length})`;
+        if (!loginForm.csrf) {
+            const reason = `Login token not found on IMS page (status=${pageRes.status}, len=${pageHtml.length})`;
             console.error(`[ims-bot] ${reason}`);
             await updateBotStatus('offline', reason);
             return false;
         }
-        console.log(`[ims-bot] Got CSRF token (len=${csrf.value.length})`);
+        console.log(`[ims-bot] Got login token (len=${loginForm.csrf.length}) and posting to ${loginForm.postUrl}`);
 
         // Step 2: POST credentials with token
         const form = new URLSearchParams({
-            [csrf.name]: csrf.value,
+            ...loginForm.fields,
             username: user,
             password: pass,
         });
-        const res = await client.post(url, form, {
+        const res = await client.post(loginForm.postUrl, form, {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Referer': url,
