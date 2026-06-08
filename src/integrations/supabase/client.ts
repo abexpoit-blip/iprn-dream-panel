@@ -144,6 +144,25 @@ function createSupabaseClient() {
             }
           },
 
+          upsert: async function(rows: any | any[], options: any = {}) {
+            const body = Array.isArray(rows) ? rows : [rows];
+            const onConflict = options.onConflict || '';
+            try {
+              const res = await fetch(`${API_URL}/api/upsert/${table}?on_conflict=${encodeURIComponent(onConflict)}`, {
+                method: 'POST',
+                body: JSON.stringify(body),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('nexus_token')}`
+                }
+              });
+              const data = await res.json().catch(() => ({}));
+              return { data, error: res.ok ? null : { message: data.error || 'Upsert failed' } };
+            } catch (e: any) {
+              return { data: null, error: { message: e.message } };
+            }
+          },
+
           update: function(body: any) {
             return {
               eq: async (col: string, val: any) => {

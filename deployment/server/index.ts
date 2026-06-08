@@ -204,7 +204,43 @@ app.post('/api/data/:table', async (c) => {
     }
 
     const results = await sql`INSERT INTO ${sql(table)} ${sql(body)} RETURNING *`;
-    
+
+// Upsert endpoint — handles ON CONFLICT for bot_settings etc.
+app.post('/api/upsert/:table', async (c) => {
+  const table = c.req.param('table');
+  const onConflict = c.req.query('on_conflict') || '';
+  const rows = await c.req.json();
+  const list = Array.isArray(rows) ? rows : [rows];
+  if (list.length === 0) return c.json([]);
+
+  try {
+    const results: any[] = [];
+    for (const row of list) {
+      if (!row.id) row.id = crypto.randomUUID();
+      const cols = Object.keys(row);
+      const vals = Object.values(row);
+
+      let query = `INSERT INTO ${table} (${cols.map(c => `"${c}"`).join(',')}) VALUES (${cols.map((_, i) => `$${i+1}`).join(',')})`;
+      if (onConflict) {
+        const conflictCols = onConflict.split(',').map(s => `"${s.trim()}"`).join(',');
+        const updateCols = cols.filter(c => !onConflict.split(',').map(s => s.trim()).includes(c));
+        if (updateCols.length > 0) {
+          query += ` ON CONFLICT (${conflictCols}) DO UPDATE SET ${updateCols.map(c => `"${c}" = EXCLUDED."${c}"`).join(',')}`;
+        } else {
+          query += ` ON CONFLICT (${conflictCols}) DO NOTHING`;
+        }
+      }
+      query += ` RETURNING *`;
+      const r = await sql.unsafe(query, vals as any[]);
+      if (r[0]) results.push(r[0]);
+    }
+    return c.json(results);
+  } catch (error: any) {
+    console.error(`Upsert error on ${table}:`, error.message);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
     // If we just created a client, also create a profile for them so they can login
     if (table === 'clients') {
       await sql`
