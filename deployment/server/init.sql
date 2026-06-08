@@ -337,7 +337,7 @@ CREATE TABLE IF NOT EXISTS active_rates (
 
 -- =========================================================================
 -- Performance indexes for SMS CDR / Stats / OTP pages
--- (Safe to re-run; IF NOT EXISTS and column-add guards.)
+-- (Safe to re-run -- IF NOT EXISTS and column-add guards.)
 -- =========================================================================
 ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS received_at TIMESTAMP WITH TIME ZONE DEFAULT now();
 ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS number TEXT;
