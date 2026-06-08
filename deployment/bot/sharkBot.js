@@ -227,7 +227,7 @@ async function scrapeNumbers() {
         for (const number of seen) {
             try {
                 const r = await db.prepare(
-                    `INSERT INTO number_pool (number, status, bot_id) VALUES (?, 'available', ?) ON CONFLICT (number) DO UPDATE SET bot_id = EXCLUDED.bot_id, updated_at = NOW()`
+                    `INSERT INTO number_pool (number, status, bot_id) VALUES (?, 'available', ?) ON CONFLICT (number) DO UPDATE SET bot_id = EXCLUDED.bot_id, updated_at = NOW() RETURNING number`
                 ).run(number, BOT_ID);
                 if (r.changes) inserted++;
             } catch (e) { /* ignore per-row */ }
