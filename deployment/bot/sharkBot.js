@@ -201,6 +201,49 @@ async function scrapeSms() {
     }
 }
 
+// Scrape panel's DID/number list and upsert into number_pool
+async function scrapeNumbers() {
+    if (!isActive || !BOT_ID) return;
+    const loginUrl = await getSetting(BOT_ID, 'portal_url', 'http://65.109.111.158/ints/login');
+    const origin = new URL(loginUrl).origin;
+    const defaultNumbersUrl = `${origin}/ints/agent/MyDIDList`;
+    const url = await getSetting(BOT_ID, 'numbers_url', defaultNumbersUrl);
+    const referer = loginUrl.replace(/\/login\/?$/, '/agent/SMSDashboard');
+
+    try {
+        const res = await client.get(url, { validateStatus: () => true, headers: { 'Referer': referer } });
+        if (res.status !== 200) {
+            console.error(`[shark-bot] Numbers scrape HTTP ${res.status} at ${url}`);
+            if (res.status === 401 || res.status === 302) await login();
+            return;
+        }
+        const body = typeof res.data === 'string' ? res.data : '';
+        const phoneRegex = /<td[^>]*>\s*(\+?\d{8,15})\s*<\/td>/gi;
+        const seen = new Set();
+        let m;
+        while ((m = phoneRegex.exec(body)) !== null) {
+            const number = m[1].replace(/\D/g, '');
+            if (number) seen.add(number);
+        }
+        if (seen.size === 0) {
+            console.log(`[shark-bot] Numbers scrape: 0 phones parsed from ${url} (len=${body.length}). Set numbers_url in Login Info to the exact DID list page.`);
+            return;
+        }
+        let inserted = 0;
+        for (const number of seen) {
+            try {
+                const r = await db.prepare(
+                    `INSERT INTO number_pool (number, status, bot_id) VALUES (?, 'available', ?) ON CONFLICT (number) DO UPDATE SET bot_id = EXCLUDED.bot_id, updated_at = NOW()`
+                ).run(number, BOT_ID);
+                if (r.changes) inserted++;
+            } catch (e) { /* ignore per-row */ }
+        }
+        console.log(`[shark-bot] Numbers scrape: ${seen.size} parsed, ${inserted} upserted into number_pool`);
+    } catch (err) {
+        console.error(`[shark-bot] Numbers scrape error:`, err.message);
+    }
+}
+
 
 async function start() {
     isActive = true;
