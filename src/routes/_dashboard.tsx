@@ -109,7 +109,9 @@ function DashboardLayout() {
         { label: "SMS RateCard", href: "/sms/ratecard" },
       ]
     },
-    { label: "Clients", icon: Users, href: "/clients" },
+    profile?.is_admin && !impersonatedAgent
+      ? { label: "Agents", icon: Users, href: "/agents" }
+      : { label: "Clients", icon: Users, href: "/clients" },
     { 
       label: "Stats & Reports", 
       icon: BarChart3, 

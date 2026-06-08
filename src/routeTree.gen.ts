@@ -23,6 +23,7 @@ import { Route as DashboardNewsRouteImport } from './routes/_dashboard/news'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
 import { Route as DashboardCreditsRouteImport } from './routes/_dashboard/credits'
 import { Route as DashboardClientsRouteImport } from './routes/_dashboard/clients'
+import { Route as DashboardAgentsRouteImport } from './routes/_dashboard/agents'
 import { Route as DashboardAdminRouteImport } from './routes/_dashboard/admin'
 import { Route as ClientStatsSmsRouteImport } from './routes/client.stats.sms'
 import { Route as ClientStatsCdrRouteImport } from './routes/client.stats.cdr'
@@ -106,6 +107,11 @@ const DashboardClientsRoute = DashboardClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAgentsRoute = DashboardAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAdminRoute = DashboardAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin': typeof DashboardAdminRoute
+  '/agents': typeof DashboardAgentsRoute
   '/clients': typeof DashboardClientsRoute
   '/credits': typeof DashboardCreditsRoute
   '/dashboard': typeof DashboardDashboardRoute
@@ -208,6 +215,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin': typeof DashboardAdminRoute
+  '/agents': typeof DashboardAgentsRoute
   '/clients': typeof DashboardClientsRoute
   '/credits': typeof DashboardCreditsRoute
   '/dashboard': typeof DashboardDashboardRoute
@@ -238,6 +246,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_dashboard/admin': typeof DashboardAdminRoute
+  '/_dashboard/agents': typeof DashboardAgentsRoute
   '/_dashboard/clients': typeof DashboardClientsRoute
   '/_dashboard/credits': typeof DashboardCreditsRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
@@ -268,6 +277,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/admin'
+    | '/agents'
     | '/clients'
     | '/credits'
     | '/dashboard'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/admin'
+    | '/agents'
     | '/clients'
     | '/credits'
     | '/dashboard'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/_dashboard/admin'
+    | '/_dashboard/agents'
     | '/_dashboard/clients'
     | '/_dashboard/credits'
     | '/_dashboard/dashboard'
@@ -456,6 +468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardClientsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/agents': {
+      id: '/_dashboard/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof DashboardAgentsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/admin': {
       id: '/_dashboard/admin'
       path: '/admin'
@@ -552,6 +571,7 @@ declare module '@tanstack/react-router' {
 
 interface DashboardRouteChildren {
   DashboardAdminRoute: typeof DashboardAdminRoute
+  DashboardAgentsRoute: typeof DashboardAgentsRoute
   DashboardClientsRoute: typeof DashboardClientsRoute
   DashboardCreditsRoute: typeof DashboardCreditsRoute
   DashboardDashboardRoute: typeof DashboardDashboardRoute
@@ -570,6 +590,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminRoute: DashboardAdminRoute,
+  DashboardAgentsRoute: DashboardAgentsRoute,
   DashboardClientsRoute: DashboardClientsRoute,
   DashboardCreditsRoute: DashboardCreditsRoute,
   DashboardDashboardRoute: DashboardDashboardRoute,
