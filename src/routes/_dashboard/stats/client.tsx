@@ -1,89 +1,78 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
-import { getEffectiveUserId } from "@/lib/auth-helpers";
+import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 
 export const Route = createFileRoute("/_dashboard/stats/client")({
-  component: StatsClientPage,
+  component: ClientStatsPage,
 });
 
-function StatsClientPage() {
-  const { data: clientStats, isLoading } = useQuery({
-    queryKey: ['client_performance_stats'],
+type Row = { client: string; sms: number; payout: number };
+
+function ClientStatsPage() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["client_stats"],
     queryFn: async () => {
-      // Fetch clients and their SMS activity
-      const { data: clients } = await supabase
-        .from('clients')
-        .select('id, username');
-
-      if (!clients) return [];
-
-      // For each client, calculate stats
-      const stats = await Promise.all(clients.map(async (client: any) => {
-        const res = await supabase
-          .from('sms_logs')
-          .select('*', { count: 'exact' })
-          .eq('client_id', client.id);
-        
-        return {
-          username: client.username,
-          total_sms: res.count || 0,
-        };
-      }));
-
-      return stats.sort((a, b) => b.total_sms - a.total_sms);
-    }
+      const { data, error } = await supabase
+        .from("sms_cdr")
+        .select("payout, clients(name)")
+        .limit(10000);
+      if (error) throw error;
+      const agg = new Map<string, Row>();
+      (data ?? []).forEach((r: any) => {
+        const name = r.clients?.name ?? "Unassigned";
+        const e = agg.get(name) ?? { client: name, sms: 0, payout: 0 };
+        e.sms += 1;
+        e.payout += Number(r.payout ?? 0);
+        agg.set(name, e);
+      });
+      return Array.from(agg.values()).sort((a, b) => b.sms - a.sms);
+    },
   });
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-[#2b3a4a] tracking-tight">Client Stats</h1>
-          <p className="text-[#69707a] text-[13px] font-medium mt-0.5">Performance ranking by client</p>
-        </div>
-      </div>
+  const columns: IMSColumn<Row>[] = [
+    {
+      key: "client",
+      header: "Client",
+      value: (r) => r.client,
+      cell: (r) => <span className="font-bold">{r.client}</span>,
+    },
+    {
+      key: "sms",
+      header: "SMS",
+      value: (r) => r.sms,
+      cell: (r) => (
+        <span className="font-bold text-[#0061f2]">{r.sms}</span>
+      ),
+    },
+    { key: "currency", header: "Currency", value: () => "USD" },
+    {
+      key: "my",
+      header: "My Payout",
+      value: (r) => `$${r.payout.toFixed(4)}`,
+      cell: (r) => (
+        <span className="font-bold text-green-600">
+          ${r.payout.toFixed(4)}
+        </span>
+      ),
+      className: "text-right",
+    },
+    {
+      key: "cp",
+      header: "Client Payout",
+      value: (r) => `$${r.payout.toFixed(4)}`,
+      className: "text-right",
+    },
+  ];
 
-      <Card className="shadow-lg border-[#e3e6ec] rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc]">
-          <h3 className="font-black text-[#69707a] uppercase text-[11px] tracking-widest">Client Leaderboard</h3>
-        </div>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-[#f8f9fc]">
-              <TableRow>
-                <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Rank</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Client Username</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Total SMS Received</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={3} className="text-center py-20">Calculating stats...</TableCell></TableRow>
-              ) : clientStats?.length === 0 ? (
-                <TableRow><TableCell colSpan={3} className="text-center py-20 italic">No client data found</TableCell></TableRow>
-              ) : clientStats?.map((stat: any, idx: number) => (
-                <TableRow key={idx} className="border-b border-[#f2f4f8]">
-                  <TableCell className="px-6 py-4">
-                    <span className={cn(
-                      "w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black text-white",
-                      idx === 0 ? "bg-amber-400" : idx === 1 ? "bg-slate-400" : idx === 2 ? "bg-amber-700" : "bg-[#69707a]"
-                    )}>
-                      {idx + 1}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-[13px] font-bold text-[#2b3a4a] px-6 py-4">{stat.username}</TableCell>
-                  <TableCell className="text-[13px] font-black text-[#0061f2] px-6 py-4">{stat.total_sms.toLocaleString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+  return (
+    <IMSDataTable
+      title="Client Stats"
+      subtitle="SMS volume and payout per client"
+      columns={columns}
+      rows={data}
+      loading={isLoading}
+      exportName="ClientStats"
+    />
   );
 }
-
