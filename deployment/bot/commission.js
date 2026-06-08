@@ -34,11 +34,26 @@ async function splitCommissionForOtp({ otp_audit_id, phone_number }) {
 
     // Admin profit (only meaningful when agent_rate exists)
     if (adminEarn > 0) {
+      // Resolve the root admin profile (oldest is_admin=true row)
+      const adminRow = await db.prepare(
+        `SELECT id FROM profiles
+         WHERE is_admin = true OR role = 'admin'
+         ORDER BY created_at ASC NULLS LAST
+         LIMIT 1`
+      ).get();
+      const adminUserId = adminRow?.id || null;
+
       writes.push(db.prepare(
         `INSERT INTO commission_ledger
           (otp_audit_id, number_pool_id, phone_number, tier, user_id, amount)
-         VALUES (?, ?, ?, 'admin', NULL, ?)`
-      ).run(otp_audit_id || null, np.id, phone_number, adminEarn));
+         VALUES (?, ?, ?, 'admin', ?, ?)`
+      ).run(otp_audit_id || null, np.id, phone_number, adminUserId, adminEarn));
+
+      if (adminUserId) {
+        writes.push(db.prepare(
+          `UPDATE profiles SET balance = COALESCE(balance,0) + ? WHERE id = ?`
+        ).run(adminEarn, adminUserId));
+      }
     }
 
     // Agent profit + balance credit
