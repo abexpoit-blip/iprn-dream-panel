@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -15,6 +15,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Loader2, Zap } from "lucide-react";
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://X.nexus-x.site/api';
 
 export const Route = createFileRoute("/_dashboard/sms/numbers")({
   component: SmsNumbersPage,
@@ -23,6 +26,8 @@ export const Route = createFileRoute("/_dashboard/sms/numbers")({
 function SmsNumbersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRange, setFilterRange] = useState("All Ranges");
+  const [autoPooling, setAutoPooling] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: numbers, isLoading } = useQuery({
     queryKey: ['number_pool_view'],
