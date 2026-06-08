@@ -203,12 +203,22 @@ WHERE val IS NOT NULL
 ON CONFLICT (bot_id, setting_key) DO NOTHING;
 
 
+-- Dedupe any existing duplicate panels (keep earliest row per panel_url)
+DELETE FROM number_panels a
+USING number_panels b
+WHERE a.panel_url = b.panel_url
+  AND a.created_at > b.created_at;
+
+-- Ensure panel_url is unique so re-running this seed is idempotent
+ALTER TABLE number_panels DROP CONSTRAINT IF EXISTS number_panels_panel_url_key;
+ALTER TABLE number_panels ADD CONSTRAINT number_panels_panel_url_key UNIQUE (panel_url);
+
 INSERT INTO number_panels (name, panel_url, username, password, status)
 VALUES 
     ('IMS Pool Panel', 'https://www.imssms.org/login', 'mamun99', 'mamun@12aa#', 'offline'),
     ('Hadi Pool Panel', 'http://2.59.169.96/ints/login', 'mamun999', 'mamun999', 'offline'),
     ('Shark Pool Panel', 'http://65.109.111.158/ints/login', 'mamun01', 'mamun@12#A', 'offline')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (panel_url) DO NOTHING;
 
 -- SMS Ranges seeding
 CREATE TABLE IF NOT EXISTS sms_ranges (
