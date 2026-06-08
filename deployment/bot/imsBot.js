@@ -281,7 +281,19 @@ async function scrapeSms() {
   const referer = `${origin}/${PANEL_MODE}/SMSCDRStats`;
 
   try {
-    const res = await fetchDataTables(base, referer, { iColumns: '7' });
+    let res = await fetchDataTables(base, referer, { iColumns: '7' });
+    if (res.status === 503 || res.status === 403) {
+      // Warm up parent page so Cloudflare / session middleware accepts the AJAX, then retry once.
+      console.log(`[ims-bot] CDR ${res.status} — warming up ${referer} and retrying`);
+      try {
+        await client.get(referer, {
+          headers: { 'Referer': `${origin}/${PANEL_MODE}/Dashboard`, 'User-Agent': UA },
+          validateStatus: () => true,
+        });
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 1500));
+      res = await fetchDataTables(base, referer, { iColumns: '7' });
+    }
     if (res.status !== 200) {
       console.error(`[ims-bot] CDR HTTP ${res.status}`);
       if (res.status === 401 || res.status === 302) await login();
