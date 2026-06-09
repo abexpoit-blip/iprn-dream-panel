@@ -376,13 +376,14 @@ async function start() {
   if (!ok) return;
 
 
-  // Initial pulls
+  // One-time number pool seed at startup. After that, number scraping is
+  // ON-DEMAND ONLY — triggered by the admin clicking "Start Auto Pool"
+  // (NOTIFY scrape_now). No periodic background number polling.
   scrapeNumbers();
-  scrapeSms();
 
-  // Scheduled
-  setInterval(scrapeSms, 15000);      // OTP every 15s
-  setInterval(scrapeNumbers, 60000);  // Numbers every 60s
+  // OTP/SMS auto-sync stays on a fast 15s loop.
+  scrapeSms();
+  setInterval(scrapeSms, 15000);
 
   // Auto-pool trigger from UI
   try {

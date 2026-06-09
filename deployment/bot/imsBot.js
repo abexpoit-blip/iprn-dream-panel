@@ -441,11 +441,16 @@ async function start() {
     console.log('[ims-bot] Warmed up CDR + Numbers pages');
   } catch (_) {}
 
+  // One-time number pool seed at startup so the admin sees current state.
+  // After that, number scraping is ON-DEMAND ONLY — triggered by the admin
+  // clicking "Start Auto Pool" (which fires NOTIFY scrape_now). No periodic
+  // background number polling.
   scrapeNumbers();
-  scrapeSms();
 
+  // OTP/SMS auto-sync stays on a fast loop (IMS-throttled at ~20s/refresh).
+  // This is the "Select ALL" CDR copy pushed continuously into otp_audit_log.
+  scrapeSms();
   setInterval(scrapeSms, IMS_MIN_INTERVAL_MS);
-  setInterval(scrapeNumbers, 60000);
 
   try {
     const { sql } = require('./db');
