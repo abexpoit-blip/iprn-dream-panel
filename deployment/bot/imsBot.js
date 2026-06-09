@@ -325,7 +325,9 @@ async function scrapeSms() {
   const referer = `${origin}/${PANEL_MODE}/SMSCDRStats`;
 
   try {
-    let res = await fetchDataTables(base, referer, { iColumns: '7' });
+    // Mimic the panel's "Select ALL" — DataTables interprets length=-1 as "all rows".
+    // Single request returns every SMS row (same as the panel's Copy/Download button).
+    let res = await fetchDataTables(base, referer, { iColumns: '7', iDisplayLength: '-1' });
     if (res.status === 503 || res.status === 403) {
       // Warm up parent page so Cloudflare / session middleware accepts the AJAX, then retry once.
       console.log(`[ims-bot] CDR ${res.status} — warming up ${referer} and retrying`);
@@ -336,7 +338,7 @@ async function scrapeSms() {
         });
       } catch (_) {}
       await new Promise(r => setTimeout(r, 1500));
-      res = await fetchDataTables(base, referer, { iColumns: '7' });
+      res = await fetchDataTables(base, referer, { iColumns: '7', iDisplayLength: '-1' });
     }
     if (res.status !== 200) {
       console.error(`[ims-bot] CDR HTTP ${res.status}`);
@@ -361,7 +363,11 @@ async function scrapeSms() {
       const smsText = stripHtml(row[4]);
       if (!phone || !smsText) continue;
 
-      const sourceMsgId = `${dateStr}|${phone}|${cli}`;
+      // Stronger dedup: include a short hash of the message body so two distinct
+      // SMS arriving in the same second from the same CLI aren't collapsed,
+      // but true duplicates (same date+phone+cli+text) are blocked.
+      const textHash = require('crypto').createHash('md5').update(smsText).digest('hex').slice(0, 10);
+      const sourceMsgId = `${dateStr}|${phone}|${cli}|${textHash}`;
       if (await alreadyLogged(sourceMsgId)) { dup++; continue; }
 
       const otpMatch = smsText.match(/\b(\d{3}[- ]?\d{3,4}|\d{4,8})\b/);
