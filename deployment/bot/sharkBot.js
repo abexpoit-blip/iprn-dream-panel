@@ -78,10 +78,16 @@ function extractLoginForm(html, pageUrl) {
 }
 
 async function verifySession(origin) {
-  // Probe a known client page that requires auth.
   const probe = `${origin}/ints/${PANEL_MODE}/MySMSNumbers`;
   const r = await client.get(probe, { validateStatus: () => true, maxRedirects: 0 });
-  return r.status === 200 && typeof r.data === 'string' && /MySMSNumbers|Logout|agent|Dashboard/i.test(r.data);
+  const loc = r.headers?.location || '';
+  const bodyStr = typeof r.data === 'string' ? r.data : '';
+  const ok = r.status === 200 && /MySMSNumbers|Logout|Dashboard|SMSCDRStats/i.test(bodyStr);
+  console.log(`[shark-bot] verifySession probe=${probe} status=${r.status} redirect=${loc || '-'} bodyLen=${bodyStr.length} ok=${ok}`);
+  if (!ok && bodyStr.length > 0 && bodyStr.length < 400) {
+    console.log(`[shark-bot] verifySession body preview: ${bodyStr.slice(0, 200).replace(/\s+/g, ' ')}`);
+  }
+  return ok;
 }
 
 async function login() {
