@@ -399,8 +399,11 @@ async function start() {
     return;
   }
 
+  await resolvePanelMode();
+
   const ok = await login();
   if (!ok) return;
+
 
   // Warm up CDR stats page so the AJAX endpoint accepts us (avoids 503).
   try {
