@@ -90,7 +90,9 @@ export function IMSDataTable<T>({
   const pageRows = filtered.slice(start, end);
 
   const buildMatrix = (includeHeader = true) => {
-    const cols = columns.filter((c) => c.exportable !== false);
+    const cols = columns.filter(
+      (c) => c.exportable !== false && exportCols.has(c.key),
+    );
     const head = cols.map((c) =>
       typeof c.header === "string" ? c.header : c.key,
     );
