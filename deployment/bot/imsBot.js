@@ -33,7 +33,19 @@ let isActive = false;
 let BOT_ID = null;
 const BOT_NAME = 'IMS Main Agent';
 const BOT_TYPE = 'ims';
-const PANEL_MODE = 'client'; // /client/... — these are client-panel accounts
+let PANEL_MODE = 'agent'; // 'agent' (reseller) or 'client'. Overridable via bot_settings.panel_mode
+
+async function resolvePanelMode() {
+  try {
+    const v = await getSetting(BOT_ID, 'panel_mode', '');
+    const m = String(v || '').trim().toLowerCase();
+    if (m === 'agent' || m === 'client') {
+      PANEL_MODE = m;
+    }
+  } catch (_) {}
+  console.log(`[ims-bot] PANEL_MODE=${PANEL_MODE}`);
+}
+
 
 // IMS blocks if CDR refresh < ~16s
 const IMS_MIN_INTERVAL_MS = 20000;
@@ -387,8 +399,11 @@ async function start() {
     return;
   }
 
+  await resolvePanelMode();
+
   const ok = await login();
   if (!ok) return;
+
 
   // Warm up CDR stats page so the AJAX endpoint accepts us (avoids 503).
   try {
@@ -410,11 +425,13 @@ async function start() {
     await sql.listen('scrape_now', () => {
       console.log('[ims-bot] [auto-pool] NOTIFY scrape_now received');
       scrapeNumbers();
+      scrapeSms();
     });
     console.log('[ims-bot] [auto-pool] listening on channel scrape_now');
   } catch (e) {
     console.error('[ims-bot] [auto-pool] LISTEN failed:', e.message);
   }
 }
+
 
 module.exports = { start, stop: () => { isActive = false; } };
