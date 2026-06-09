@@ -466,6 +466,10 @@ async function scrapeSms() {
       return /\d{4}-\d{2}-\d{2}/.test(String(r[0] || ''));
     });
 
+    if (rows.length === 0) {
+      console.log(`[ims-bot] CDR empty — iTotalRecords=${data.iTotalRecords ?? '?'} iTotalDisplayRecords=${data.iTotalDisplayRecords ?? '?'} window=${from}..${to}`);
+    }
+
     let billed = 0, dup = 0;
     for (const row of realRows) {
       const dateStr = stripHtml(row[0]);
