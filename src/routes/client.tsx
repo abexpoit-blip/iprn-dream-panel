@@ -57,6 +57,7 @@ function ClientLayout() {
 
   const menuItems: any[] = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/client/dashboard" },
+    { label: "My Number Pool", icon: MessageSquare, href: "/client/pool" },
     { label: "SMS Numbers", icon: MessageSquare, href: "/client/sms/numbers" },
     {
       label: "Stats & Reports",
