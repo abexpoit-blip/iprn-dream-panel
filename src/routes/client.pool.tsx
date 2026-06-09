@@ -91,12 +91,11 @@ function ClientPoolPage() {
   const available = rows.filter((r: any) => r.status === "available" || r.status === "active").length;
   const reserved = rows.filter((r: any) => r.status === "reserved").length;
   const used = rows.filter((r: any) => r.status === "used").length;
-  const lastScrape = rows.reduce<string | null>((acc, r: any) => {
+  let lastScrape: string | null = null;
+  for (const r of rows as any[]) {
     const v = r.updated_at || r.created_at;
-    if (!v) return acc;
-    if (!acc || new Date(v) > new Date(acc)) return v;
-    return acc;
-  }, null);
+    if (v && (!lastScrape || new Date(v) > new Date(lastScrape))) lastScrape = v;
+  }
 
   const stats = [
     { label: "Total Numbers", value: total, icon: Database, color: "bg-[#0061f2]" },

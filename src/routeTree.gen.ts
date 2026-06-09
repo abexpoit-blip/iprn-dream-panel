@@ -16,6 +16,7 @@ import { Route as BotDashboardRouteImport } from './routes/bot-dashboard'
 import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ClientPoolRouteImport } from './routes/client.pool'
 import { Route as ClientNewsRouteImport } from './routes/client.news'
 import { Route as ClientDashboardRouteImport } from './routes/client.dashboard'
 import { Route as DashboardTestPanelRouteImport } from './routes/_dashboard/test-panel'
@@ -73,6 +74,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ClientPoolRoute = ClientPoolRouteImport.update({
+  id: '/pool',
+  path: '/pool',
+  getParentRoute: () => ClientRoute,
 } as any)
 const ClientNewsRoute = ClientNewsRouteImport.update({
   id: '/news',
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/test-panel': typeof DashboardTestPanelRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/news': typeof ClientNewsRoute
+  '/client/pool': typeof ClientPoolRoute
   '/agent/numbers': typeof DashboardAgentNumbersRoute
   '/sms/numbers': typeof DashboardSmsNumbersRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/test-panel': typeof DashboardTestPanelRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/news': typeof ClientNewsRoute
+  '/client/pool': typeof ClientPoolRoute
   '/agent/numbers': typeof DashboardAgentNumbersRoute
   '/sms/numbers': typeof DashboardSmsNumbersRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   '/_dashboard/test-panel': typeof DashboardTestPanelRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/news': typeof ClientNewsRoute
+  '/client/pool': typeof ClientPoolRoute
   '/_dashboard/agent/numbers': typeof DashboardAgentNumbersRoute
   '/_dashboard/sms/numbers': typeof DashboardSmsNumbersRoute
   '/_dashboard/sms/ranges': typeof DashboardSmsRangesRoute
@@ -305,6 +314,7 @@ export interface FileRouteTypes {
     | '/test-panel'
     | '/client/dashboard'
     | '/client/news'
+    | '/client/pool'
     | '/agent/numbers'
     | '/sms/numbers'
     | '/sms/ranges'
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
     | '/test-panel'
     | '/client/dashboard'
     | '/client/news'
+    | '/client/pool'
     | '/agent/numbers'
     | '/sms/numbers'
     | '/sms/ranges'
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/_dashboard/test-panel'
     | '/client/dashboard'
     | '/client/news'
+    | '/client/pool'
     | '/_dashboard/agent/numbers'
     | '/_dashboard/sms/numbers'
     | '/_dashboard/sms/ranges'
@@ -442,6 +454,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/client/pool': {
+      id: '/client/pool'
+      path: '/pool'
+      fullPath: '/client/pool'
+      preLoaderRoute: typeof ClientPoolRouteImport
+      parentRoute: typeof ClientRoute
     }
     '/client/news': {
       id: '/client/news'
@@ -656,6 +675,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 interface ClientRouteChildren {
   ClientDashboardRoute: typeof ClientDashboardRoute
   ClientNewsRoute: typeof ClientNewsRoute
+  ClientPoolRoute: typeof ClientPoolRoute
   ClientSmsNumbersRoute: typeof ClientSmsNumbersRoute
   ClientStatsCdrRoute: typeof ClientStatsCdrRoute
   ClientStatsSmsRoute: typeof ClientStatsSmsRoute
@@ -664,6 +684,7 @@ interface ClientRouteChildren {
 const ClientRouteChildren: ClientRouteChildren = {
   ClientDashboardRoute: ClientDashboardRoute,
   ClientNewsRoute: ClientNewsRoute,
+  ClientPoolRoute: ClientPoolRoute,
   ClientSmsNumbersRoute: ClientSmsNumbersRoute,
   ClientStatsCdrRoute: ClientStatsCdrRoute,
   ClientStatsSmsRoute: ClientStatsSmsRoute,
