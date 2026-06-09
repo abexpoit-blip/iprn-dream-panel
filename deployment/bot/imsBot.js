@@ -33,7 +33,7 @@ let isActive = false;
 let BOT_ID = null;
 const BOT_NAME = 'IMS Main Agent';
 const BOT_TYPE = 'ims';
-let PANEL_MODE = 'agent'; // 'agent' (reseller) or 'client'. Overridable via bot_settings.panel_mode
+let PANEL_MODE = 'client'; // 'agent' (reseller) or 'client'. Overridable via bot_settings.panel_mode
 
 async function resolvePanelMode() {
   try {
