@@ -329,6 +329,136 @@ app.post('/api/numbers/auto-pool', async (c) => {
 });
 
 // =========================================================================
+// Fast report endpoints: server-side pagination + aggregation for heavy pages
+// =========================================================================
+
+function pageParams(c: any) {
+  const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '25', 10) || 25, 1), 500);
+  const offset = Math.max(parseInt(c.req.query('offset') || '0', 10) || 0, 0);
+  return { limit, offset };
+}
+
+app.get('/api/reports/cdr', async (c) => {
+  const { limit, offset } = pageParams(c);
+  const q = c.req.query();
+  const start = q.start ? new Date(q.start).toISOString() : new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const end = q.end ? new Date(q.end).toISOString() : new Date().toISOString();
+
+  try {
+    const rows = await sql`
+      SELECT c.id, c.received_at, c.number, c.prefix, c.message, c.payout, c.status,
+             c.client_id, c.agent_id, cl.name AS client_name
+      FROM sms_cdr c
+      LEFT JOIN clients cl ON cl.id = c.client_id
+      WHERE c.received_at >= ${start}
+        AND c.received_at <= ${end}
+        AND (${q.prefix || ''} = '' OR c.prefix ILIKE ${'%' + (q.prefix || '') + '%'})
+        AND (${q.number || ''} = '' OR c.number ILIKE ${'%' + (q.number || '') + '%'})
+        AND (${q.client_id || ''} = '' OR c.client_id::text = ${q.client_id || ''})
+        AND (${q.agent_id || ''} = '' OR c.agent_id::text = ${q.agent_id || ''})
+      ORDER BY c.received_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+    const [summary] = await sql`
+      SELECT COUNT(*)::int AS total, COALESCE(SUM(payout), 0)::float AS payout_total
+      FROM sms_cdr c
+      WHERE c.received_at >= ${start}
+        AND c.received_at <= ${end}
+        AND (${q.prefix || ''} = '' OR c.prefix ILIKE ${'%' + (q.prefix || '') + '%'})
+        AND (${q.number || ''} = '' OR c.number ILIKE ${'%' + (q.number || '') + '%'})
+        AND (${q.client_id || ''} = '' OR c.client_id::text = ${q.client_id || ''})
+        AND (${q.agent_id || ''} = '' OR c.agent_id::text = ${q.agent_id || ''})
+    `;
+    return c.json({ rows, total: summary?.total || 0, payout_total: summary?.payout_total || 0 });
+  } catch (err: any) {
+    console.error('[reports/cdr]', err);
+    return c.json({ error: err.message || 'CDR report failed' }, 500);
+  }
+});
+
+app.get('/api/reports/sms-summary', async (c) => {
+  try {
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const [summary] = await sql`
+      SELECT COUNT(*)::int AS rows,
+             COUNT(*) FILTER (WHERE outcome = 'billed')::int AS billed,
+             COUNT(*) FILTER (WHERE outcome IN ('duplicate','dup'))::int AS duplicates,
+             MAX(created_at) AS last_scrape
+      FROM otp_audit_log
+      WHERE created_at >= ${since}
+    `;
+    const latest = await sql`
+      SELECT c.received_at, c.prefix, c.number, c.message, c.payout, cl.name AS client_name
+      FROM sms_cdr c
+      LEFT JOIN clients cl ON cl.id = c.client_id
+      ORDER BY c.received_at DESC
+      LIMIT 200
+    `;
+    return c.json({ summary: summary || { rows: 0, billed: 0, duplicates: 0, last_scrape: null }, latest });
+  } catch (err: any) {
+    console.error('[reports/sms-summary]', err);
+    return c.json({ error: err.message || 'SMS summary failed' }, 500);
+  }
+});
+
+app.get('/api/reports/stats/:group', async (c) => {
+  const group = c.req.param('group');
+  const limit = Math.min(parseInt(c.req.query('limit') || '200', 10) || 200, 500);
+  try {
+    if (group === 'client') {
+      const rows = await sql`
+        SELECT COALESCE(cl.name, cl.username, 'Unassigned') AS label, COUNT(*)::int AS sms,
+               COALESCE(SUM(c.payout), 0)::float AS payout
+        FROM sms_cdr c LEFT JOIN clients cl ON cl.id = c.client_id
+        GROUP BY label ORDER BY sms DESC LIMIT ${limit}
+      `;
+      return c.json(rows);
+    }
+    if (group === 'range') {
+      const rows = await sql`
+        SELECT COALESCE(prefix, 'Unknown') AS label, COUNT(*)::int AS sms,
+               COALESCE(SUM(payout), 0)::float AS payout
+        FROM sms_cdr GROUP BY label ORDER BY sms DESC LIMIT ${limit}
+      `;
+      return c.json(rows);
+    }
+    if (group === 'number') {
+      const rows = await sql`
+        SELECT COALESCE(number, 'Unknown') AS label, COUNT(*)::int AS sms,
+               COALESCE(SUM(payout), 0)::float AS payout
+        FROM sms_cdr GROUP BY label ORDER BY sms DESC LIMIT ${limit}
+      `;
+      return c.json(rows);
+    }
+    return c.json({ error: 'Invalid stats group' }, 400);
+  } catch (err: any) {
+    console.error('[reports/stats]', err);
+    return c.json({ error: err.message || 'Stats report failed' }, 500);
+  }
+});
+
+app.get('/api/reports/numbers', async (c) => {
+  const { limit, offset } = pageParams(c);
+  const rangeName = c.req.query('range_name') || '';
+  try {
+    const rows = await sql`
+      SELECT * FROM number_pool
+      WHERE (${rangeName} = '' OR range_name = ${rangeName})
+      ORDER BY updated_at DESC NULLS LAST, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+    const [summary] = await sql`
+      SELECT COUNT(*)::int AS total FROM number_pool
+      WHERE (${rangeName} = '' OR range_name = ${rangeName})
+    `;
+    return c.json({ rows, total: summary?.total || 0 });
+  } catch (err: any) {
+    console.error('[reports/numbers]', err);
+    return c.json({ error: err.message || 'Numbers report failed' }, 500);
+  }
+});
+
+// =========================================================================
 // Allocation chain: Admin → Agent → Client
 // =========================================================================
 
