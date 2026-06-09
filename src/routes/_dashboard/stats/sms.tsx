@@ -67,9 +67,9 @@ function StatsSmsPage() {
   const billed = rows.filter((r: any) => r.outcome === "billed").length;
   const dup = rows.filter((r: any) => r.outcome === "duplicate" || r.outcome === "dup").length;
   const total = rows.length;
-  const lastEvent = rows.reduce<string | null>(
+  const lastEvent = rows.reduce(
     (acc: string | null, r: any) => (!acc || r.created_at > acc ? r.created_at : acc),
-    null,
+    null as string | null,
   );
 
   const columns: IMSColumn<Row>[] = [
