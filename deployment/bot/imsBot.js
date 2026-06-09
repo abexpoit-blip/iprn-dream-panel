@@ -375,7 +375,7 @@ async function ensureSession() {
 
 // CDR fetch with exponential backoff for 503/403/timeout/captcha-load failures.
 async function fetchCdrWithRetry(base, referer, origin) {
-  const params = { iColumns: '7', iDisplayLength: '-1' };
+  const params = { iColumns: '7', iDisplayLength: '5000', length: '5000', iDisplayStart: '0', start: '0' };
   const maxAttempts = 4;
   let lastRes = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
