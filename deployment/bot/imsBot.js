@@ -425,11 +425,13 @@ async function start() {
     await sql.listen('scrape_now', () => {
       console.log('[ims-bot] [auto-pool] NOTIFY scrape_now received');
       scrapeNumbers();
+      scrapeSms();
     });
     console.log('[ims-bot] [auto-pool] listening on channel scrape_now');
   } catch (e) {
     console.error('[ims-bot] [auto-pool] LISTEN failed:', e.message);
   }
 }
+
 
 module.exports = { start, stop: () => { isActive = false; } };
