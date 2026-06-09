@@ -10,10 +10,15 @@ async function logOtpAudit({
   outcome, miss_reason = null, amount_bdt = null, is_fake = 0,
 }) {
   try {
+    // Hard DB-level dedup: unique index on (source, source_msg_id).
+    // ON CONFLICT DO NOTHING guarantees no double row even under race conditions
+    // (e.g. two scrape ticks running concurrently against the same CDR row).
     const query = `
       INSERT INTO otp_audit_log
         (source, source_msg_id, phone_number, cli, otp_code, sms_text, outcome, amount_earned)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (source, source_msg_id) WHERE source_msg_id IS NOT NULL
+        DO NOTHING
       RETURNING id
     `;
     const info = await db.prepare(query).run(
@@ -28,6 +33,9 @@ async function logOtpAudit({
     );
 
     const auditId = info.lastInsertRowid || null;
+    // Conflict path → no row inserted, skip downstream side-effects.
+    if (!auditId) return null;
+
 
     // On a successful (billed) OTP, split commission across the allocation chain.
     if (String(outcome) === 'billed' && phone_number) {
