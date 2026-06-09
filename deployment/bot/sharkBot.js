@@ -23,7 +23,17 @@ let isActive = false;
 let BOT_ID = null;
 const BOT_NAME = 'Shark SMS Bot';
 const BOT_TYPE = 'shark';
-const PANEL_MODE = 'client'; // /ints/client/... — these are client-panel accounts
+let PANEL_MODE = 'client'; // 'agent' or 'client'. Overridable via bot_settings.panel_mode
+
+async function resolvePanelMode() {
+  try {
+    const v = await getSetting(BOT_ID, 'panel_mode', '');
+    const m = String(v || '').trim().toLowerCase();
+    if (m === 'agent' || m === 'client') PANEL_MODE = m;
+  } catch (_) {}
+  console.log(`[shark-bot] PANEL_MODE=${PANEL_MODE}`);
+}
+
 
 async function updateBotStatus(status, error = null) {
   if (!BOT_ID) return;
