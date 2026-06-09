@@ -566,6 +566,11 @@ async function start() {
   scrapeSms();
   setInterval(scrapeSms, IMS_MIN_INTERVAL_MS);
 
+  // Dedicated session keep-alive ticker — independent of CDR cadence so the
+  // PHPSESSID stays warm even if scrapeSms is paused/blocked.
+  lastLoginAt = Date.now();
+  setInterval(() => { ensureSession().catch(() => {}); }, KEEP_ALIVE_INTERVAL_MS);
+
   try {
     const { sql } = require('./db');
     await sql.listen('scrape_now', () => {
