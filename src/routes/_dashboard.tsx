@@ -100,7 +100,10 @@ function DashboardLayout() {
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { label: "Bot Dashboard", icon: Bot, href: "/bot-dashboard" },
     ...(profile?.is_admin && !impersonatedAgent
-      ? [{ label: "Bot Health", icon: Activity, href: "/bot-health" }]
+      ? [
+          { label: "Bot Health", icon: Activity, href: "/bot-health" },
+          { label: "Bot Control", icon: Bot, href: "/bot-control" },
+        ]
       : []),
     { 
       label: "SMS Module", 

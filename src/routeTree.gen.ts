@@ -24,6 +24,7 @@ import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dash
 import { Route as DashboardCreditsRouteImport } from './routes/_dashboard/credits'
 import { Route as DashboardClientsRouteImport } from './routes/_dashboard/clients'
 import { Route as DashboardBotHealthRouteImport } from './routes/_dashboard/bot-health'
+import { Route as DashboardBotControlRouteImport } from './routes/_dashboard/bot-control'
 import { Route as DashboardAgentsRouteImport } from './routes/_dashboard/agents'
 import { Route as DashboardAdminRouteImport } from './routes/_dashboard/admin'
 import { Route as ClientStatsSmsRouteImport } from './routes/client.stats.sms'
@@ -113,6 +114,11 @@ const DashboardBotHealthRoute = DashboardBotHealthRouteImport.update({
   path: '/bot-health',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardBotControlRoute = DashboardBotControlRouteImport.update({
+  id: '/bot-control',
+  path: '/bot-control',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAgentsRoute = DashboardAgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/admin': typeof DashboardAdminRoute
   '/agents': typeof DashboardAgentsRoute
+  '/bot-control': typeof DashboardBotControlRoute
   '/bot-health': typeof DashboardBotHealthRoute
   '/clients': typeof DashboardClientsRoute
   '/credits': typeof DashboardCreditsRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/admin': typeof DashboardAdminRoute
   '/agents': typeof DashboardAgentsRoute
+  '/bot-control': typeof DashboardBotControlRoute
   '/bot-health': typeof DashboardBotHealthRoute
   '/clients': typeof DashboardClientsRoute
   '/credits': typeof DashboardCreditsRoute
@@ -255,6 +263,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/_dashboard/admin': typeof DashboardAdminRoute
   '/_dashboard/agents': typeof DashboardAgentsRoute
+  '/_dashboard/bot-control': typeof DashboardBotControlRoute
   '/_dashboard/bot-health': typeof DashboardBotHealthRoute
   '/_dashboard/clients': typeof DashboardClientsRoute
   '/_dashboard/credits': typeof DashboardCreditsRoute
@@ -287,6 +296,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/admin'
     | '/agents'
+    | '/bot-control'
     | '/bot-health'
     | '/clients'
     | '/credits'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/admin'
     | '/agents'
+    | '/bot-control'
     | '/bot-health'
     | '/clients'
     | '/credits'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/_dashboard/admin'
     | '/_dashboard/agents'
+    | '/_dashboard/bot-control'
     | '/_dashboard/bot-health'
     | '/_dashboard/clients'
     | '/_dashboard/credits'
@@ -487,6 +499,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardBotHealthRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/bot-control': {
+      id: '/_dashboard/bot-control'
+      path: '/bot-control'
+      fullPath: '/bot-control'
+      preLoaderRoute: typeof DashboardBotControlRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/agents': {
       id: '/_dashboard/agents'
       path: '/agents'
@@ -591,6 +610,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardAdminRoute: typeof DashboardAdminRoute
   DashboardAgentsRoute: typeof DashboardAgentsRoute
+  DashboardBotControlRoute: typeof DashboardBotControlRoute
   DashboardBotHealthRoute: typeof DashboardBotHealthRoute
   DashboardClientsRoute: typeof DashboardClientsRoute
   DashboardCreditsRoute: typeof DashboardCreditsRoute
@@ -611,6 +631,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminRoute: DashboardAdminRoute,
   DashboardAgentsRoute: DashboardAgentsRoute,
+  DashboardBotControlRoute: DashboardBotControlRoute,
   DashboardBotHealthRoute: DashboardBotHealthRoute,
   DashboardClientsRoute: DashboardClientsRoute,
   DashboardCreditsRoute: DashboardCreditsRoute,
