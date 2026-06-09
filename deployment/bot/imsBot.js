@@ -340,14 +340,95 @@ async function alreadyLogged(sourceMsgId) {
   } catch (_) { return false; }
 }
 
+// Session keep-alive: lightweight ping to keep PHPSESSID fresh, and proactive
+// re-login if the session is older than SESSION_MAX_AGE_MS. Combined with
+// reactive re-login on 401/302 this keeps OTP auto-sync running 24/7 without
+// the admin manually pasting cookies.
+async function ensureSession() {
+  const now = Date.now();
+  const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
+  const origin = new URL(loginUrl).origin;
+
+  // Proactive rotation — re-login before IMS forcibly expires us.
+  if (lastLoginAt && now - lastLoginAt > SESSION_MAX_AGE_MS) {
+    console.log('[ims-bot] Session age > 50min — proactive re-login');
+    await login();
+    return;
+  }
+
+  // Lightweight heartbeat — touches Dashboard so PHPSESSID idle timer resets.
+  if (now - lastKeepAlive > KEEP_ALIVE_INTERVAL_MS) {
+    lastKeepAlive = now;
+    try {
+      const r = await client.get(`${origin}/${PANEL_MODE}/Dashboard`, {
+        headers: { 'User-Agent': UA }, validateStatus: () => true, maxRedirects: 0,
+      });
+      const alive = r.status === 200;
+      await writeSyncStatus({ session_alive: alive });
+      if (!alive) {
+        console.log(`[ims-bot] Keep-alive failed (status=${r.status}) — re-logging in`);
+        await login();
+      }
+    } catch (_) {}
+  }
+}
+
+// CDR fetch with exponential backoff for 503/403/timeout/captcha-load failures.
+async function fetchCdrWithRetry(base, referer, origin) {
+  const params = { iColumns: '7', iDisplayLength: '-1' };
+  const maxAttempts = 4;
+  let lastRes = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await fetchDataTables(base, referer, params);
+      lastRes = res;
+      if (res.status === 200) {
+        return { ok: true, res, retries: attempt };
+      }
+      // 401/302 → cookies dead, force re-login then retry.
+      if (res.status === 401 || res.status === 302) {
+        console.log(`[ims-bot] CDR ${res.status} — session expired, re-logging in`);
+        await writeSyncStatus({ session_alive: false });
+        const loggedIn = await login();
+        if (!loggedIn) return { ok: false, res, retries: attempt };
+        continue; // immediate retry after fresh login
+      }
+      // 503/403 → IMS throttle / Cloudflare → warm up + backoff
+      if (res.status === 503 || res.status === 403 || res.status === 429) {
+        const wait = backoffMs(attempt);
+        console.log(`[ims-bot] CDR ${res.status} (attempt ${attempt + 1}/${maxAttempts}) — warm up + backoff ${wait}ms`);
+        try {
+          await client.get(referer, {
+            headers: { 'Referer': `${origin}/${PANEL_MODE}/Dashboard`, 'User-Agent': UA },
+            validateStatus: () => true,
+          });
+        } catch (_) {}
+        await sleep(wait);
+        continue;
+      }
+      // Other status → backoff once then give up.
+      console.log(`[ims-bot] CDR HTTP ${res.status} — backoff and retry`);
+      await sleep(backoffMs(attempt));
+    } catch (err) {
+      // Network / timeout error → backoff
+      const wait = backoffMs(attempt);
+      console.log(`[ims-bot] CDR fetch error: ${err.message} (attempt ${attempt + 1}/${maxAttempts}) — backoff ${wait}ms`);
+      await sleep(wait);
+    }
+  }
+  return { ok: false, res: lastRes, retries: maxAttempts };
+}
+
 async function scrapeSms() {
   if (!isActive || !BOT_ID) return;
   const now = Date.now();
   const elapsed = now - lastSmsScrape;
   if (elapsed < IMS_MIN_INTERVAL_MS) {
-    await new Promise(r => setTimeout(r, IMS_MIN_INTERVAL_MS - elapsed));
+    await sleep(IMS_MIN_INTERVAL_MS - elapsed);
   }
   lastSmsScrape = Date.now();
+
+  await ensureSession();
 
   const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
   const origin   = new URL(loginUrl).origin;
@@ -357,27 +438,19 @@ async function scrapeSms() {
     + `&frange=&fnum=&fcli=&fgdate=&fgmonth=&fgrange=&fgnumber=&fgcli=&fg=0`;
   const referer = `${origin}/${PANEL_MODE}/SMSCDRStats`;
 
+  const startedAt = new Date().toISOString();
   try {
-    // Mimic the panel's "Select ALL" — DataTables interprets length=-1 as "all rows".
-    // Single request returns every SMS row (same as the panel's Copy/Download button).
-    let res = await fetchDataTables(base, referer, { iColumns: '7', iDisplayLength: '-1' });
-    if (res.status === 503 || res.status === 403) {
-      // Warm up parent page so Cloudflare / session middleware accepts the AJAX, then retry once.
-      console.log(`[ims-bot] CDR ${res.status} — warming up ${referer} and retrying`);
-      try {
-        await client.get(referer, {
-          headers: { 'Referer': `${origin}/${PANEL_MODE}/Dashboard`, 'User-Agent': UA },
-          validateStatus: () => true,
-        });
-      } catch (_) {}
-      await new Promise(r => setTimeout(r, 1500));
-      res = await fetchDataTables(base, referer, { iColumns: '7', iDisplayLength: '-1' });
-    }
-    if (res.status !== 200) {
-      console.error(`[ims-bot] CDR HTTP ${res.status}`);
-      if (res.status === 401 || res.status === 302) await login();
+    const { ok, res, retries } = await fetchCdrWithRetry(base, referer, origin);
+    if (!ok) {
+      const errMsg = `CDR fetch failed after ${retries} retries (last status=${res?.status ?? 'n/a'})`;
+      console.error(`[ims-bot] ${errMsg}`);
+      await writeSyncStatus({
+        last_sync_at: startedAt, last_error_at: startedAt, last_error: errMsg,
+        retry_count: retries, session_alive: res?.status !== 401 && res?.status !== 302,
+      });
       return;
     }
+
     const data = typeof res.body === 'object' ? res.body : JSON.parse(res.body);
     const rows = Array.isArray(data.aaData) ? data.aaData : [];
     await updateBotStatus('online', null);
@@ -390,15 +463,11 @@ async function scrapeSms() {
     let billed = 0, dup = 0;
     for (const row of realRows) {
       const dateStr = stripHtml(row[0]);
-      const range   = stripHtml(row[1]);
       const phone   = digitsOnly(stripHtml(row[2]));
       const cli     = stripHtml(row[3]);
       const smsText = stripHtml(row[4]);
       if (!phone || !smsText) continue;
 
-      // Stronger dedup: include a short hash of the message body so two distinct
-      // SMS arriving in the same second from the same CLI aren't collapsed,
-      // but true duplicates (same date+phone+cli+text) are blocked.
       const textHash = require('crypto').createHash('md5').update(smsText).digest('hex').slice(0, 10);
       const sourceMsgId = `${dateStr}|${phone}|${cli}|${textHash}`;
       if (await alreadyLogged(sourceMsgId)) { dup++; continue; }
@@ -415,15 +484,9 @@ async function scrapeSms() {
       } catch (_) {}
 
       await logOtpAudit({
-        source: 'ims',
-        source_msg_id: sourceMsgId,
-        phone_number: phone,
-        cli,
-        otp_code: otpCode,
-        sms_text: smsText,
-        user_id: userId,
-        outcome: otpCode ? 'billed' : 'mismatch',
-        amount_bdt: 0,
+        source: 'ims', source_msg_id: sourceMsgId, phone_number: phone, cli,
+        otp_code: otpCode, sms_text: smsText, user_id: userId,
+        outcome: otpCode ? 'billed' : 'mismatch', amount_bdt: 0,
       });
       if (otpCode) {
         billed++;
@@ -432,9 +495,28 @@ async function scrapeSms() {
         }
       }
     }
-    console.log(`[ims-bot] CDR scrape: rows=${realRows.length}, billed=${billed}, dup=${dup}`);
+    console.log(`[ims-bot] CDR scrape: rows=${realRows.length}, billed=${billed}, dup=${dup} (retries=${retries})`);
+    await writeSyncStatus({
+      last_sync_at: startedAt, last_success_at: startedAt, last_error: null,
+      rows_fetched: realRows.length, billed_count: billed, dup_count: dup,
+      retry_count: retries, session_alive: true,
+      total_syncs: db.raw ? db.raw('total_syncs + 1') : undefined,
+    });
+    // Increment cumulative counters in a second simple statement (driver-agnostic).
+    try {
+      await db.prepare(
+        `UPDATE bot_sync_status
+         SET total_syncs = total_syncs + 1,
+             total_billed = total_billed + ?,
+             total_dup = total_dup + ?
+         WHERE bot_id = ?`
+      ).run(billed, dup, BOT_ID);
+    } catch (_) {}
   } catch (err) {
     console.error(`[ims-bot] CDR scrape error:`, err.message);
+    await writeSyncStatus({
+      last_sync_at: startedAt, last_error_at: startedAt, last_error: err.message,
+    });
   }
 }
 
