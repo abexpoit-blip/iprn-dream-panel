@@ -33,7 +33,19 @@ let isActive = false;
 let BOT_ID = null;
 const BOT_NAME = 'IMS Main Agent';
 const BOT_TYPE = 'ims';
-const PANEL_MODE = 'client'; // /client/... — these are client-panel accounts
+let PANEL_MODE = 'agent'; // 'agent' (reseller) or 'client'. Overridable via bot_settings.panel_mode
+
+async function resolvePanelMode() {
+  try {
+    const v = await getSetting(BOT_ID, 'panel_mode', '');
+    const m = String(v || '').trim().toLowerCase();
+    if (m === 'agent' || m === 'client') {
+      PANEL_MODE = m;
+    }
+  } catch (_) {}
+  console.log(`[ims-bot] PANEL_MODE=${PANEL_MODE}`);
+}
+
 
 // IMS blocks if CDR refresh < ~16s
 const IMS_MIN_INTERVAL_MS = 20000;
