@@ -281,7 +281,9 @@ async function scrapeNumbers() {
         if (r.changes) inserted++;
       } catch (_) {}
     }
-    console.log(`[ims-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted (with country/range/payout)`);
+    const uniqueRanges = [...new Set(items.map(i => i.range_name).filter(Boolean))];
+    console.log(`[ims-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted across ${uniqueRanges.length} range(s)`);
+    if (uniqueRanges.length > 0) console.log(`[ims-bot] Ranges: ${uniqueRanges.slice(0, 20).join(' | ')}${uniqueRanges.length > 20 ? ` (+${uniqueRanges.length - 20} more)` : ''}`);
   } catch (err) {
     console.error(`[ims-bot] Numbers scrape error:`, err.message);
   }
