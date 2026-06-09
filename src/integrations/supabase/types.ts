@@ -97,6 +97,74 @@ export type Database = {
           },
         ]
       }
+      bot_sync_status: {
+        Row: {
+          billed_count: number
+          bot_id: string
+          bot_type: string
+          dup_count: number
+          last_error: string | null
+          last_error_at: string | null
+          last_relogin_at: string | null
+          last_success_at: string | null
+          last_sync_at: string | null
+          retry_count: number
+          rows_fetched: number
+          scope: string
+          session_alive: boolean
+          total_billed: number
+          total_dup: number
+          total_syncs: number
+          updated_at: string
+        }
+        Insert: {
+          billed_count?: number
+          bot_id: string
+          bot_type: string
+          dup_count?: number
+          last_error?: string | null
+          last_error_at?: string | null
+          last_relogin_at?: string | null
+          last_success_at?: string | null
+          last_sync_at?: string | null
+          retry_count?: number
+          rows_fetched?: number
+          scope?: string
+          session_alive?: boolean
+          total_billed?: number
+          total_dup?: number
+          total_syncs?: number
+          updated_at?: string
+        }
+        Update: {
+          billed_count?: number
+          bot_id?: string
+          bot_type?: string
+          dup_count?: number
+          last_error?: string | null
+          last_error_at?: string | null
+          last_relogin_at?: string | null
+          last_success_at?: string | null
+          last_sync_at?: string | null
+          retry_count?: number
+          rows_fetched?: number
+          scope?: string
+          session_alive?: boolean
+          total_billed?: number
+          total_dup?: number
+          total_syncs?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_sync_status_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: true
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bots: {
         Row: {
           auto_relogin: boolean | null

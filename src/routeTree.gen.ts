@@ -36,6 +36,7 @@ import { Route as DashboardStatsRangeRouteImport } from './routes/_dashboard/sta
 import { Route as DashboardStatsNumberRouteImport } from './routes/_dashboard/stats/number'
 import { Route as DashboardStatsClientRouteImport } from './routes/_dashboard/stats/client'
 import { Route as DashboardStatsCdrRouteImport } from './routes/_dashboard/stats/cdr'
+import { Route as DashboardSmsSyncStatusRouteImport } from './routes/_dashboard/sms/sync-status'
 import { Route as DashboardSmsRatecardRouteImport } from './routes/_dashboard/sms/ratecard'
 import { Route as DashboardSmsRangesRouteImport } from './routes/_dashboard/sms/ranges'
 import { Route as DashboardSmsNumbersRouteImport } from './routes/_dashboard/sms/numbers'
@@ -176,6 +177,11 @@ const DashboardStatsCdrRoute = DashboardStatsCdrRouteImport.update({
   path: '/stats/cdr',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSmsSyncStatusRoute = DashboardSmsSyncStatusRouteImport.update({
+  id: '/sms/sync-status',
+  path: '/sms/sync-status',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSmsRatecardRoute = DashboardSmsRatecardRouteImport.update({
   id: '/sms/ratecard',
   path: '/sms/ratecard',
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/sms/numbers': typeof DashboardSmsNumbersRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
   '/sms/ratecard': typeof DashboardSmsRatecardRoute
+  '/sms/sync-status': typeof DashboardSmsSyncStatusRoute
   '/stats/cdr': typeof DashboardStatsCdrRoute
   '/stats/client': typeof DashboardStatsClientRoute
   '/stats/number': typeof DashboardStatsNumberRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/sms/numbers': typeof DashboardSmsNumbersRoute
   '/sms/ranges': typeof DashboardSmsRangesRoute
   '/sms/ratecard': typeof DashboardSmsRatecardRoute
+  '/sms/sync-status': typeof DashboardSmsSyncStatusRoute
   '/stats/cdr': typeof DashboardStatsCdrRoute
   '/stats/client': typeof DashboardStatsClientRoute
   '/stats/number': typeof DashboardStatsNumberRoute
@@ -294,6 +302,7 @@ export interface FileRoutesById {
   '/_dashboard/sms/numbers': typeof DashboardSmsNumbersRoute
   '/_dashboard/sms/ranges': typeof DashboardSmsRangesRoute
   '/_dashboard/sms/ratecard': typeof DashboardSmsRatecardRoute
+  '/_dashboard/sms/sync-status': typeof DashboardSmsSyncStatusRoute
   '/_dashboard/stats/cdr': typeof DashboardStatsCdrRoute
   '/_dashboard/stats/client': typeof DashboardStatsClientRoute
   '/_dashboard/stats/number': typeof DashboardStatsNumberRoute
@@ -329,6 +338,7 @@ export interface FileRouteTypes {
     | '/sms/numbers'
     | '/sms/ranges'
     | '/sms/ratecard'
+    | '/sms/sync-status'
     | '/stats/cdr'
     | '/stats/client'
     | '/stats/number'
@@ -362,6 +372,7 @@ export interface FileRouteTypes {
     | '/sms/numbers'
     | '/sms/ranges'
     | '/sms/ratecard'
+    | '/sms/sync-status'
     | '/stats/cdr'
     | '/stats/client'
     | '/stats/number'
@@ -396,6 +407,7 @@ export interface FileRouteTypes {
     | '/_dashboard/sms/numbers'
     | '/_dashboard/sms/ranges'
     | '/_dashboard/sms/ratecard'
+    | '/_dashboard/sms/sync-status'
     | '/_dashboard/stats/cdr'
     | '/_dashboard/stats/client'
     | '/_dashboard/stats/number'
@@ -607,6 +619,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardStatsCdrRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/sms/sync-status': {
+      id: '/_dashboard/sms/sync-status'
+      path: '/sms/sync-status'
+      fullPath: '/sms/sync-status'
+      preLoaderRoute: typeof DashboardSmsSyncStatusRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/sms/ratecard': {
       id: '/_dashboard/sms/ratecard'
       path: '/sms/ratecard'
@@ -660,6 +679,7 @@ interface DashboardRouteChildren {
   DashboardSmsNumbersRoute: typeof DashboardSmsNumbersRoute
   DashboardSmsRangesRoute: typeof DashboardSmsRangesRoute
   DashboardSmsRatecardRoute: typeof DashboardSmsRatecardRoute
+  DashboardSmsSyncStatusRoute: typeof DashboardSmsSyncStatusRoute
   DashboardStatsCdrRoute: typeof DashboardStatsCdrRoute
   DashboardStatsClientRoute: typeof DashboardStatsClientRoute
   DashboardStatsNumberRoute: typeof DashboardStatsNumberRoute
@@ -682,6 +702,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSmsNumbersRoute: DashboardSmsNumbersRoute,
   DashboardSmsRangesRoute: DashboardSmsRangesRoute,
   DashboardSmsRatecardRoute: DashboardSmsRatecardRoute,
+  DashboardSmsSyncStatusRoute: DashboardSmsSyncStatusRoute,
   DashboardStatsCdrRoute: DashboardStatsCdrRoute,
   DashboardStatsClientRoute: DashboardStatsClientRoute,
   DashboardStatsNumberRoute: DashboardStatsNumberRoute,
