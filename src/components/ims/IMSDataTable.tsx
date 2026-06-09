@@ -57,6 +57,16 @@ export function IMSDataTable<T>({
   const [pageSize, setPageSize] = useState<number | "all">(defaultPageSize);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [showColPicker, setShowColPicker] = useState(false);
+  const [exportCols, setExportCols] = useState<Set<string>>(
+    () => new Set(columns.filter((c) => c.exportable !== false).map((c) => c.key)),
+  );
+  const toggleCol = (key: string) =>
+    setExportCols((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
 
   const data = rows ?? [];
 
