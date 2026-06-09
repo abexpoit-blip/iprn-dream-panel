@@ -46,7 +46,7 @@ function createSupabaseClient() {
       from: (table: string) => {
         const chain: any = {
           _filters: {} as any,
-          _limit: 200,
+          _limit: 5000,
           _order: 'created_at.desc',
           _count: null as string | null,
           
@@ -58,6 +58,11 @@ function createSupabaseClient() {
           
           eq: function(col: string, val: any) {
             this._filters[col] = val;
+            return this;
+          },
+
+          or: function(expr: string) {
+            this._filters['or'] = expr;
             return this;
           },
           
@@ -101,6 +106,11 @@ function createSupabaseClient() {
             } catch (e: any) {
               return { data: null, error: e.message };
             }
+          },
+
+          maybeSingle: async function() {
+            const r = await this.single();
+            return { data: r.data || null, error: r.error || null };
           },
 
           delete: function() {
