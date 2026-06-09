@@ -351,6 +351,11 @@ CREATE INDEX IF NOT EXISTS idx_sms_cdr_received_at  ON sms_cdr(received_at DESC)
 CREATE INDEX IF NOT EXISTS idx_sms_cdr_client_id    ON sms_cdr(client_id);
 CREATE INDEX IF NOT EXISTS idx_sms_cdr_agent_id     ON sms_cdr(agent_id);
 CREATE INDEX IF NOT EXISTS idx_sms_cdr_prefix       ON sms_cdr(prefix);
+-- Composite indexes for date-range + filter combos (CDR advanced filters)
+CREATE INDEX IF NOT EXISTS idx_sms_cdr_recv_agent   ON sms_cdr(received_at DESC, agent_id);
+CREATE INDEX IF NOT EXISTS idx_sms_cdr_recv_client  ON sms_cdr(received_at DESC, client_id);
+CREATE INDEX IF NOT EXISTS idx_sms_cdr_recv_prefix  ON sms_cdr(received_at DESC, prefix);
+CREATE INDEX IF NOT EXISTS idx_sms_cdr_number       ON sms_cdr(number);
 
 CREATE INDEX IF NOT EXISTS idx_otp_audit_created_at ON otp_audit_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_otp_audit_outcome    ON otp_audit_log(outcome);
