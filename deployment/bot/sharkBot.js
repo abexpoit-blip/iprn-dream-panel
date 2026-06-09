@@ -364,8 +364,11 @@ async function start() {
     return;
   }
 
+  await resolvePanelMode();
+
   const ok = await login();
   if (!ok) return;
+
 
   // Initial pulls
   scrapeNumbers();
