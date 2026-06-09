@@ -63,7 +63,7 @@ function ClientPoolPage() {
           "number, status, country, range_name, prefix, panel_payout, client_rate, reserved_at, expires_at, updated_at, created_at"
         )
         .order("updated_at", { ascending: false })
-        .limit(500);
+        .limit(5000);
 
       if (clientId) {
         q = q.or(`assigned_client.eq.${clientId},reserved_for.eq.${uid},user_id.eq.${uid}`);

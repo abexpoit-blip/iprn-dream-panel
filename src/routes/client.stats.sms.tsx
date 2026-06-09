@@ -26,7 +26,7 @@ function ClientSmsStatsPage() {
         .from("otp_audit_log")
         .select("id,phone_number,cli,otp_code,sms_text,outcome,created_at")
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(5000);
       if (error) throw error;
       return data || [];
     },

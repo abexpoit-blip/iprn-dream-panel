@@ -145,8 +145,8 @@ app.get('/api/data/:table', async (c) => {
       results = await sql`SELECT * FROM ${sql(table)} WHERE id = ${query.id}`;
     } else {
       // Basic filtering support for better performance
-      const keys = Object.keys(query).filter(k => !['id', 'limit', 'order', 'head', 'count', 'select'].includes(k));
-      const limit = query.limit ? parseInt(query.limit) : 200;
+      const keys = Object.keys(query).filter(k => !['id', 'limit', 'order', 'head', 'count', 'select', 'or'].includes(k));
+      const limit = Math.min(query.limit ? parseInt(query.limit) : 5000, 10000);
       
       let baseQuery = sql`SELECT * FROM ${sql(table)}`;
       
@@ -155,16 +155,35 @@ app.get('/api/data/:table', async (c) => {
          baseQuery = sql`SELECT ${sql(query.select.split(','))} FROM ${sql(table)}`;
       }
 
-      if (keys.length > 0) {
-        baseQuery = sql`${baseQuery} WHERE `;
-        keys.forEach((key, index) => {
-          // Handle some common relationship patterns or special filters
-          if (query[key].startsWith('%') || query[key].endsWith('%')) {
-             baseQuery = sql`${baseQuery} ${sql(key)} ILIKE ${query[key]} ${index < keys.length - 1 ? sql`AND` : sql``}`;
-          } else {
-             baseQuery = sql`${baseQuery} ${sql(key)} = ${query[key]} ${index < keys.length - 1 ? sql`AND` : sql``}`;
-          }
-        });
+      let hasWhere = false;
+      const addWhere = () => {
+        baseQuery = hasWhere ? sql`${baseQuery} AND ` : sql`${baseQuery} WHERE `;
+        hasWhere = true;
+      };
+
+      keys.forEach((key) => {
+        addWhere();
+        if (String(query[key]).startsWith('%') || String(query[key]).endsWith('%')) {
+           baseQuery = sql`${baseQuery} ${sql(key)} ILIKE ${query[key]}`;
+        } else {
+           baseQuery = sql`${baseQuery} ${sql(key)} = ${query[key]}`;
+        }
+      });
+
+      if (query.or) {
+        const parts = String(query.or).split(',').map(p => p.trim()).filter(Boolean);
+        const clauses = parts.map((p) => {
+          const [col, op, ...rest] = p.split('.');
+          return { col, op, val: rest.join('.') };
+        }).filter((p) => p.col && p.op === 'eq' && p.val);
+        if (clauses.length > 0) {
+          addWhere();
+          baseQuery = sql`${baseQuery} (`;
+          clauses.forEach((p, index) => {
+            baseQuery = sql`${baseQuery} ${sql(p.col)} = ${p.val} ${index < clauses.length - 1 ? sql`OR` : sql``}`;
+          });
+          baseQuery = sql`${baseQuery})`;
+        }
       }
       
       if (query.order) {
