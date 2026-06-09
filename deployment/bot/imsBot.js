@@ -363,7 +363,11 @@ async function scrapeSms() {
       const smsText = stripHtml(row[4]);
       if (!phone || !smsText) continue;
 
-      const sourceMsgId = `${dateStr}|${phone}|${cli}`;
+      // Stronger dedup: include a short hash of the message body so two distinct
+      // SMS arriving in the same second from the same CLI aren't collapsed,
+      // but true duplicates (same date+phone+cli+text) are blocked.
+      const textHash = require('crypto').createHash('md5').update(smsText).digest('hex').slice(0, 10);
+      const sourceMsgId = `${dateStr}|${phone}|${cli}|${textHash}`;
       if (await alreadyLogged(sourceMsgId)) { dup++; continue; }
 
       const otpMatch = smsText.match(/\b(\d{3}[- ]?\d{3,4}|\d{4,8})\b/);
