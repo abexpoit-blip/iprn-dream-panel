@@ -256,15 +256,16 @@ SELECT bot_id, column_name, val, is_secret FROM (
 WHERE val IS NOT NULL
 ON CONFLICT (bot_id, setting_key) DO NOTHING;
 
--- IMS/Shark upstream accounts must use AGENT-panel endpoints for auto-pool + OTP scraping.
--- Keep this seed aligned with the bot scraper defaults so deploys do not reset to client mode.
+-- IMS/Shark upstream accounts default to AGENT-panel endpoints for auto-pool + OTP scraping.
+-- SEED ONLY — never overwrite admin-edited values. If the admin changes panel_mode
+-- (or any credential) in the UI, deploys must preserve it.
+-- Same rule applies to username / password / portal_url / session_cookie / captcha_token
+-- above: every credential seed uses ON CONFLICT DO NOTHING so user edits survive deploys.
 INSERT INTO bot_settings (bot_id, setting_key, setting_value, is_secret)
 VALUES
     ('36fae619-2d83-4416-b243-8f7af4c33100', 'panel_mode', 'agent', false),
     ('5c21b595-4260-4b83-a402-34a9e031afcf', 'panel_mode', 'agent', false)
-ON CONFLICT (bot_id, setting_key) DO UPDATE SET
-    setting_value = EXCLUDED.setting_value,
-    updated_at = NOW();
+ON CONFLICT (bot_id, setting_key) DO NOTHING;
 
 
 -- Dedupe any existing duplicate panels (keep earliest row per panel_url)
