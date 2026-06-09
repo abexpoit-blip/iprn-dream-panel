@@ -722,6 +722,7 @@ export type Database = {
     }
     Functions: {
       current_client_id: { Args: never; Returns: string }
+      notify_scrape_now: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
