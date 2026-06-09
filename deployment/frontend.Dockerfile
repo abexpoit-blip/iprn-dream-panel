@@ -14,7 +14,8 @@ ARG VITE_API_URL=https://x.nexus-x.site/api
 ENV VITE_SELF_HOSTED=$VITE_SELF_HOSTED
 ENV VITE_API_URL=$VITE_API_URL
 
-# Build the app
+# Build the app (raise Node heap so low-RAM VPS doesn't OOM-hang the build)
+ENV NODE_OPTIONS=--max-old-space-size=3072
 RUN ./node_modules/.bin/vite build
 
 # Verify Nitro output
