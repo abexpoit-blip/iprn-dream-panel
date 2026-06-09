@@ -247,6 +247,7 @@ SELECT bot_id, column_name, val, is_secret FROM (
         WHEN name = 'SMS Hadi Agent' AND column_name = 'username' THEN 'mamun999'
         WHEN name = 'SMS Hadi Agent' AND column_name = 'password' THEN 'mamun999'
         WHEN name = 'SMS Hadi Agent' AND column_name = 'portal_url' THEN 'http://2.59.169.96/ints/login'
+        WHEN name = 'Shark SMS Agent' AND column_name = 'portal_url' THEN 'http://65.109.111.158/ints/login'
         WHEN column_name = 'interval' THEN '15'
     END AS val,
     (column_name = 'password') AS is_secret
@@ -256,15 +257,16 @@ SELECT bot_id, column_name, val, is_secret FROM (
 WHERE val IS NOT NULL
 ON CONFLICT (bot_id, setting_key) DO NOTHING;
 
--- IMS/Shark upstream accounts default to AGENT-panel endpoints for auto-pool + OTP scraping.
+-- All upstream accounts default to CLIENT-panel endpoints across IMS, SMSHadi, and Shark.
 -- SEED ONLY — never overwrite admin-edited values. If the admin changes panel_mode
 -- (or any credential) in the UI, deploys must preserve it.
 -- Same rule applies to username / password / portal_url / session_cookie / captcha_token
 -- above: every credential seed uses ON CONFLICT DO NOTHING so user edits survive deploys.
 INSERT INTO bot_settings (bot_id, setting_key, setting_value, is_secret)
 VALUES
-    ('36fae619-2d83-4416-b243-8f7af4c33100', 'panel_mode', 'agent', false),
-    ('5c21b595-4260-4b83-a402-34a9e031afcf', 'panel_mode', 'agent', false)
+    ('36fae619-2d83-4416-b243-8f7af4c33100', 'panel_mode', 'client', false),
+    ('95280089-8b3e-4c88-9e49-be5fe93330a9', 'panel_mode', 'client', false),
+    ('5c21b595-4260-4b83-a402-34a9e031afcf', 'panel_mode', 'client', false)
 ON CONFLICT (bot_id, setting_key) DO NOTHING;
 
 
