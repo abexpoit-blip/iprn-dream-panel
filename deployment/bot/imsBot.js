@@ -197,7 +197,9 @@ async function login() {
 
     if (ok) {
       console.log(`[ims-bot] Login successful (status=${res.status}, path=${finalPath})`);
+      lastLoginAt = Date.now();
       await updateBotStatus('online', null);
+      await writeSyncStatus({ session_alive: true, last_relogin_at: new Date().toISOString(), last_error: null });
       return true;
     }
     const reason = `Login rejected (status=${res.status}, path=${finalPath}). Wrong creds or captcha — paste PHPSESSID via bot_settings.session_cookie.`;
