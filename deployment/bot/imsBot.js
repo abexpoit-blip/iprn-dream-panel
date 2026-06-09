@@ -500,7 +500,6 @@ async function scrapeSms() {
       last_sync_at: startedAt, last_success_at: startedAt, last_error: null,
       rows_fetched: realRows.length, billed_count: billed, dup_count: dup,
       retry_count: retries, session_alive: true,
-      total_syncs: db.raw ? db.raw('total_syncs + 1') : undefined,
     });
     // Increment cumulative counters in a second simple statement (driver-agnostic).
     try {
