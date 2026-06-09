@@ -159,7 +159,7 @@ export function IMSDataTable<T>({
       const matrix = buildMatrix(false);
       const head = [
         columns
-          .filter((c) => c.exportable !== false)
+          .filter((c) => c.exportable !== false && exportCols.has(c.key))
           .map((c) => (typeof c.header === "string" ? c.header : c.key)),
       ];
       const pdf = new jsPDF({ orientation: "landscape" });
