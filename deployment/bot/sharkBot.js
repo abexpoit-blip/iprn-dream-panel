@@ -23,7 +23,7 @@ let isActive = false;
 let BOT_ID = null;
 const BOT_NAME = 'Shark SMS Bot';
 const BOT_TYPE = 'shark';
-let PANEL_MODE = 'client'; // 'agent' or 'client'. Overridable via bot_settings.panel_mode
+let PANEL_MODE = 'agent'; // 'agent' or 'client'. Overridable via bot_settings.panel_mode
 
 async function resolvePanelMode() {
   try {
