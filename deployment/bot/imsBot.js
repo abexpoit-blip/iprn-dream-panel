@@ -52,6 +52,10 @@ const IMS_MIN_INTERVAL_MS = 20000;
 const IMS_NUMBERS_MIN_INTERVAL_MS = 20000;
 let lastSmsScrape = 0;
 let lastNumbersScrape = 0;
+let lastKeepAlive = 0;
+let lastLoginAt = 0;
+const KEEP_ALIVE_INTERVAL_MS = 4 * 60 * 1000; // ping every 4min to keep PHPSESSID warm
+const SESSION_MAX_AGE_MS = 50 * 60 * 1000;    // proactively re-login after 50min
 
 async function updateBotStatus(status, error = null) {
   if (!BOT_ID) return;
@@ -60,6 +64,33 @@ async function updateBotStatus(status, error = null) {
       .run(status, error, BOT_ID);
   } catch (_) {}
 }
+
+// Persist live sync metrics so the admin sync-status page can subscribe in realtime.
+async function writeSyncStatus(patch) {
+  if (!BOT_ID) return;
+  try {
+    const cols = Object.keys(patch);
+    const vals = Object.values(patch);
+    const setParts = cols.map((c) => `${c} = EXCLUDED.${c}`).join(', ');
+    const placeholders = cols.map(() => '?').join(', ');
+    const colList = cols.join(', ');
+    await db.prepare(
+      `INSERT INTO bot_sync_status (bot_id, bot_type, scope, ${colList}, updated_at)
+       VALUES (?, ?, 'cdr', ${placeholders}, NOW())
+       ON CONFLICT (bot_id) DO UPDATE SET ${setParts}, updated_at = NOW()`
+    ).run(BOT_ID, BOT_TYPE, ...vals);
+  } catch (e) {
+    // Non-fatal — status table may not exist yet in older deploys.
+  }
+}
+
+// Exponential backoff: 1s, 2s, 4s, 8s (capped). Jittered to avoid sync storms.
+function backoffMs(attempt) {
+  const base = Math.min(1000 * Math.pow(2, attempt), 8000);
+  return base + Math.floor(Math.random() * 500);
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function parseCookieString(cookieStr, urlOrigin) {
   if (!cookieStr) return 0;
