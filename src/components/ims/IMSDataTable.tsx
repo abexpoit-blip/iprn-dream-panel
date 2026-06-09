@@ -57,6 +57,16 @@ export function IMSDataTable<T>({
   const [pageSize, setPageSize] = useState<number | "all">(defaultPageSize);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [showColPicker, setShowColPicker] = useState(false);
+  const [exportCols, setExportCols] = useState<Set<string>>(
+    () => new Set(columns.filter((c) => c.exportable !== false).map((c) => c.key)),
+  );
+  const toggleCol = (key: string) =>
+    setExportCols((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
 
   const data = rows ?? [];
 
@@ -80,7 +90,9 @@ export function IMSDataTable<T>({
   const pageRows = filtered.slice(start, end);
 
   const buildMatrix = (includeHeader = true) => {
-    const cols = columns.filter((c) => c.exportable !== false);
+    const cols = columns.filter(
+      (c) => c.exportable !== false && exportCols.has(c.key),
+    );
     const head = cols.map((c) =>
       typeof c.header === "string" ? c.header : c.key,
     );
@@ -147,7 +159,7 @@ export function IMSDataTable<T>({
       const matrix = buildMatrix(false);
       const head = [
         columns
-          .filter((c) => c.exportable !== false)
+          .filter((c) => c.exportable !== false && exportCols.has(c.key))
           .map((c) => (typeof c.header === "string" ? c.header : c.key)),
       ];
       const pdf = new jsPDF({ orientation: "landscape" });
@@ -252,6 +264,65 @@ export function IMSDataTable<T>({
           <Button onClick={doPrint} size="sm" className={btnCls}>
             Print
           </Button>
+          <div className="relative">
+            <Button
+              onClick={() => setShowColPicker((s) => !s)}
+              size="sm"
+              className="h-8 px-3 text-[11px] font-bold uppercase rounded-md border border-[#c5ccd6] bg-white text-[#2b3a4a] hover:bg-gray-50"
+            >
+              Columns ({exportCols.size})
+            </Button>
+            {showColPicker && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowColPicker(false)}
+                />
+                <div className="absolute z-20 mt-1 w-60 bg-white border border-[#e3e6ec] rounded-md shadow-lg p-2 max-h-72 overflow-auto">
+                  <div className="flex justify-between gap-2 px-1 pb-2 border-b border-[#f2f4f8] mb-1">
+                    <button
+                      type="button"
+                      className="text-[10px] font-bold uppercase text-[#0061f2] hover:underline"
+                      onClick={() =>
+                        setExportCols(
+                          new Set(
+                            columns
+                              .filter((c) => c.exportable !== false)
+                              .map((c) => c.key),
+                          ),
+                        )
+                      }
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      className="text-[10px] font-bold uppercase text-[#69707a] hover:underline"
+                      onClick={() => setExportCols(new Set())}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {columns
+                    .filter((c) => c.exportable !== false)
+                    .map((c) => (
+                      <label
+                        key={c.key}
+                        className="flex items-center gap-2 px-2 py-1.5 text-xs text-[#2b3a4a] hover:bg-[#f8f9fc] rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={exportCols.has(c.key)}
+                          onChange={() => toggleCol(c.key)}
+                          className="accent-[#0061f2]"
+                        />
+                        {typeof c.header === "string" ? c.header : c.key}
+                      </label>
+                    ))}
+                </div>
+              </>
+            )}
+          </div>
 
           <div className="ml-auto flex items-center gap-4">
             <label className="flex items-center gap-2 text-[11px] font-bold uppercase text-[#69707a]">
