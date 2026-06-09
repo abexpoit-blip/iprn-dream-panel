@@ -47,9 +47,11 @@ async function resolvePanelMode() {
 }
 
 
-// IMS blocks if CDR refresh < ~16s
+// IMS blocks if any page is refreshed < ~16s. Keep a separate throttle per endpoint.
 const IMS_MIN_INTERVAL_MS = 20000;
+const IMS_NUMBERS_MIN_INTERVAL_MS = 20000;
 let lastSmsScrape = 0;
+let lastNumbersScrape = 0;
 
 async function updateBotStatus(status, error = null) {
   if (!BOT_ID) return;
