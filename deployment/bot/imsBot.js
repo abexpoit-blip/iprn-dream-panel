@@ -47,9 +47,11 @@ async function resolvePanelMode() {
 }
 
 
-// IMS blocks if CDR refresh < ~16s
+// IMS blocks if any page is refreshed < ~16s. Keep a separate throttle per endpoint.
 const IMS_MIN_INTERVAL_MS = 20000;
+const IMS_NUMBERS_MIN_INTERVAL_MS = 20000;
 let lastSmsScrape = 0;
+let lastNumbersScrape = 0;
 
 async function updateBotStatus(status, error = null) {
   if (!BOT_ID) return;
@@ -215,14 +217,24 @@ function stripHtml(s) { return String(s || '').replace(/<[^>]+>/g, '').trim(); }
 // ---------- NUMBERS ----------
 async function scrapeNumbers() {
   if (!isActive || !BOT_ID) return;
+  // IMS blocks rapid refreshes (<~15s). Skip if last scrape was too recent.
+  const now = Date.now();
+  if (now - lastNumbersScrape < IMS_NUMBERS_MIN_INTERVAL_MS) {
+    const wait = Math.ceil((IMS_NUMBERS_MIN_INTERVAL_MS - (now - lastNumbersScrape)) / 1000);
+    console.log(`[ims-bot] Numbers scrape skipped — wait ${wait}s (IMS throttle)`);
+    return;
+  }
+  lastNumbersScrape = now;
+
   const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
   const origin   = new URL(loginUrl).origin;
   const url      = `${origin}/${PANEL_MODE}/res/data_smsnumbers.php?frange=&fclient=`;
   const referer  = `${origin}/${PANEL_MODE}/MySMSNumbers`;
 
   try {
-    // IMS accounts can have many numbers — pull up to 2000 per scrape.
-    const res = await fetchDataTables(url, referer, { iDisplayLength: '2000', iColumns: '6' });
+    // Mimic the panel's "Select ALL" option — DataTables interprets length=-1 as "all rows".
+    // This returns every range/number in a single response (same as the panel's Copy/Download button).
+    const res = await fetchDataTables(url, referer, { iDisplayLength: '-1', iColumns: '6' });
     if (res.status !== 200) {
       console.error(`[ims-bot] Numbers HTTP ${res.status}`);
       if (res.status === 401 || res.status === 302) await login();
@@ -269,7 +281,9 @@ async function scrapeNumbers() {
         if (r.changes) inserted++;
       } catch (_) {}
     }
-    console.log(`[ims-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted (with country/range/payout)`);
+    const uniqueRanges = [...new Set(items.map(i => i.range_name).filter(Boolean))];
+    console.log(`[ims-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted across ${uniqueRanges.length} range(s)`);
+    if (uniqueRanges.length > 0) console.log(`[ims-bot] Ranges: ${uniqueRanges.slice(0, 20).join(' | ')}${uniqueRanges.length > 20 ? ` (+${uniqueRanges.length - 20} more)` : ''}`);
   } catch (err) {
     console.error(`[ims-bot] Numbers scrape error:`, err.message);
   }
