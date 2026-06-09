@@ -323,12 +323,18 @@ async function scrapeNumbers() {
 }
 
 // ---------- OTP / SMS CDR ----------
+// IMS panel uses Asia/Dhaka (UTC+6). Use Dhaka "today" and widen window to
+// include yesterday so OTPs received near midnight Dhaka time are not missed.
 function todayRange() {
-  const d = new Date();
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(d.getUTCDate()).padStart(2, '0');
-  return { from: `${yyyy}-${mm}-${dd} 00:00:00`, to: `${yyyy}-${mm}-${dd} 23:59:59` };
+  const nowDhaka = new Date(Date.now() + 6 * 60 * 60 * 1000); // shift to Dhaka
+  const yyyy = nowDhaka.getUTCFullYear();
+  const mm = String(nowDhaka.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(nowDhaka.getUTCDate()).padStart(2, '0');
+  const yesterday = new Date(nowDhaka.getTime() - 24 * 60 * 60 * 1000);
+  const yy2 = yesterday.getUTCFullYear();
+  const mm2 = String(yesterday.getUTCMonth() + 1).padStart(2, '0');
+  const dd2 = String(yesterday.getUTCDate()).padStart(2, '0');
+  return { from: `${yy2}-${mm2}-${dd2} 00:00:00`, to: `${yyyy}-${mm}-${dd} 23:59:59` };
 }
 
 async function alreadyLogged(sourceMsgId) {
@@ -459,6 +465,10 @@ async function scrapeSms() {
       if (!Array.isArray(r) || r.length < 5) return false;
       return /\d{4}-\d{2}-\d{2}/.test(String(r[0] || ''));
     });
+
+    if (rows.length === 0) {
+      console.log(`[ims-bot] CDR empty — iTotalRecords=${data.iTotalRecords ?? '?'} iTotalDisplayRecords=${data.iTotalDisplayRecords ?? '?'} window=${from}..${to}`);
+    }
 
     let billed = 0, dup = 0;
     for (const row of realRows) {
