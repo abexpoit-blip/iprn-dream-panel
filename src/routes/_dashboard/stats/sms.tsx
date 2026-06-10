@@ -13,6 +13,14 @@ export const Route = createFileRoute("/_dashboard/stats/sms")({
   component: StatsSmsPage,
 });
 
+function pad(n: number) { return String(n).padStart(2, "0"); }
+function formatLocal(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 type Row = {
   date: string;
   range: string;
