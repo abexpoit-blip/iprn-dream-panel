@@ -364,6 +364,9 @@ CREATE INDEX IF NOT EXISTS idx_otp_audit_created_at ON otp_audit_log(created_at 
 CREATE INDEX IF NOT EXISTS idx_otp_audit_outcome    ON otp_audit_log(outcome);
 CREATE INDEX IF NOT EXISTS idx_otp_audit_bot_id     ON otp_audit_log(bot_id);
 CREATE INDEX IF NOT EXISTS idx_otp_audit_phone      ON otp_audit_log(phone_number);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_otp_audit_source_msg_id
+  ON otp_audit_log(source, source_msg_id)
+  WHERE source_msg_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_number_pool_updated_at ON number_pool(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_number_pool_country    ON number_pool(country);
