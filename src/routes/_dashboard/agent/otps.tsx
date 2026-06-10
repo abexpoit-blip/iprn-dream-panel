@@ -46,8 +46,8 @@ function AgentOtpsPage() {
   const columns: IMSColumn<Row>[] = [
     {
       key: "time",
-      header: "Time",
-      value: (r) => new Date(r.created_at).toLocaleString(),
+      header: "Date",
+      value: (r) => formatLocal(r.created_at),
     },
     {
       key: "number",
