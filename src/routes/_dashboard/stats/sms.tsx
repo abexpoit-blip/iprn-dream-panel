@@ -95,7 +95,16 @@ function StatsSmsPage() {
     { key: "number", header: "Number", value: (r) => r.number },
     { key: "cli", header: "CLI", value: (r) => r.cli },
     { key: "client", header: "Client", value: (r) => r.client },
-    { key: "sms", header: "SMS", value: (r) => r.sms },
+    {
+      key: "sms",
+      header: "SMS",
+      value: (r) => r.sms,
+      cell: (r) => (
+        <span className="block max-w-[520px] whitespace-pre-wrap break-words text-[12px] text-[#2b3a4a]">
+          {r.sms || "—"}
+        </span>
+      ),
+    },
     { key: "currency", header: "Currency", value: () => "USD" },
     {
       key: "payout",
