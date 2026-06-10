@@ -76,8 +76,8 @@ function AgentOtpsPage() {
       header: "Message",
       value: (r) => r.sms_text ?? "",
       cell: (r) => (
-        <span className="text-[12px] text-[#69707a] line-clamp-2 max-w-[420px] block">
-          {r.sms_text ?? "—"}
+        <span className="block max-w-[520px] whitespace-pre-wrap break-words text-[12px] text-[#2b3a4a]">
+          {r.sms_text || "—"}
         </span>
       ),
     },
