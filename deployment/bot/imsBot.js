@@ -107,6 +107,91 @@ function getAttr(tag, name) {
   return m ? m[1] : '';
 }
 
+function decodeHtml(value) {
+  return String(value || '')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+}
+
+function detectPanelMode(value) {
+  const text = String(value || '');
+  if (/\/agent(?:\/|$)/i.test(text)) return 'agent';
+  if (/\/client(?:\/|$)/i.test(text)) return 'client';
+  return null;
+}
+
+function looksLikeHtmlPage(value) {
+  return /<!doctype html|<html\b|<head\b|<body\b/i.test(String(value || ''));
+}
+
+function looksLikeLoginPage(value) {
+  const text = String(value || '');
+  if (!looksLikeHtmlPage(text)) return false;
+  return /\blogin\b|\bsign\s*in\b|name=["']username["']|name=["']password["']/i.test(text)
+    && !/MySMSNumbers|SMSCDRStats|SMSDashboard|Logout/i.test(text);
+}
+
+function buildDataTablesUrl(url, extraParams = {}) {
+  const full = new URL(url);
+  const params = {
+    sEcho: '1',
+    iColumns: '10',
+    iDisplayStart: '0',
+    iDisplayLength: '500',
+    sSearch: '',
+    iSortingCols: '1',
+    iSortCol_0: '0',
+    sSortDir_0: 'desc',
+    ...extraParams,
+  };
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue;
+    full.searchParams.set(key, String(value));
+  }
+  return full.toString();
+}
+
+function extractAjaxSource(html, pageUrl, endpointName) {
+  const source = String(html || '');
+  const safeName = endpointName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const patterns = [
+    new RegExp(`["']sAjaxSource["']\\s*:\\s*["']([^"']*${safeName}[^"']*)["']`, 'i'),
+    new RegExp(`["']ajax["']\\s*:\\s*["']([^"']*${safeName}[^"']*)["']`, 'i'),
+    new RegExp(`ajax\\s*:\\s*\\{[\\s\\S]*?url\\s*:\\s*["']([^"']*${safeName}[^"']*)["']`, 'i'),
+  ];
+  for (const pattern of patterns) {
+    const match = source.match(pattern);
+    if (match?.[1]) {
+      try {
+        return new URL(decodeHtml(match[1]), pageUrl).toString();
+      } catch (_) {}
+    }
+  }
+  return null;
+}
+
+async function getPageAjaxSource(pageUrl, endpointName, fallbackUrl) {
+  const r = await client.get(pageUrl, {
+    headers: { 'User-Agent': UA },
+    validateStatus: () => true,
+    maxRedirects: 0,
+  });
+  const body = typeof r.data === 'string' ? r.data : JSON.stringify(r.data || '');
+  const detectedMode = detectPanelMode(r.headers?.location || '') || detectPanelMode(pageUrl) || detectPanelMode(body);
+  if (detectedMode && detectedMode !== PANEL_MODE) {
+    PANEL_MODE = detectedMode;
+    console.log(`[ims-bot] Auto-detected PANEL_MODE=${PANEL_MODE} from ${endpointName} page`);
+  }
+  return {
+    status: r.status,
+    body,
+    url: extractAjaxSource(body, pageUrl, endpointName) || fallbackUrl,
+  };
+}
+
 function extractLoginForm(html, pageUrl) {
   const formHtml = (html.match(/<form[\s\S]*?<\/form>/i) || [html])[0];
   const formOpen = (formHtml.match(/<form[^>]*>/i) || [''])[0];
@@ -127,16 +212,28 @@ function extractLoginForm(html, pageUrl) {
 }
 
 async function verifySession(origin) {
-  const probe = `${origin}/${PANEL_MODE}/MySMSNumbers`;
-  const r = await client.get(probe, { validateStatus: () => true, maxRedirects: 0 });
-  const loc = r.headers?.location || '';
-  const bodyStr = typeof r.data === 'string' ? r.data : '';
-  const ok = r.status === 200 && /MySMSNumbers|Logout|Dashboard|SMSCDRStats/i.test(bodyStr);
-  console.log(`[ims-bot] verifySession probe=${probe} status=${r.status} redirect=${loc || '-'} bodyLen=${bodyStr.length} ok=${ok}`);
-  if (!ok && bodyStr.length > 0 && bodyStr.length < 400) {
-    console.log(`[ims-bot] verifySession body preview: ${bodyStr.slice(0, 200).replace(/\s+/g, ' ')}`);
+  const modes = PANEL_MODE === 'agent' ? ['agent', 'client'] : ['client', 'agent'];
+  for (const mode of modes) {
+    const probe = `${origin}/${mode}/MySMSNumbers`;
+    const r = await client.get(probe, { validateStatus: () => true, maxRedirects: 0 });
+    const loc = r.headers?.location || '';
+    const bodyStr = typeof r.data === 'string' ? r.data : '';
+    const ok = r.status === 200
+      && /MySMSNumbers|Logout|Dashboard|SMSCDRStats/i.test(bodyStr)
+      && !looksLikeLoginPage(bodyStr);
+    console.log(`[ims-bot] verifySession probe=${probe} status=${r.status} redirect=${loc || '-'} bodyLen=${bodyStr.length} ok=${ok}`);
+    if (ok) {
+      if (PANEL_MODE !== mode) {
+        PANEL_MODE = mode;
+        console.log(`[ims-bot] Auto-detected PANEL_MODE=${PANEL_MODE} from live session`);
+      }
+      return true;
+    }
+    if (bodyStr.length > 0 && bodyStr.length < 400) {
+      console.log(`[ims-bot] verifySession body preview: ${bodyStr.slice(0, 200).replace(/\s+/g, ' ')}`);
+    }
   }
-  return ok;
+  return false;
 }
 
 async function login() {
@@ -189,8 +286,14 @@ async function login() {
       validateStatus: () => true,
     });
 
-    const finalPath = res.request?.path || '';
+    const responseUrl = res.request?.res?.responseUrl || '';
+    const finalPath = res.request?.path || responseUrl || '';
     const body = typeof res.data === 'string' ? res.data : '';
+    const detectedMode = detectPanelMode(responseUrl) || detectPanelMode(finalPath) || detectPanelMode(body);
+    if (detectedMode && detectedMode !== PANEL_MODE) {
+      PANEL_MODE = detectedMode;
+      console.log(`[ims-bot] Login landed on ${PANEL_MODE} panel — switching mode automatically`);
+    }
     const ok = await verifySession(origin) ||
                finalPath.includes(`/${PANEL_MODE}`) ||
                /Logout|logout|Dashboard/.test(body);
@@ -214,18 +317,7 @@ async function login() {
 }
 
 async function fetchDataTables(url, referer, extraParams = {}) {
-  const params = new URLSearchParams({
-    sEcho: '1',
-    iColumns: '10',
-    iDisplayStart: '0',
-    iDisplayLength: '500',
-    sSearch: '',
-    iSortingCols: '1',
-    iSortCol_0: '0',
-    sSortDir_0: 'desc',
-    ...extraParams,
-  });
-  const full = url + (url.includes('?') ? '&' : '?') + params.toString();
+  const full = buildDataTablesUrl(url, extraParams);
   const origin = new URL(referer).origin;
   const r = await client.get(full, {
     headers: {
@@ -441,7 +533,20 @@ async function fetchCdrWithRetry(base, referer, origin) {
         const res = await fetchDataTables(base, referer, params);
         lastRes = res;
         if (res.status === 200) {
+          const bodyStr = typeof res.body === 'string' ? res.body : '';
+          if (looksLikeLoginPage(bodyStr)) {
+            console.log('[ims-bot] CDR endpoint returned login HTML — re-logging in');
+            await writeSyncStatus({ session_alive: false });
+            const loggedIn = await login();
+            if (!loggedIn) return { ok: false, res, retries: attempt };
+            break;
+          }
           const parsed = parseCdrBody(res.body);
+          if (!parsed.ok && looksLikeHtmlPage(bodyStr)) {
+            console.log(`[ims-bot] CDR returned HTML instead of JSON (cols=${iCols})`);
+            await sleep(backoffMs(attempt));
+            break;
+          }
           if (parsed.ok && (parsed.rows.length > 0 || Number(parsed.data?.iTotalRecords || 0) > 0)) {
             return { ok: true, res, retries: attempt, iCols };
           }
@@ -499,13 +604,34 @@ async function scrapeSms() {
   const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
   const origin   = new URL(loginUrl).origin;
   const { from, to } = todayRange();
-  const base = `${origin}/${PANEL_MODE}/res/data_smscdr.php`
-    + `?fdate1=${encodeURIComponent(from)}&fdate2=${encodeURIComponent(to)}`
-    + `&frange=&fnum=&fcli=&fgdate=&fgmonth=&fgrange=&fgnumber=&fgcli=&fg=0`;
   const referer = `${origin}/${PANEL_MODE}/SMSCDRStats`;
+  const fallback = `${origin}/${PANEL_MODE}/res/data_smscdr.php`
+    + `?fdate1=${encodeURIComponent(from)}&fdate2=${encodeURIComponent(to)}`
+    + `&frange=&fclient=&fnum=&fcli=&fgdate=&fgmonth=&fgrange=&fgclient=&fgnumber=&fgcli=&fg=0`;
 
   const startedAt = new Date().toISOString();
   try {
+    const pageSource = await getPageAjaxSource(referer, 'data_smscdr.php', fallback);
+    if (pageSource.status === 401 || pageSource.status === 302 || looksLikeLoginPage(pageSource.body)) {
+      console.log(`[ims-bot] SMSCDRStats page rejected (status=${pageSource.status}) — re-logging in`);
+      const loggedIn = await login();
+      if (!loggedIn) return;
+    }
+    const base = buildDataTablesUrl(pageSource.url || fallback, {
+      fdate1: from,
+      fdate2: to,
+      frange: '',
+      fclient: '',
+      fnum: '',
+      fcli: '',
+      fgdate: '',
+      fgmonth: '',
+      fgrange: '',
+      fgclient: '',
+      fgnumber: '',
+      fgcli: '',
+      fg: '0',
+    });
     const { ok, res, retries, iCols } = await fetchCdrWithRetry(base, referer, origin);
     if (!ok) {
       const errMsg = `CDR fetch failed after ${retries} retries (last status=${res?.status ?? 'n/a'})`;
