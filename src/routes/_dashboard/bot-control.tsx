@@ -14,6 +14,8 @@ import {
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://x.nexus-x.site/api";
+
 export const Route = createFileRoute("/_dashboard/bot-control")({
   component: BotControlPage,
 });
@@ -86,9 +88,10 @@ function BotControlPage() {
       const { data, error } = await supabase
         .from("otp_audit_log")
         .select("source,created_at,outcome")
-        .gte("created_at", since);
+        .order("created_at", { ascending: false })
+        .limit(5000);
       if (error) throw error;
-      return (data || []) as OtpRow[];
+      return ((data || []) as OtpRow[]).filter((r) => r.created_at >= since);
     },
     refetchInterval: 12000,
   });
@@ -119,8 +122,13 @@ function BotControlPage() {
   };
 
   const triggerAutoPool = async () => {
-    const { error } = await supabase.rpc("notify_scrape_now");
-    if (error) toast.error(error.message || "Failed to trigger");
+    const token = localStorage.getItem("nexus_token");
+    const res = await fetch(`${API_URL}/api/numbers/auto-pool`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) toast.error(data.error || "Failed to trigger");
     else toast.success("Auto-pool scrape signal sent to all bots");
   };
 
