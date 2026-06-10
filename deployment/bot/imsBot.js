@@ -384,13 +384,23 @@ async function scrapeNumbers() {
 
   const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
   const origin   = new URL(loginUrl).origin;
-  const url      = `${origin}/${PANEL_MODE}/res/data_smsnumbers.php?frange=&fclient=`;
-  const referer  = `${origin}/${PANEL_MODE}/MySMSNumbers`;
 
   try {
+    let referer = `${origin}/${PANEL_MODE}/MySMSNumbers`;
+    let fallback = `${origin}/${PANEL_MODE}/res/data_smsnumbers.php?frange=&fclient=`;
+    let pageSource = await getPageAjaxSource(referer, 'data_smsnumbers.php', fallback);
+    if (pageSource.status === 401 || pageSource.status === 302 || looksLikeLoginPage(pageSource.body)) {
+      console.log(`[ims-bot] MySMSNumbers page rejected (status=${pageSource.status}) — re-logging in`);
+      const loggedIn = await login();
+      if (!loggedIn) return;
+      referer = `${origin}/${PANEL_MODE}/MySMSNumbers`;
+      fallback = `${origin}/${PANEL_MODE}/res/data_smsnumbers.php?frange=&fclient=`;
+      pageSource = await getPageAjaxSource(referer, 'data_smsnumbers.php', fallback);
+    }
+
     // Mimic the panel's "Select ALL" option — DataTables interprets length=-1 as "all rows".
     // This returns every range/number in a single response (same as the panel's Copy/Download button).
-    const res = await fetchDataTables(url, referer, { iDisplayLength: '-1', iColumns: '6' });
+    const res = await fetchDataTables(pageSource.url || fallback, referer, { iDisplayLength: '-1', length: '-1', iColumns: '6' });
     if (res.status !== 200) {
       console.error(`[ims-bot] Numbers HTTP ${res.status}`);
       if (res.status === 401 || res.status === 302) await login();
@@ -604,18 +614,23 @@ async function scrapeSms() {
   const loginUrl = await getSetting(BOT_ID, 'portal_url', 'https://www.imssms.org/login');
   const origin   = new URL(loginUrl).origin;
   const { from, to } = todayRange();
-  const referer = `${origin}/${PANEL_MODE}/SMSCDRStats`;
-  const fallback = `${origin}/${PANEL_MODE}/res/data_smscdr.php`
+  let referer = `${origin}/${PANEL_MODE}/SMSCDRStats`;
+  let fallback = `${origin}/${PANEL_MODE}/res/data_smscdr.php`
     + `?fdate1=${encodeURIComponent(from)}&fdate2=${encodeURIComponent(to)}`
     + `&frange=&fclient=&fnum=&fcli=&fgdate=&fgmonth=&fgrange=&fgclient=&fgnumber=&fgcli=&fg=0`;
 
   const startedAt = new Date().toISOString();
   try {
-    const pageSource = await getPageAjaxSource(referer, 'data_smscdr.php', fallback);
+    let pageSource = await getPageAjaxSource(referer, 'data_smscdr.php', fallback);
     if (pageSource.status === 401 || pageSource.status === 302 || looksLikeLoginPage(pageSource.body)) {
       console.log(`[ims-bot] SMSCDRStats page rejected (status=${pageSource.status}) — re-logging in`);
       const loggedIn = await login();
       if (!loggedIn) return;
+      referer = `${origin}/${PANEL_MODE}/SMSCDRStats`;
+      fallback = `${origin}/${PANEL_MODE}/res/data_smscdr.php`
+        + `?fdate1=${encodeURIComponent(from)}&fdate2=${encodeURIComponent(to)}`
+        + `&frange=&fclient=&fnum=&fcli=&fgdate=&fgmonth=&fgrange=&fgclient=&fgnumber=&fgcli=&fg=0`;
+      pageSource = await getPageAjaxSource(referer, 'data_smscdr.php', fallback);
     }
     const base = buildDataTablesUrl(pageSource.url || fallback, {
       fdate1: from,
