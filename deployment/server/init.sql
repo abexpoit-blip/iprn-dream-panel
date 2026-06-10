@@ -338,6 +338,27 @@ CREATE TABLE IF NOT EXISTS active_rates (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- Bot sync status / telemetry table (used by deployment/bot/_botTelemetry.js)
+CREATE TABLE IF NOT EXISTS bot_sync_status (
+  bot_id           UUID PRIMARY KEY,
+  bot_type         TEXT,
+  scope            TEXT,
+  last_sync_at     TIMESTAMP WITH TIME ZONE,
+  last_success_at  TIMESTAMP WITH TIME ZONE,
+  last_error       TEXT,
+  rows_fetched     INTEGER DEFAULT 0,
+  billed_count     INTEGER DEFAULT 0,
+  dup_count        INTEGER DEFAULT 0,
+  retry_count      INTEGER DEFAULT 0,
+  session_alive    BOOLEAN DEFAULT false,
+  total_syncs      BIGINT  DEFAULT 0,
+  total_billed     BIGINT  DEFAULT 0,
+  total_dup        BIGINT  DEFAULT 0,
+  created_at       TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at       TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+
 -- =========================================================================
 -- Performance indexes for SMS CDR / Stats / OTP pages
 -- (Safe to re-run -- IF NOT EXISTS and column-add guards.)
