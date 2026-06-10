@@ -360,8 +360,10 @@ function pageParams(c: any) {
 app.get('/api/reports/cdr', async (c) => {
   const { limit, offset } = pageParams(c);
   const q = c.req.query();
-  const start = q.start ? new Date(q.start).toISOString() : new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-  const end = q.end ? new Date(q.end).toISOString() : new Date().toISOString();
+  const dateOnly = (value: string | undefined) => String(value || '').match(/^\d{4}-\d{2}-\d{2}/)?.[0] || null;
+  const today = new Date().toISOString().slice(0, 10);
+  const start = `${dateOnly(q.start) || today} 00:00:00`;
+  const end = `${dateOnly(q.end) || today} 23:59:59`;
 
   try {
     const rows = await sql`
@@ -397,7 +399,8 @@ app.get('/api/reports/cdr', async (c) => {
 
 app.get('/api/reports/sms-summary', async (c) => {
   try {
-    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const today = new Date().toISOString().slice(0, 10);
+    const since = `${today} 00:00:00`;
     const [summary] = await sql`
       SELECT COUNT(*)::int AS rows,
              COUNT(*) FILTER (WHERE outcome = 'billed')::int AS billed,
@@ -407,10 +410,23 @@ app.get('/api/reports/sms-summary', async (c) => {
       WHERE created_at >= ${since}
     `;
     const latest = await sql`
-      SELECT c.received_at, c.prefix, c.number, c.message, c.payout, cl.name AS client_name
-      FROM sms_cdr c
-      LEFT JOIN clients cl ON cl.id = c.client_id
-      ORDER BY c.received_at DESC
+      SELECT o.created_at AS received_at,
+             COALESCE(np.prefix, substring(regexp_replace(COALESCE(o.phone_number, ''), '[^0-9]', '', 'g') from 1 for 3)) AS prefix,
+             o.phone_number AS number,
+             o.sms_text AS message,
+             COALESCE(NULLIF(o.amount_earned, 0), np.client_rate, np.agent_rate, np.panel_payout, 0) AS payout,
+             cl.name AS client_name
+      FROM otp_audit_log o
+      LEFT JOIN LATERAL (
+        SELECT prefix, assigned_client, client_rate, agent_rate, panel_payout
+        FROM number_pool
+        WHERE regexp_replace(COALESCE(number, ''), '[^0-9]', '', 'g') LIKE '%' || right(regexp_replace(COALESCE(o.phone_number, ''), '[^0-9]', '', 'g'), 9)
+        ORDER BY updated_at DESC NULLS LAST, created_at DESC
+        LIMIT 1
+      ) np ON true
+      LEFT JOIN clients cl ON cl.id = np.assigned_client
+      WHERE o.created_at >= ${since}
+      ORDER BY o.created_at DESC
       LIMIT 200
     `;
     return c.json({ summary: summary || { rows: 0, billed: 0, duplicates: 0, last_scrape: null }, latest });

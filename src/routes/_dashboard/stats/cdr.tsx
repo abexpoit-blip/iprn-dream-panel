@@ -4,12 +4,23 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 import { Button } from "@/components/ui/button";
-
-const API_URL = import.meta.env.VITE_API_URL || "https://x.nexus-x.site/api";
+import { apiUrl } from "@/lib/api-url";
 
 export const Route = createFileRoute("/_dashboard/stats/cdr")({
   component: StatsCDRPage,
 });
+
+function pad(n: number) { return String(n).padStart(2, "0"); }
+function systemDate(value = new Date()) {
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+}
+function formatSystemDateTime(iso: string | null | undefined) {
+  if (!iso) return "—";
+  const match = String(iso).match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/);
+  if (match) return `${match[1]} ${match[2]}`;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : `${systemDate(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 type CDR = {
   id: string;
@@ -24,9 +35,9 @@ type CDR = {
 };
 
 function StatsCDRPage() {
-  const today = new Date().toISOString().slice(0, 10);
-  const [startDate, setStartDate] = useState(`${today}T00:00`);
-  const [endDate, setEndDate] = useState(`${today}T23:59`);
+  const today = systemDate();
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
   const [prefix, setPrefix] = useState("");
   const [clientId, setClientId] = useState("");
   const [agentId, setAgentId] = useState("");
@@ -67,8 +78,8 @@ function StatsCDRPage() {
     queryKey: ["sms_cdr_report", applied],
     queryFn: async () => {
       const params = new URLSearchParams({
-        start: new Date(applied.start).toISOString(),
-        end: new Date(applied.end).toISOString(),
+        start: applied.start,
+        end: applied.end,
         limit: "500",
       });
       if (applied.prefix) params.set("prefix", applied.prefix);
@@ -76,7 +87,7 @@ function StatsCDRPage() {
       if (applied.agentId) params.set("agent_id", applied.agentId);
       if (applied.number) params.set("number", applied.number);
       const token = localStorage.getItem("nexus_token");
-      const res = await fetch(`${API_URL}/reports/cdr?${params.toString()}`, {
+      const res = await fetch(apiUrl(`/api/reports/cdr?${params.toString()}`), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json();
@@ -100,8 +111,8 @@ function StatsCDRPage() {
     {
       key: "date",
       header: "Received At",
-      value: (r) => new Date(r.received_at).toISOString(),
-      cell: (r) => new Date(r.received_at).toLocaleString(),
+      value: (r) => formatSystemDateTime(r.received_at),
+      cell: (r) => formatSystemDateTime(r.received_at),
     },
     { key: "range", header: "Range", value: (r) => r.prefix ?? "-" },
     {
@@ -146,11 +157,11 @@ function StatsCDRPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div>
           <label className="text-[10px] font-bold uppercase text-[#69707a] block mb-1">Start</label>
-          <input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputCls} />
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputCls} />
         </div>
         <div>
           <label className="text-[10px] font-bold uppercase text-[#69707a] block mb-1">End</label>
-          <input type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputCls} />
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputCls} />
         </div>
         <div>
           <label className="text-[10px] font-bold uppercase text-[#69707a] block mb-1">Prefix / Range</label>

@@ -5,9 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiUrl } from "@/lib/api-url";
 import { formatDistanceToNow } from "date-fns";
-
-const API_URL = import.meta.env.VITE_API_URL || "https://x.nexus-x.site/api";
 
 export const Route = createFileRoute("/_dashboard/stats/sms")({
   component: StatsSmsPage,
@@ -16,9 +15,10 @@ export const Route = createFileRoute("/_dashboard/stats/sms")({
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function formatLocal(iso: string | null | undefined): string {
   if (!iso) return "—";
+  const match = String(iso).match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/);
+  if (match) return `${match[1]} ${match[2]}`;
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return Number.isNaN(d.getTime()) ? "—" : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 type Row = {
@@ -36,7 +36,7 @@ function StatsSmsPage() {
     queryKey: ["sms_stats_cdr"],
     queryFn: async () => {
       const token = localStorage.getItem("nexus_token");
-      const res = await fetch(`${API_URL}/reports/sms-summary`, {
+      const res = await fetch(apiUrl("/api/reports/sms-summary"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json();
@@ -63,7 +63,7 @@ function StatsSmsPage() {
     queryKey: ["sms_stats_audit_24h"],
     queryFn: async () => {
       const token = localStorage.getItem("nexus_token");
-      const res = await fetch(`${API_URL}/reports/sms-summary`, {
+      const res = await fetch(apiUrl("/api/reports/sms-summary"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json();
