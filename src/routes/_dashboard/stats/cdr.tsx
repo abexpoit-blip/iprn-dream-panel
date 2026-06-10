@@ -76,7 +76,7 @@ function StatsCDRPage() {
       if (applied.agentId) params.set("agent_id", applied.agentId);
       if (applied.number) params.set("number", applied.number);
       const token = localStorage.getItem("nexus_token");
-      const res = await fetch(`${API_URL}/api/reports/cdr?${params.toString()}`, {
+      const res = await fetch(`${API_URL}/reports/cdr?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json();

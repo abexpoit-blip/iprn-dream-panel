@@ -36,7 +36,7 @@ function StatsSmsPage() {
     queryKey: ["sms_stats_cdr"],
     queryFn: async () => {
       const token = localStorage.getItem("nexus_token");
-      const res = await fetch(`${API_URL}/api/reports/sms-summary`, {
+      const res = await fetch(`${API_URL}/reports/sms-summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json();
@@ -63,7 +63,7 @@ function StatsSmsPage() {
     queryKey: ["sms_stats_audit_24h"],
     queryFn: async () => {
       const token = localStorage.getItem("nexus_token");
-      const res = await fetch(`${API_URL}/api/reports/sms-summary`, {
+      const res = await fetch(`${API_URL}/reports/sms-summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json();
