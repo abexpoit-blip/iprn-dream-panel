@@ -379,47 +379,75 @@ async function ensureSession() {
   }
 }
 
+// Adaptive helper — try multiple column counts (client panel often has 6 cols
+// without MyPayout, agent panel has 7) and return the first variant that
+// actually has data, so we don't silently log "rows=0" when the only problem
+// is a column-count / iSortCol mismatch.
+function parseCdrBody(body) {
+  try {
+    const data = typeof body === 'object' ? body : JSON.parse(String(body));
+    const rows = Array.isArray(data.aaData) ? data.aaData : [];
+    return { data, rows, ok: true };
+  } catch (_) {
+    return { data: null, rows: [], ok: false };
+  }
+}
+
 // CDR fetch with exponential backoff for 503/403/timeout/captcha-load failures.
+// Tries iColumns=7 (agent) → 6 (client) → 5 to find the variant the panel accepts.
 async function fetchCdrWithRetry(base, referer, origin) {
-  const params = { iColumns: '7', iDisplayLength: '5000', length: '5000', iDisplayStart: '0', start: '0' };
+  const colVariants = PANEL_MODE === 'client' ? ['6', '7', '5'] : ['7', '6', '5'];
   const maxAttempts = 4;
   let lastRes = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      const res = await fetchDataTables(base, referer, params);
-      lastRes = res;
-      if (res.status === 200) {
-        return { ok: true, res, retries: attempt };
-      }
-      // 401/302 → cookies dead, force re-login then retry.
-      if (res.status === 401 || res.status === 302) {
-        console.log(`[ims-bot] CDR ${res.status} — session expired, re-logging in`);
-        await writeSyncStatus({ session_alive: false });
-        const loggedIn = await login();
-        if (!loggedIn) return { ok: false, res, retries: attempt };
-        continue; // immediate retry after fresh login
-      }
-      // 503/403 → IMS throttle / Cloudflare → warm up + backoff
-      if (res.status === 503 || res.status === 403 || res.status === 429) {
+    for (const iCols of colVariants) {
+      const params = {
+        iColumns: iCols, iDisplayLength: '5000', length: '5000',
+        iDisplayStart: '0', start: '0', iSortCol_0: '0', sSortDir_0: 'desc',
+      };
+      try {
+        const res = await fetchDataTables(base, referer, params);
+        lastRes = res;
+        if (res.status === 200) {
+          const parsed = parseCdrBody(res.body);
+          if (parsed.ok && (parsed.rows.length > 0 || Number(parsed.data?.iTotalRecords || 0) > 0)) {
+            return { ok: true, res, retries: attempt, iCols };
+          }
+          // 200 but empty — try next iColumns variant before backing off
+          if (iCols === colVariants[colVariants.length - 1]) {
+            // Last variant also empty → return this so caller can log diagnostic
+            return { ok: true, res, retries: attempt, iCols, empty: true };
+          }
+          continue;
+        }
+        if (res.status === 401 || res.status === 302) {
+          console.log(`[ims-bot] CDR ${res.status} — session expired, re-logging in`);
+          await writeSyncStatus({ session_alive: false });
+          const loggedIn = await login();
+          if (!loggedIn) return { ok: false, res, retries: attempt };
+          break; // restart attempt loop after fresh login
+        }
+        if (res.status === 503 || res.status === 403 || res.status === 429) {
+          const wait = backoffMs(attempt);
+          console.log(`[ims-bot] CDR ${res.status} (attempt ${attempt + 1}/${maxAttempts}, cols=${iCols}) — warm up + backoff ${wait}ms`);
+          try {
+            await client.get(referer, {
+              headers: { 'Referer': `${origin}/${PANEL_MODE}/Dashboard`, 'User-Agent': UA },
+              validateStatus: () => true,
+            });
+          } catch (_) {}
+          await sleep(wait);
+          break;
+        }
+        console.log(`[ims-bot] CDR HTTP ${res.status} (cols=${iCols}) — backoff and retry`);
+        await sleep(backoffMs(attempt));
+        break;
+      } catch (err) {
         const wait = backoffMs(attempt);
-        console.log(`[ims-bot] CDR ${res.status} (attempt ${attempt + 1}/${maxAttempts}) — warm up + backoff ${wait}ms`);
-        try {
-          await client.get(referer, {
-            headers: { 'Referer': `${origin}/${PANEL_MODE}/Dashboard`, 'User-Agent': UA },
-            validateStatus: () => true,
-          });
-        } catch (_) {}
+        console.log(`[ims-bot] CDR fetch error: ${err.message} (attempt ${attempt + 1}/${maxAttempts}, cols=${iCols}) — backoff ${wait}ms`);
         await sleep(wait);
-        continue;
+        break;
       }
-      // Other status → backoff once then give up.
-      console.log(`[ims-bot] CDR HTTP ${res.status} — backoff and retry`);
-      await sleep(backoffMs(attempt));
-    } catch (err) {
-      // Network / timeout error → backoff
-      const wait = backoffMs(attempt);
-      console.log(`[ims-bot] CDR fetch error: ${err.message} (attempt ${attempt + 1}/${maxAttempts}) — backoff ${wait}ms`);
-      await sleep(wait);
     }
   }
   return { ok: false, res: lastRes, retries: maxAttempts };
