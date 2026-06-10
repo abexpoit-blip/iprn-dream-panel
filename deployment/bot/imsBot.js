@@ -495,7 +495,11 @@ async function scrapeSms() {
     });
 
     if (rows.length === 0) {
-      console.log(`[ims-bot] CDR empty — iTotalRecords=${data.iTotalRecords ?? '?'} iTotalDisplayRecords=${data.iTotalDisplayRecords ?? '?'} window=${from}..${to}`);
+      const sample = typeof res.body === 'string'
+        ? res.body.slice(0, 400)
+        : JSON.stringify(res.body).slice(0, 400);
+      console.log(`[ims-bot] CDR empty — iTotalRecords=${data.iTotalRecords ?? '?'} iTotalDisplayRecords=${data.iTotalDisplayRecords ?? '?'} cols=${typeof iCols !== 'undefined' ? iCols : '?'} window=${from}..${to}`);
+      console.log(`[ims-bot] CDR body sample: ${sample}`);
     }
 
     let billed = 0, dup = 0;
