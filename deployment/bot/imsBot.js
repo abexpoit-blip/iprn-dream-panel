@@ -247,6 +247,37 @@ async function fetchDataTables(url, referer, extraParams = {}) {
 function digitsOnly(s) { return String(s || '').replace(/\D/g, ''); }
 function stripHtml(s) { return String(s || '').replace(/<[^>]+>/g, '').trim(); }
 
+async function upsertSmsRangesFromItems(items) {
+  const byPrefix = new Map();
+  for (const item of items) {
+    if (!item.prefix && !item.range_name) continue;
+    const key = item.prefix || item.range_name;
+    if (!byPrefix.has(key)) byPrefix.set(key, item);
+  }
+
+  let synced = 0;
+  for (const item of byPrefix.values()) {
+    try {
+      const prefix = item.prefix || item.range_name;
+      await db.prepare(
+        `INSERT INTO sms_ranges (prefix, name, test_number, currency, payout_7_1, payout_30_45, memo)
+         VALUES (?, ?, ?, 'USD', ?, ?, ?)
+         ON CONFLICT (prefix) DO UPDATE SET
+           name = COALESCE(EXCLUDED.name, sms_ranges.name),
+           test_number = COALESCE(EXCLUDED.test_number, sms_ranges.test_number),
+           payout_7_1 = COALESCE(EXCLUDED.payout_7_1, sms_ranges.payout_7_1),
+           payout_30_45 = COALESCE(EXCLUDED.payout_30_45, sms_ranges.payout_30_45),
+           memo = COALESCE(EXCLUDED.memo, sms_ranges.memo)
+         RETURNING id`
+      ).run(prefix, item.range_name, item.number, item.panel_payout, item.panel_payout, item.range_name);
+      synced++;
+    } catch (err) {
+      console.error(`[ims-bot] Range sync failed (${item.prefix || item.range_name}):`, err.message);
+    }
+  }
+  return synced;
+}
+
 // ---------- NUMBERS ----------
 async function scrapeNumbers() {
   if (!isActive || !BOT_ID) return;
@@ -315,7 +346,8 @@ async function scrapeNumbers() {
       } catch (_) {}
     }
     const uniqueRanges = [...new Set(items.map(i => i.range_name).filter(Boolean))];
-    console.log(`[ims-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted across ${uniqueRanges.length} range(s)`);
+    const syncedRanges = await upsertSmsRangesFromItems(items);
+    console.log(`[ims-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted across ${uniqueRanges.length} range(s), ${syncedRanges} sms_ranges synced`);
     if (uniqueRanges.length > 0) console.log(`[ims-bot] Ranges: ${uniqueRanges.slice(0, 20).join(' | ')}${uniqueRanges.length > 20 ? ` (+${uniqueRanges.length - 20} more)` : ''}`);
   } catch (err) {
     console.error(`[ims-bot] Numbers scrape error:`, err.message);
