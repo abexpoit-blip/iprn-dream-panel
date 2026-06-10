@@ -395,7 +395,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_otp_audit_source_msg_id
   WHERE source_msg_id IS NOT NULL;
 
 -- Backfill + keep the visible CDR table aligned with existing OTP audit rows.
--- Bot code mirrors new OTPs live; this catches older OTPs created before the mirror existed.
+-- Bot code mirrors new OTPs live -- this catches older OTPs created before the mirror existed.
 INSERT INTO sms_cdr
   (source, source_msg_id, phone_number, number, otp_code, cli, message, payout, price_bdt, status, received_at, created_at, prefix, agent_id, client_id)
 SELECT
