@@ -60,9 +60,10 @@ function BotHealthPage() {
       const { data, error } = await supabase
         .from("otp_audit_log")
         .select("source,created_at,outcome")
-        .gte("created_at", since);
+        .order("created_at", { ascending: false })
+        .limit(5000);
       if (error) throw error;
-      return (data || []) as OtpRow[];
+      return ((data || []) as OtpRow[]).filter((r) => r.created_at >= since);
     },
     refetchInterval: 10000,
   });
