@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 import { Button } from "@/components/ui/button";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://x.nexus-x.site/api";
+
 export const Route = createFileRoute("/_dashboard/stats/cdr")({
   component: StatsCDRPage,
 });
@@ -64,22 +66,25 @@ function StatsCDRPage() {
   const { data, isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["sms_cdr_report", applied],
     queryFn: async () => {
-      let q = supabase
-        .from("sms_cdr")
-        .select(
-          "id,received_at,number,prefix,message,payout,status,client_id,agent_id,clients(name)"
-        )
-        .gte("received_at", new Date(applied.start).toISOString())
-        .lte("received_at", new Date(applied.end).toISOString())
-        .order("received_at", { ascending: false })
-        .limit(2000);
-      if (applied.prefix) q = q.ilike("prefix", `%${applied.prefix}%`);
-      if (applied.clientId) q = q.eq("client_id", applied.clientId);
-      if (applied.agentId) q = q.eq("agent_id", applied.agentId);
-      if (applied.number) q = q.ilike("number", `%${applied.number}%`);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as (CDR & { clients: { name: string } | null })[];
+      const params = new URLSearchParams({
+        start: new Date(applied.start).toISOString(),
+        end: new Date(applied.end).toISOString(),
+        limit: "500",
+      });
+      if (applied.prefix) params.set("prefix", applied.prefix);
+      if (applied.clientId) params.set("client_id", applied.clientId);
+      if (applied.agentId) params.set("agent_id", applied.agentId);
+      if (applied.number) params.set("number", applied.number);
+      const token = localStorage.getItem("nexus_token");
+      const res = await fetch(`${API_URL}/api/reports/cdr?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "CDR report failed");
+      return (payload.rows || []).map((r: any) => ({
+        ...r,
+        clients: r.client_name ? { name: r.client_name } : null,
+      })) as (CDR & { clients: { name: string } | null })[];
     },
     staleTime: 30_000,
     refetchOnWindowFocus: false,

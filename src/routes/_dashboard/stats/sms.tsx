@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+
+const API_URL = import.meta.env.VITE_API_URL || "https://x.nexus-x.site/api";
 
 export const Route = createFileRoute("/_dashboard/stats/sms")({
   component: StatsSmsPage,
@@ -26,18 +27,18 @@ function StatsSmsPage() {
   const cdr = useQuery({
     queryKey: ["sms_stats_cdr"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sms_cdr")
-        .select("received_at,prefix,number,message,payout,clients(name)")
-        .order("received_at", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      return (data ?? []).map((r: any) => ({
+      const token = localStorage.getItem("nexus_token");
+      const res = await fetch(`${API_URL}/api/reports/sms-summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "SMS summary failed");
+      return (payload.latest ?? []).map((r: any) => ({
         date: new Date(r.received_at).toLocaleString(),
         range: r.prefix ?? "-",
         number: r.number,
         cli: r.message?.match(/from\s+(\S+)/i)?.[1] ?? "-",
-        client: r.clients?.name ?? "-",
+        client: r.client_name ?? "-",
         sms: r.message ?? "",
         payout: Number(r.payout ?? 0),
       })) as Row[];
@@ -51,13 +52,19 @@ function StatsSmsPage() {
   const audit = useQuery({
     queryKey: ["sms_stats_audit_24h"],
     queryFn: async () => {
-      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-      const { data, error } = await supabase
-        .from("otp_audit_log")
-        .select("outcome,created_at,source")
-        .gte("created_at", since);
-      if (error) throw error;
-      return data ?? [];
+      const token = localStorage.getItem("nexus_token");
+      const res = await fetch(`${API_URL}/api/reports/sms-summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "SMS summary failed");
+      const s = payload.summary || { rows: 0, billed: 0, duplicates: 0, last_scrape: null };
+      const syntheticRows = [
+        ...Array.from({ length: Number(s.billed || 0) }, () => ({ outcome: "billed", created_at: s.last_scrape, source: "ims" })),
+        ...Array.from({ length: Number(s.duplicates || 0) }, () => ({ outcome: "duplicate", created_at: s.last_scrape, source: "ims" })),
+        ...Array.from({ length: Math.max(0, Number(s.rows || 0) - Number(s.billed || 0) - Number(s.duplicates || 0)) }, () => ({ outcome: "other", created_at: s.last_scrape, source: "ims" })),
+      ];
+      return syntheticRows;
     },
     refetchInterval: 15_000,
     refetchOnWindowFocus: false,

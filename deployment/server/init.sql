@@ -349,6 +349,8 @@ ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS message TEXT;
 ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS payout NUMERIC DEFAULT 0;
 ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS agent_id UUID;
 ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS client_id UUID;
+ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE sms_cdr ADD COLUMN IF NOT EXISTS source_msg_id TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_sms_cdr_received_at  ON sms_cdr(received_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sms_cdr_client_id    ON sms_cdr(client_id);
@@ -359,6 +361,9 @@ CREATE INDEX IF NOT EXISTS idx_sms_cdr_recv_agent   ON sms_cdr(received_at DESC,
 CREATE INDEX IF NOT EXISTS idx_sms_cdr_recv_client  ON sms_cdr(received_at DESC, client_id);
 CREATE INDEX IF NOT EXISTS idx_sms_cdr_recv_prefix  ON sms_cdr(received_at DESC, prefix);
 CREATE INDEX IF NOT EXISTS idx_sms_cdr_number       ON sms_cdr(number);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sms_cdr_source_msg_id
+  ON sms_cdr(source, source_msg_id)
+  WHERE source_msg_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_otp_audit_created_at ON otp_audit_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_otp_audit_outcome    ON otp_audit_log(outcome);
@@ -367,6 +372,50 @@ CREATE INDEX IF NOT EXISTS idx_otp_audit_phone      ON otp_audit_log(phone_numbe
 CREATE UNIQUE INDEX IF NOT EXISTS idx_otp_audit_source_msg_id
   ON otp_audit_log(source, source_msg_id)
   WHERE source_msg_id IS NOT NULL;
+
+-- Backfill + keep the visible CDR table aligned with existing OTP audit rows.
+-- Bot code mirrors new OTPs live; this catches older OTPs created before the mirror existed.
+INSERT INTO sms_cdr
+  (source, source_msg_id, phone_number, number, otp_code, cli, message, payout, price_bdt, status, received_at, created_at, prefix, agent_id, client_id)
+SELECT
+  o.source,
+  o.source_msg_id,
+  o.phone_number,
+  o.phone_number,
+  o.otp_code,
+  o.cli,
+  o.sms_text,
+  COALESCE(NULLIF(o.amount_earned, 0), np.client_rate, np.agent_rate, np.panel_payout, 0),
+  COALESCE(NULLIF(o.amount_earned, 0), np.client_rate, np.agent_rate, np.panel_payout, 0),
+  CASE WHEN o.outcome = 'billed' THEN 'delivered' ELSE o.outcome END,
+  o.created_at,
+  o.created_at,
+  COALESCE(np.prefix, substring(regexp_replace(COALESCE(o.phone_number, ''), '[^0-9]', '', 'g') from 1 for 3)),
+  np.assigned_agent,
+  np.assigned_client
+FROM otp_audit_log o
+LEFT JOIN LATERAL (
+  SELECT prefix, assigned_agent, assigned_client, client_rate, agent_rate, panel_payout
+  FROM number_pool
+  WHERE regexp_replace(COALESCE(number, ''), '[^0-9]', '', 'g') LIKE '%' || right(regexp_replace(COALESCE(o.phone_number, ''), '[^0-9]', '', 'g'), 9)
+  ORDER BY updated_at DESC NULLS LAST, created_at DESC
+  LIMIT 1
+) np ON true
+WHERE o.phone_number IS NOT NULL
+  AND o.source_msg_id IS NOT NULL
+ON CONFLICT (source, source_msg_id) WHERE source_msg_id IS NOT NULL DO UPDATE SET
+  phone_number = EXCLUDED.phone_number,
+  number = EXCLUDED.number,
+  otp_code = EXCLUDED.otp_code,
+  cli = EXCLUDED.cli,
+  message = EXCLUDED.message,
+  payout = EXCLUDED.payout,
+  price_bdt = EXCLUDED.price_bdt,
+  status = EXCLUDED.status,
+  received_at = EXCLUDED.received_at,
+  prefix = EXCLUDED.prefix,
+  agent_id = EXCLUDED.agent_id,
+  client_id = EXCLUDED.client_id;
 
 CREATE INDEX IF NOT EXISTS idx_number_pool_updated_at ON number_pool(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_number_pool_country    ON number_pool(country);
