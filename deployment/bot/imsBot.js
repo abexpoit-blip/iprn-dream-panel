@@ -474,7 +474,7 @@ async function scrapeSms() {
 
   const startedAt = new Date().toISOString();
   try {
-    const { ok, res, retries } = await fetchCdrWithRetry(base, referer, origin);
+    const { ok, res, retries, iCols } = await fetchCdrWithRetry(base, referer, origin);
     if (!ok) {
       const errMsg = `CDR fetch failed after ${retries} retries (last status=${res?.status ?? 'n/a'})`;
       console.error(`[ims-bot] ${errMsg}`);
