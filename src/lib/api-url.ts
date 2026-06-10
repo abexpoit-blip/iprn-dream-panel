@@ -1,11 +1,12 @@
 const RAW_BASE = (import.meta.env.VITE_API_URL || "https://x.nexus-x.site/api").replace(/\/+$/, "");
-// If base already ends with /api, strip it so callers can use either "/api/foo" or "/foo".
-const BASE_HAS_API = /\/api$/i.test(RAW_BASE);
-const ROOT = BASE_HAS_API ? RAW_BASE.replace(/\/api$/i, "") : RAW_BASE;
+
+// VITE_API_URL points at the public gateway prefix (/api). Nginx strips that
+// prefix before proxying, while protected backend routes also live under /api.
+// So /api/reports externally must become /api/api/reports when RAW_BASE ends in /api.
 
 export function apiUrl(path: string): string {
   let p = path.startsWith("/") ? path : `/${path}`;
-  // Normalize: ensure exactly one /api prefix
+  // Normalize the backend route path; do not strip RAW_BASE's gateway /api prefix.
   if (!/^\/api(\/|$)/i.test(p)) p = `/api${p}`;
-  return `${ROOT}${p}`;
+  return `${RAW_BASE}${p}`;
 }
