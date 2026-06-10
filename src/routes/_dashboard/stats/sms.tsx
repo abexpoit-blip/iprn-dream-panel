@@ -13,6 +13,14 @@ export const Route = createFileRoute("/_dashboard/stats/sms")({
   component: StatsSmsPage,
 });
 
+function pad(n: number) { return String(n).padStart(2, "0"); }
+function formatLocal(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 type Row = {
   date: string;
   range: string;
@@ -33,15 +41,17 @@ function StatsSmsPage() {
       });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || "SMS summary failed");
-      return (payload.latest ?? []).map((r: any) => ({
-        date: new Date(r.received_at).toLocaleString(),
-        range: r.prefix ?? "-",
-        number: r.number,
-        cli: r.message?.match(/from\s+(\S+)/i)?.[1] ?? "-",
-        client: r.client_name ?? "-",
-        sms: r.message ?? "",
-        payout: Number(r.payout ?? 0),
-      })) as Row[];
+      return (payload.latest ?? [])
+        .filter((r: any) => (r.message && String(r.message).trim()) || (r.number && String(r.number).trim()))
+        .map((r: any) => ({
+          date: formatLocal(r.received_at),
+          range: r.prefix ?? "-",
+          number: r.number ?? "-",
+          cli: r.message?.match(/from\s+(\S+)/i)?.[1] ?? "-",
+          client: r.client_name ?? "-",
+          sms: r.message ?? "",
+          payout: Number(r.payout ?? 0),
+        })) as Row[];
     },
     staleTime: 15_000,
     refetchInterval: 30_000,
@@ -85,7 +95,16 @@ function StatsSmsPage() {
     { key: "number", header: "Number", value: (r) => r.number },
     { key: "cli", header: "CLI", value: (r) => r.cli },
     { key: "client", header: "Client", value: (r) => r.client },
-    { key: "sms", header: "SMS", value: (r) => r.sms },
+    {
+      key: "sms",
+      header: "SMS",
+      value: (r) => r.sms,
+      cell: (r) => (
+        <span className="block max-w-[520px] whitespace-pre-wrap break-words text-[12px] text-[#2b3a4a]">
+          {r.sms || "—"}
+        </span>
+      ),
+    },
     { key: "currency", header: "Currency", value: () => "USD" },
     {
       key: "payout",

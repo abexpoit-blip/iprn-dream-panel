@@ -8,6 +8,14 @@ export const Route = createFileRoute("/_dashboard/agent/otps")({
   component: AgentOtpsPage,
 });
 
+function pad(n: number) { return String(n).padStart(2, "0"); }
+function formatLocal(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 type Row = {
   id: string;
   phone_number: string | null;
@@ -38,8 +46,8 @@ function AgentOtpsPage() {
   const columns: IMSColumn<Row>[] = [
     {
       key: "time",
-      header: "Time",
-      value: (r) => new Date(r.created_at).toLocaleString(),
+      header: "Date",
+      value: (r) => formatLocal(r.created_at),
     },
     {
       key: "number",
@@ -68,8 +76,8 @@ function AgentOtpsPage() {
       header: "Message",
       value: (r) => r.sms_text ?? "",
       cell: (r) => (
-        <span className="text-[12px] text-[#69707a] line-clamp-2 max-w-[420px] block">
-          {r.sms_text ?? "—"}
+        <span className="block max-w-[520px] whitespace-pre-wrap break-words text-[12px] text-[#2b3a4a]">
+          {r.sms_text || "—"}
         </span>
       ),
     },
