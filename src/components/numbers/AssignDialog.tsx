@@ -26,8 +26,8 @@ export function AssignDialog({ open, onClose, mode, numberIds, onDone }: Props) 
     if (!open) return;
     const token = localStorage.getItem('nexus_token');
     const url = mode === 'agent'
-      ? `${API_URL}/api/allocations/agents`
-      : `${API_URL}/api/allocations/my-clients`;
+      ? `${API_URL}/allocations/agents`
+      : `${API_URL}/allocations/my-clients`;
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then((rows: any[]) => {
@@ -51,7 +51,7 @@ export function AssignDialog({ open, onClose, mode, numberIds, onDone }: Props) 
       const endpoint = mode === 'agent' ? 'assign-agent' : 'assign-client';
       const body: any = { number_ids: numberIds, markup: Number(markup) || 0 };
       if (mode === 'agent') body.agent_id = targetId; else body.client_id = targetId;
-      const r = await fetch(`${API_URL}/api/allocations/${endpoint}`, {
+      const r = await fetch(`${API_URL}/allocations/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),

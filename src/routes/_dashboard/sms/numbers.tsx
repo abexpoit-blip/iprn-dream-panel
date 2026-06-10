@@ -76,7 +76,7 @@ function SmsNumbersPage() {
     setAutoPooling(true);
     try {
       const token = localStorage.getItem("nexus_token");
-      const res = await fetch(`${API_URL}/api/numbers/auto-pool`, {
+      const res = await fetch(`${API_URL}/numbers/auto-pool`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
