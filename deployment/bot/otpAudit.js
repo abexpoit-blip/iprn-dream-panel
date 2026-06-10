@@ -10,26 +10,43 @@ async function logOtpAudit({
   outcome, miss_reason = null, amount_bdt = null, is_fake = 0,
 }) {
   try {
-    // Hard DB-level dedup: unique index on (source, source_msg_id).
-    // ON CONFLICT DO NOTHING guarantees no double row even under race conditions
-    // (e.g. two scrape ticks running concurrently against the same CDR row).
-    const query = `
-      INSERT INTO otp_audit_log
-        (source, source_msg_id, phone_number, cli, otp_code, sms_text, outcome, amount_earned)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT (source, source_msg_id) WHERE source_msg_id IS NOT NULL
-        DO NOTHING
-      RETURNING id
-    `;
-    const info = await db.prepare(query).run(
-      String(source),
-      source_msg_id ? String(source_msg_id) : null,
+    const normalizedSource = String(source);
+    const normalizedMsgId = source_msg_id ? String(source_msg_id) : null;
+    const payload = [
+      normalizedSource,
+      normalizedMsgId,
       phone_number,
       cli,
       otp_code,
       sms_text ? String(sms_text).slice(0, 1000) : null,
       String(outcome),
-      amount_bdt || 0
+      amount_bdt || 0,
+    ];
+
+    // Some deployed databases still miss the partial unique index needed by
+    // ON CONFLICT (source, source_msg_id). To keep OTP auto-sync working, do a
+    // SQL-level dedupe fallback that works even before the index exists.
+    const query = normalizedMsgId
+      ? `
+          INSERT INTO otp_audit_log
+            (source, source_msg_id, phone_number, cli, otp_code, sms_text, outcome, amount_earned)
+          SELECT ?, ?, ?, ?, ?, ?, ?, ?
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM otp_audit_log
+            WHERE source = ? AND source_msg_id = ?
+          )
+          RETURNING id
+        `
+      : `
+          INSERT INTO otp_audit_log
+            (source, source_msg_id, phone_number, cli, otp_code, sms_text, outcome, amount_earned)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          RETURNING id
+        `;
+
+    const info = await db.prepare(query).run(
+      ...(normalizedMsgId ? [...payload, normalizedSource, normalizedMsgId] : payload)
     );
 
     const auditId = info.lastInsertRowid || null;
