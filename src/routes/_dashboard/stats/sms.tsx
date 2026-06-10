@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
