@@ -46,15 +46,16 @@ function SmsNumbersPage() {
   const { data: rangeOptions = [] } = useQuery<string[]>({
     queryKey: ["number_pool_ranges"],
     staleTime: 5 * 60_000,
-    queryFn: async () => {
+    queryFn: async (): Promise<string[]> => {
       const { data } = await supabase
         .from("number_pool")
         .select("range_name")
         .not("range_name", "is", null)
         .limit(5000);
-      return Array.from(
-        new Set((data || []).map((r: any) => r.range_name as string).filter(Boolean)),
-      ).sort();
+      const names = (data || [])
+        .map((r: any) => r.range_name as string)
+        .filter((v): v is string => !!v);
+      return Array.from(new Set(names)).sort();
     },
   });
 
