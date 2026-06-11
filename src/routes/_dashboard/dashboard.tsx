@@ -1,22 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { 
-  Users, 
-  TrendingUp, 
-} from "lucide-react";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
+import { TrendingUp } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getEffectiveUserId } from "@/lib/auth-helpers";
+
 import {
   Table,
   TableBody,
@@ -30,15 +27,6 @@ export const Route = createFileRoute("/_dashboard/dashboard")({
   component: DashboardPage,
 });
 
-const chartData = [
-  { name: '2026-05-31', sms: 400, payout: 15 },
-  { name: '2026-06-01', sms: 300, payout: 12 },
-  { name: '2026-06-02', sms: 200, payout: 8 },
-  { name: '2026-06-03', sms: 100, payout: 5 },
-  { name: '2026-06-04', sms: 500, payout: 22 },
-  { name: '2026-06-05', sms: 450, payout: 19 },
-  { name: '2026-06-06', sms: 431, payout: 18 },
-];
 
 function DashboardPage() {
   const { data: statsData } = useQuery({
@@ -56,24 +44,50 @@ function DashboardPage() {
         todayCount,
         yesterdayCount,
         last7DaysCount,
-        monthData
+        monthData,
+        chartRows,
       ] = await Promise.all([
-        supabase.from('sms_logs').select('*', { count: 'exact' }).gte('created_at', today.toISOString()),
-        supabase.from('sms_logs').select('*', { count: 'exact' }).gte('created_at', yesterday.toISOString()).lt('created_at', today.toISOString()),
-        supabase.from('sms_logs').select('*', { count: 'exact' }).gte('created_at', last7Days.toISOString()),
-        supabase.from('sms_logs').select('payout').gte('created_at', startOfMonth.toISOString())
+        supabase.from('sms_cdr').select('id', { count: 'exact', head: true }).gte('received_at', today.toISOString()),
+        supabase.from('sms_cdr').select('id', { count: 'exact', head: true }).gte('received_at', yesterday.toISOString()).lt('received_at', today.toISOString()),
+        supabase.from('sms_cdr').select('id', { count: 'exact', head: true }).gte('received_at', last7Days.toISOString()),
+        supabase.from('sms_cdr').select('payout').gte('received_at', startOfMonth.toISOString()),
+        supabase.from('sms_cdr').select('received_at, payout').gte('received_at', last7Days.toISOString()),
       ]);
 
       const monthPayout = monthData.data?.reduce((acc: number, curr: any) => acc + (Number(curr.payout) || 0), 0) || 0;
+
+      // Build per-day chart for last 7 days
+      const buckets: Record<string, { sms: number; payout: number }> = {};
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        buckets[key] = { sms: 0, payout: 0 };
+      }
+      (chartRows.data || []).forEach((r: any) => {
+        const key = new Date(r.received_at).toISOString().slice(0, 10);
+        if (buckets[key]) {
+          buckets[key].sms += 1;
+          buckets[key].payout += Number(r.payout) || 0;
+        }
+      });
+      const chart = Object.entries(buckets).map(([name, v]) => ({
+        name,
+        sms: v.sms,
+        payout: Number(v.payout.toFixed(2)),
+      }));
 
       return {
         today: todayCount.count || 0,
         yesterday: yesterdayCount.count || 0,
         last7Days: last7DaysCount.count || 0,
-        monthPayout: monthPayout.toFixed(2)
+        monthPayout: monthPayout.toFixed(2),
+        chart,
       };
     }
   });
+
+  const chartData = statsData?.chart || [];
 
   const { data: recentClients } = useQuery({
     queryKey: ['recent_clients'],
@@ -108,6 +122,7 @@ function DashboardPage() {
     { label: "Money This Month", value: statsData?.monthPayout || "0.00", color: "bg-[#f4a100]", footer: "Payout in this month", prefix: "$" },
   ];
 
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -121,7 +136,7 @@ function DashboardPage() {
         {stats.map((stat) => (
           <Link 
             key={stat.label} 
-            to={stat.label.includes("MONEY") ? "/credits" : "/stats/cdr"}
+            to={stat.label.toLowerCase().includes("money") ? "/credits" : "/stats/cdr"}
             className={cn("rounded-xl shadow-md overflow-hidden relative group transition-transform hover:-translate-y-1 duration-300 block", stat.color)}
           >
             <div className="p-6 text-white">
