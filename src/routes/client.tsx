@@ -270,9 +270,16 @@ function ClientLayout() {
           <footer className="py-6 px-8 border-t border-[#e3e6ec] bg-white flex flex-col sm:flex-row justify-between items-center gap-2">
             <p className="text-[12px] text-[#69707a] font-medium italic">
               Copyright © {new Date().getFullYear()}{" "}
-              <span className="font-bold text-[#2b3a4a] not-italic tracking-tighter">IMS SMS</span>.
-              Designed with ❤️ by <a href="#" className="text-[#0061f2] font-bold">IMS SMS</a> All rights
-              reserved
+              <span className="font-bold text-[#2b3a4a] not-italic tracking-tighter">NEXUS X</span>.
+              Designed with ❤️ by{" "}
+              <a
+                href="#"
+                className="not-italic font-extrabold tracking-wide bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]"
+                style={{ textShadow: "0 0 12px rgba(56,189,248,0.6)" }}
+              >
+                SHOVON
+              </a>{" "}
+              · All rights reserved
             </p>
           </footer>
         </main>
