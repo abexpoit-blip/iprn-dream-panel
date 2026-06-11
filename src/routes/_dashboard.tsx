@@ -61,22 +61,32 @@ function DashboardLayout() {
     }
     
     const user = session.user;
-    if (user.role === 'client') {
+    // Load real profile (role + is_admin) from DB — auth user object doesn't carry these
+    const { data: dbProfile } = await supabase
+      .from('profiles')
+      .select('id, username, role, is_admin')
+      .eq('id', user.id)
+      .single();
+
+    const merged: any = { ...user, ...(dbProfile || {}) };
+
+    if (merged.role === 'client') {
       if (!location.pathname.startsWith("/client")) {
         navigate({ to: "/client/dashboard" });
         return;
       }
     }
-    setProfile(user);
+    setProfile(merged);
 
     // Impersonation check (Only for admins)
     const impersonatedId = sessionStorage.getItem('impersonated_agent_id');
-    if (impersonatedId && user.is_admin) {
+    if (impersonatedId && merged.is_admin) {
        setImpersonatedAgent({ id: impersonatedId, username: 'Agent' });
     } else {
       setImpersonatedAgent(null);
     }
   };
+
 
   useEffect(() => {
     checkUser();
