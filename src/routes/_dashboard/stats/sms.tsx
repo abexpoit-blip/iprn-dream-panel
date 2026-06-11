@@ -100,7 +100,7 @@ function StatsSmsPage() {
       header: "SMS",
       value: (r) => r.sms,
       cell: (r) => (
-        <span className="block max-w-[520px] whitespace-pre-wrap break-words text-[12px] text-[#2b3a4a]">
+        <span className="block min-w-[420px] max-w-[760px] whitespace-pre-wrap break-words text-[14px] leading-snug font-medium text-[#1a2330]">
           {r.sms || "—"}
         </span>
       ),

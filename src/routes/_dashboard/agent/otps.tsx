@@ -36,7 +36,7 @@ function AgentOtpsPage() {
         .from("otp_audit_log")
         .select("id,phone_number,cli,otp_code,sms_text,outcome,created_at")
         .order("created_at", { ascending: false })
-        .limit(5000);
+        .limit(500);
       if (error) throw error;
       return (data || []) as Row[];
     },
@@ -76,7 +76,7 @@ function AgentOtpsPage() {
       header: "Message",
       value: (r) => r.sms_text ?? "",
       cell: (r) => (
-        <span className="block max-w-[520px] whitespace-pre-wrap break-words text-[12px] text-[#2b3a4a]">
+        <span className="block min-w-[420px] max-w-[760px] whitespace-pre-wrap break-words text-[14px] leading-snug font-medium text-[#1a2330]">
           {r.sms_text || "—"}
         </span>
       ),

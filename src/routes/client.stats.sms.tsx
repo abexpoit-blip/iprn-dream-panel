@@ -26,11 +26,11 @@ function ClientSmsStatsPage() {
         .from("otp_audit_log")
         .select("id,phone_number,cli,otp_code,sms_text,outcome,created_at")
         .order("created_at", { ascending: false })
-        .limit(5000);
+        .limit(500);
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 15000,
+    refetchInterval: 30000,
   });
 
   return (
@@ -93,8 +93,8 @@ function ClientSmsStatsPage() {
                       <TableCell className="px-6 py-4 text-[13px] font-mono font-bold text-[#0061f2]">
                         {r.otp_code || "—"}
                       </TableCell>
-                      <TableCell className="px-6 py-4 text-[12px] text-[#69707a] max-w-[380px]">
-                        <span className="line-clamp-2 block">{r.sms_text || "—"}</span>
+                      <TableCell className="px-6 py-4 text-[14px] leading-snug font-medium text-[#1a2330] min-w-[420px] max-w-[760px]">
+                        <span className="block whitespace-pre-wrap break-words">{r.sms_text || "—"}</span>
                       </TableCell>
                       <TableCell className="px-6 py-4">
                         <span
