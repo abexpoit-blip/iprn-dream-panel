@@ -55,7 +55,7 @@ function AgentOtpsPage() {
       if (error) throw error;
       return { rows: (data || []) as Row[], total: count ?? 0 };
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     refetchInterval: 30000,
   });
 
