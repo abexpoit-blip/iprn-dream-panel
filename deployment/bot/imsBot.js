@@ -447,9 +447,28 @@ async function scrapeNumbers() {
         if (r.changes) inserted++;
       } catch (_) {}
     }
+    // Sync removal: delete numbers that this bot's panel no longer lists.
+    // Only touch rows owned by this bot and not currently assigned/used.
+    let removedCount = 0;
+    try {
+      const { sql } = require('./db');
+      const seen = items.map(i => i.number);
+      const removed = await sql`
+        DELETE FROM number_pool
+        WHERE bot_id = ${BOT_ID}
+          AND assigned_agent IS NULL
+          AND assigned_client IS NULL
+          AND status = 'available'
+          AND number <> ALL(${seen})
+        RETURNING number
+      `;
+      removedCount = removed.length;
+    } catch (e) {
+      console.error('[ims-bot] stale-number cleanup error:', e.message);
+    }
     const uniqueRanges = [...new Set(items.map(i => i.range_name).filter(Boolean))];
     const syncedRanges = await upsertSmsRangesFromItems(items);
-    console.log(`[ims-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted across ${uniqueRanges.length} range(s), ${syncedRanges} sms_ranges synced`);
+    console.log(`[ims-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted, ${removedCount} removed (no longer in panel), across ${uniqueRanges.length} range(s), ${syncedRanges} sms_ranges synced`);
     if (uniqueRanges.length > 0) console.log(`[ims-bot] Ranges: ${uniqueRanges.slice(0, 20).join(' | ')}${uniqueRanges.length > 20 ? ` (+${uniqueRanges.length - 20} more)` : ''}`);
   } catch (err) {
     console.error(`[ims-bot] Numbers scrape error:`, err.message);

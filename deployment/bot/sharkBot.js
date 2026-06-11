@@ -248,7 +248,24 @@ async function scrapeNumbers() {
         if (r.changes) inserted++;
       } catch (_) {}
     }
-    console.log(`[shark-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted into number_pool (with country/range/payout)`);
+    let removedCount = 0;
+    try {
+      const { sql } = require('./db');
+      const seen = items.map(i => i.number);
+      const removed = await sql`
+        DELETE FROM number_pool
+        WHERE bot_id = ${BOT_ID}
+          AND assigned_agent IS NULL
+          AND assigned_client IS NULL
+          AND status = 'available'
+          AND number <> ALL(${seen})
+        RETURNING number
+      `;
+      removedCount = removed.length;
+    } catch (e) {
+      console.error('[shark-bot] stale-number cleanup error:', e.message);
+    }
+    console.log(`[shark-bot] Numbers scrape: ${items.length} parsed, ${inserted} upserted, ${removedCount} removed (no longer in panel)`);
   } catch (err) {
     console.error(`[shark-bot] Numbers scrape error:`, err.message);
   }
