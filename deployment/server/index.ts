@@ -527,22 +527,24 @@ app.get('/api/reports/numbers', async (c) => {
   const like = `%${search}%`;
   try {
     const rows = await sql`
-      SELECT * FROM number_pool
-      WHERE (${rangeName} = '' OR range_name = ${rangeName})
-        AND (${search} = '' OR COALESCE(number, '') ILIKE ${like}
-          OR COALESCE(country, '') ILIKE ${like}
-          OR COALESCE(range_name, '') ILIKE ${like}
-          OR COALESCE(prefix, '') ILIKE ${like})
-      ORDER BY updated_at DESC NULLS LAST, created_at DESC
+      SELECT np.*,
+             COALESCE(NULLIF(np.range_name, ''), NULLIF(np.country, ''), NULLIF(np.prefix, ''), 'Unknown') AS range_name
+      FROM number_pool np
+      WHERE (${rangeName} = '' OR COALESCE(np.range_name, np.country, np.prefix, '') = ${rangeName})
+        AND (${search} = '' OR COALESCE(np.number, '') ILIKE ${like}
+          OR COALESCE(np.country, '') ILIKE ${like}
+          OR COALESCE(np.range_name, '') ILIKE ${like}
+          OR COALESCE(np.prefix, '') ILIKE ${like})
+      ORDER BY np.updated_at DESC NULLS LAST, np.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
     const [summary] = await sql`
-      SELECT COUNT(*)::int AS total FROM number_pool
-      WHERE (${rangeName} = '' OR range_name = ${rangeName})
-        AND (${search} = '' OR COALESCE(number, '') ILIKE ${like}
-          OR COALESCE(country, '') ILIKE ${like}
-          OR COALESCE(range_name, '') ILIKE ${like}
-          OR COALESCE(prefix, '') ILIKE ${like})
+      SELECT COUNT(*)::int AS total FROM number_pool np
+      WHERE (${rangeName} = '' OR COALESCE(np.range_name, np.country, np.prefix, '') = ${rangeName})
+        AND (${search} = '' OR COALESCE(np.number, '') ILIKE ${like}
+          OR COALESCE(np.country, '') ILIKE ${like}
+          OR COALESCE(np.range_name, '') ILIKE ${like}
+          OR COALESCE(np.prefix, '') ILIKE ${like})
     `;
     return c.json({ rows, total: summary?.total || 0 });
   } catch (err: any) {
