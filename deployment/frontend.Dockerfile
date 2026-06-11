@@ -19,14 +19,14 @@ ENV NODE_OPTIONS=--max-old-space-size=3072
 RUN ./node_modules/.bin/vite build
 
 # Verify Nitro output
-RUN ls -la .output/server/index.mjs || (echo "Nitro output not found" && ls -R .output && exit 1)
+RUN ls -la dist/server/index.mjs || (echo "Nitro output not found" && ls -R dist && exit 1)
 
 
 FROM node:22-alpine
 WORKDIR /app
 
 # Copy the Nitro output
-COPY --from=build /app/.output ./.output
+COPY --from=build /app/dist ./dist
 COPY --from=build /app/package*.json ./
 
 EXPOSE 3000
@@ -35,4 +35,4 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 
 # Nitro node-server entry point
-CMD ["node", ".output/server/index.mjs"]
+CMD ["node", "dist/server/index.mjs"]
