@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://X.nexus-x.site/api';
+import { apiUrl } from "@/lib/api-url";
 
 type Target = { id: string; label: string; sub?: string };
 
@@ -26,8 +25,8 @@ export function AssignDialog({ open, onClose, mode, numberIds, onDone }: Props) 
     if (!open) return;
     const token = localStorage.getItem('nexus_token');
     const url = mode === 'agent'
-      ? `${API_URL}/allocations/agents`
-      : `${API_URL}/allocations/my-clients`;
+      ? apiUrl('/allocations/agents')
+      : apiUrl('/allocations/my-clients');
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then((rows: any[]) => {
@@ -51,7 +50,7 @@ export function AssignDialog({ open, onClose, mode, numberIds, onDone }: Props) 
       const endpoint = mode === 'agent' ? 'assign-agent' : 'assign-client';
       const body: any = { number_ids: numberIds, markup: Number(markup) || 0 };
       if (mode === 'agent') body.agent_id = targetId; else body.client_id = targetId;
-      const r = await fetch(`${API_URL}/allocations/${endpoint}`, {
+      const r = await fetch(apiUrl(`/allocations/${endpoint}`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
