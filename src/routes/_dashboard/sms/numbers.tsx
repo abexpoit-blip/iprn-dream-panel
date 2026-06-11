@@ -67,6 +67,17 @@ function SmsNumbersPage() {
     queryFn: async () => {
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
+
+      if (isSelfHosted) {
+        const res = await fetchSelfHostedJson<{ rows: Row[]; total: number }>("/reports/numbers", {
+          limit: pageSize,
+          offset: from,
+          search: search.trim(),
+          range_name: filterRange !== "All Ranges" ? filterRange : "",
+        });
+        return { rows: res.rows || [], total: res.total || 0 };
+      }
+
       let q = supabase
         .from("number_pool")
         .select("*", { count: "exact" })
