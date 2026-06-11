@@ -37,6 +37,10 @@ type Props<T> = {
   rightSlot?: ReactNode;
   defaultPageSize?: number;
   rowKey?: (row: T, idx: number) => string | number;
+  /** Server-side mode: when totalCount + onParamsChange given, rows = current page only. */
+  totalCount?: number;
+  onParamsChange?: (p: { page: number; pageSize: number; search: string }) => void;
+  searchDebounceMs?: number;
 };
 
 const LENGTHS = [10, 25, 50, 100];
