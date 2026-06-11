@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.agents_overview() FROM PUBLIC, anon;
