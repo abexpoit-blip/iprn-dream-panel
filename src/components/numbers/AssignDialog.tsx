@@ -50,7 +50,7 @@ export function AssignDialog({ open, onClose, mode, numberIds, onDone }: Props) 
       const endpoint = mode === 'agent' ? 'assign-agent' : 'assign-client';
       const body: any = { number_ids: numberIds, markup: Number(markup) || 0 };
       if (mode === 'agent') body.agent_id = targetId; else body.client_id = targetId;
-      const r = await fetch(`${API_URL}/allocations/${endpoint}`, {
+      const r = await fetch(apiUrl(`/allocations/${endpoint}`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
