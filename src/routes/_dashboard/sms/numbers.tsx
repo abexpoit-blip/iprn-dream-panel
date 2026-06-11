@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Loader2, Zap, UserPlus } from "lucide-react";
 import { AssignDialog } from "@/components/numbers/AssignDialog";
 import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
+import { fetchSelfHostedJson, isSelfHosted } from "@/lib/self-hosted-api";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://X.nexus-x.site/api";
 
@@ -66,6 +67,17 @@ function SmsNumbersPage() {
     queryFn: async () => {
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
+
+      if (isSelfHosted) {
+        const res = await fetchSelfHostedJson<{ rows: Row[]; total: number }>("/reports/numbers", {
+          limit: pageSize,
+          offset: from,
+          search: search.trim(),
+          range_name: filterRange !== "All Ranges" ? filterRange : "",
+        });
+        return { rows: res.rows || [], total: res.total || 0 };
+      }
+
       let q = supabase
         .from("number_pool")
         .select("*", { count: "exact" })
