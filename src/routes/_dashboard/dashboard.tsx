@@ -136,7 +136,7 @@ function DashboardPage() {
         {stats.map((stat) => (
           <Link 
             key={stat.label} 
-            to={stat.label.includes("MONEY") ? "/credits" : "/stats/cdr"}
+            to={stat.label.toLowerCase().includes("money") ? "/credits" : "/stats/cdr"}
             className={cn("rounded-xl shadow-md overflow-hidden relative group transition-transform hover:-translate-y-1 duration-300 block", stat.color)}
           >
             <div className="p-6 text-white">
