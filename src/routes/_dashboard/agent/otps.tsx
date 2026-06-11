@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 import { cn } from "@/lib/utils";
+import { fetchSelfHostedJson, isSelfHosted } from "@/lib/self-hosted-api";
 
 export const Route = createFileRoute("/_dashboard/agent/otps")({
   component: AgentOtpsPage,
@@ -35,6 +36,15 @@ function AgentOtpsPage() {
     queryFn: async () => {
       const from = (params.page - 1) * params.pageSize;
       const to = from + params.pageSize - 1;
+
+      if (isSelfHosted) {
+        const res = await fetchSelfHostedJson<{ rows: Row[]; total: number }>("/reports/otps", {
+          limit: params.pageSize,
+          offset: from,
+          search: params.search.trim(),
+        });
+        return { rows: res.rows || [], total: res.total || 0 };
+      }
 
       let q = supabase
         .from("otp_audit_log")
