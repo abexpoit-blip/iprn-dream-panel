@@ -37,35 +37,49 @@ function SmsNumbersPage() {
   const [autoPooling, setAutoPooling] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
 
-  const { data: numbers, isLoading } = useQuery<Row[]>({
-    queryKey: ["number_pool_view"],
+  // Lightweight range list (just names) — cheap and cached long
+  const { data: rangeOptions = [] } = useQuery<string[]>({
+    queryKey: ["number_pool_ranges"],
+    staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("number_pool")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data || []) as Row[];
+        .select("range_name")
+        .not("range_name", "is", null)
+        .limit(5000);
+      return Array.from(new Set((data || []).map((r: any) => r.range_name).filter(Boolean))).sort();
     },
   });
 
-  const rangeOptions = useMemo(
-    () =>
-      Array.from(
-        new Set((numbers || []).map((n) => n.range_name).filter(Boolean) as string[]),
-      ).sort(),
-    [numbers],
-  );
+  const { data, isLoading } = useQuery<{ rows: Row[]; total: number }>({
+    queryKey: ["number_pool_view", page, pageSize, search, filterRange],
+    placeholderData: (prev) => prev,
+    staleTime: 15_000,
+    queryFn: async () => {
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      let q = supabase
+        .from("number_pool")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (filterRange !== "All Ranges") q = q.eq("range_name", filterRange);
+      if (search.trim()) {
+        const s = search.trim();
+        q = q.or(`number.ilike.%${s}%,country.ilike.%${s}%,range_name.ilike.%${s}%,prefix.ilike.%${s}%`);
+      }
+      const { data, error, count } = await q;
+      if (error) throw error;
+      return { rows: (data || []) as Row[], total: count || 0 };
+    },
+  });
 
-  const filtered = useMemo(
-    () =>
-      (numbers || []).filter((n) =>
-        filterRange === "All Ranges" ? true : n.range_name === filterRange,
-      ),
-    [numbers, filterRange],
-  );
+  const filtered = data?.rows || [];
 
   const allSelected =
     filtered.length > 0 && filtered.every((n) => selectedIds.includes(n.id));
