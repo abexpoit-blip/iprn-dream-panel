@@ -1,119 +1,121 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/client/stats/sms")({
   component: ClientSmsStatsPage,
 });
 
+function pad(n: number) { return String(n).padStart(2, "0"); }
+function formatLocal(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+type Row = {
+  id: string;
+  phone_number: string | null;
+  cli: string | null;
+  otp_code: string | null;
+  sms_text: string | null;
+  outcome: string;
+  created_at: string;
+};
+
 // RLS on otp_audit_log restricts this query to OTPs delivered on numbers
 // where number_pool.assigned_client belongs to the signed-in client.
 function ClientSmsStatsPage() {
-  const { data: rows, isLoading } = useQuery({
-    queryKey: ["client_otp_audit"],
+  const [params, setParams] = useState({ page: 1, pageSize: 25, search: "" });
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["client_otp_paged", params],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = (params.page - 1) * params.pageSize;
+      const to = from + params.pageSize - 1;
+      let q = supabase
         .from("otp_audit_log")
-        .select("id,phone_number,cli,otp_code,sms_text,outcome,created_at")
+        .select("id,phone_number,cli,otp_code,sms_text,outcome,created_at", { count: "exact" });
+      const s = params.search.trim();
+      if (s) {
+        q = q.or(
+          `phone_number.ilike.%${s}%,cli.ilike.%${s}%,otp_code.ilike.%${s}%,sms_text.ilike.%${s}%`,
+        );
+      }
+      const { data, error, count } = await q
         .order("created_at", { ascending: false })
-        .limit(500);
+        .range(from, to);
       if (error) throw error;
-      return data || [];
+      return { rows: (data || []) as Row[], total: count ?? 0 };
     },
+    placeholderData: keepPreviousData,
     refetchInterval: 30000,
   });
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#2b3a4a] tracking-tight">My OTPs</h1>
-        <p className="text-[#69707a] text-[13px] font-medium mt-0.5">
-          OTPs received on numbers allocated to you.
-        </p>
-      </div>
+  const columns: IMSColumn<Row>[] = [
+    { key: "time", header: "Time", value: (r) => formatLocal(r.created_at) },
+    {
+      key: "number",
+      header: "Number",
+      value: (r) => r.phone_number ?? "—",
+      cell: (r) => <span className="font-bold text-[#2b3a4a]">{r.phone_number ?? "—"}</span>,
+    },
+    { key: "cli", header: "CLI", value: (r) => r.cli ?? "—" },
+    {
+      key: "otp",
+      header: "OTP",
+      value: (r) => r.otp_code ?? "—",
+      cell: (r) =>
+        r.otp_code ? (
+          <span className="font-mono font-bold text-[#0061f2]">{r.otp_code}</span>
+        ) : (
+          <span className="text-gray-400">—</span>
+        ),
+    },
+    {
+      key: "sms",
+      header: "Message",
+      value: (r) => r.sms_text ?? "",
+      cell: (r) => (
+        <span className="block min-w-[420px] max-w-[760px] whitespace-pre-wrap break-words text-[14px] leading-snug font-medium text-[#1a2330]">
+          {r.sms_text || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "outcome",
+      header: "Status",
+      value: (r) => r.outcome,
+      cell: (r) => (
+        <span
+          className={cn(
+            "px-2 py-0.5 text-white text-[10px] font-bold rounded uppercase",
+            r.outcome === "billed" ? "bg-emerald-500" : "bg-slate-500",
+          )}
+        >
+          {r.outcome}
+        </span>
+      ),
+    },
+  ];
 
-      <Card className="shadow-lg border-[#e3e6ec] rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#e3e6ec] bg-[#f8f9fc]">
-          <h3 className="font-black text-[#69707a] uppercase text-[11px] tracking-widest">
-            Recent OTP Log
-          </h3>
-        </div>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-none bg-[#f8f9fc] hover:bg-[#f8f9fc]">
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Time</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Number</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">CLI</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">OTP</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Message</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase text-[#69707a] px-6 py-4">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-16">
-                      <div className="w-8 h-8 border-4 border-[#0061f2] border-t-transparent rounded-full animate-spin mx-auto" />
-                    </TableCell>
-                  </TableRow>
-                ) : !rows || rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-16 text-[#69707a] text-[13px] italic font-medium">
-                      No OTPs yet for your allocated numbers.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  rows.map((r: any, idx: number) => (
-                    <TableRow
-                      key={r.id}
-                      className={cn(
-                        "border-b border-[#f2f4f8] hover:bg-gray-50/50",
-                        idx % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]",
-                      )}
-                    >
-                      <TableCell className="px-6 py-4 text-[12px] text-[#69707a]">
-                        {r.created_at ? new Date(r.created_at).toLocaleString() : "—"}
-                      </TableCell>
-                      <TableCell className="px-6 py-4 text-[13px] font-bold text-[#2b3a4a]">
-                        {r.phone_number || "—"}
-                      </TableCell>
-                      <TableCell className="px-6 py-4 text-[12px] text-[#2b3a4a]">{r.cli || "—"}</TableCell>
-                      <TableCell className="px-6 py-4 text-[13px] font-mono font-bold text-[#0061f2]">
-                        {r.otp_code || "—"}
-                      </TableCell>
-                      <TableCell className="px-6 py-4 text-[14px] leading-snug font-medium text-[#1a2330] min-w-[420px] max-w-[760px]">
-                        <span className="block whitespace-pre-wrap break-words">{r.sms_text || "—"}</span>
-                      </TableCell>
-                      <TableCell className="px-6 py-4">
-                        <span
-                          className={cn(
-                            "px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider",
-                            r.outcome === "billed" ? "bg-emerald-500 text-white" : "bg-gray-400 text-white",
-                          )}
-                        >
-                          {r.outcome || "—"}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+  return (
+    <IMSDataTable<Row>
+      title="My OTPs"
+      subtitle="OTPs received on numbers allocated to you."
+      columns={columns}
+      rows={data?.rows}
+      totalCount={data?.total}
+      onParamsChange={setParams}
+      loading={isLoading || isFetching}
+      exportName="MyOTPs"
+      rowKey={(r) => r.id}
+      emptyText="No OTPs yet for your allocated numbers."
+      defaultPageSize={25}
+    />
   );
 }
