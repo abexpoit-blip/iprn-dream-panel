@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Loader2, Zap, UserPlus } from "lucide-react";
 import { AssignDialog } from "@/components/numbers/AssignDialog";
 import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
+import { fetchSelfHostedJson, isSelfHosted } from "@/lib/self-hosted-api";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://X.nexus-x.site/api";
 
