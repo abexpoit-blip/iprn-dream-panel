@@ -30,52 +30,21 @@ function AgentsPage() {
 
   const { data, isLoading } = useQuery<AgentRow[]>({
     queryKey: ["admin_agents_overview"],
+    staleTime: 30_000,
     queryFn: async () => {
-      const { data: agents, error } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, status, balance, created_at, role, is_admin")
-        .eq("role", "agent")
-        .eq("is_admin", false)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("agents_overview");
       if (error) throw error;
-
-      const [pool, clients, ledger] = await Promise.all([
-        supabase.from("number_pool").select("assigned_agent"),
-        supabase.from("clients").select("agent_id"),
-        supabase
-          .from("commission_ledger")
-          .select("user_id, amount, tier")
-          .eq("tier", "agent"),
-      ]);
-
-      const numCount = new Map<string, number>();
-      (pool.data || []).forEach((r: any) => {
-        if (!r.assigned_agent) return;
-        numCount.set(r.assigned_agent, (numCount.get(r.assigned_agent) || 0) + 1);
-      });
-      const clCount = new Map<string, number>();
-      (clients.data || []).forEach((r: any) => {
-        if (!r.agent_id) return;
-        clCount.set(r.agent_id, (clCount.get(r.agent_id) || 0) + 1);
-      });
-      const otpCount = new Map<string, number>();
-      const payoutSum = new Map<string, number>();
-      (ledger.data || []).forEach((r: any) => {
-        otpCount.set(r.user_id, (otpCount.get(r.user_id) || 0) + 1);
-        payoutSum.set(r.user_id, (payoutSum.get(r.user_id) || 0) + Number(r.amount || 0));
-      });
-
-      return (agents || []).map((a: any) => ({
-        id: a.id,
-        username: a.username,
-        full_name: a.full_name,
-        status: a.status,
-        balance: a.balance,
-        created_at: a.created_at,
-        numbers_count: numCount.get(a.id) || 0,
-        clients_count: clCount.get(a.id) || 0,
-        otp_count: otpCount.get(a.id) || 0,
-        total_payout: payoutSum.get(a.id) || 0,
+      return (data || []).map((r: any) => ({
+        id: r.id,
+        username: r.username,
+        full_name: r.full_name,
+        status: r.status,
+        balance: r.balance,
+        created_at: r.created_at,
+        numbers_count: Number(r.numbers_count || 0),
+        clients_count: Number(r.clients_count || 0),
+        otp_count: Number(r.otp_count || 0),
+        total_payout: Number(r.total_payout || 0),
       }));
     },
   });
