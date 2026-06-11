@@ -523,16 +523,26 @@ app.get('/api/reports/stats/:group', async (c) => {
 app.get('/api/reports/numbers', async (c) => {
   const { limit, offset } = pageParams(c);
   const rangeName = c.req.query('range_name') || '';
+  const search = String(c.req.query('search') || '').trim();
+  const like = `%${search}%`;
   try {
     const rows = await sql`
       SELECT * FROM number_pool
       WHERE (${rangeName} = '' OR range_name = ${rangeName})
+        AND (${search} = '' OR COALESCE(number, '') ILIKE ${like}
+          OR COALESCE(country, '') ILIKE ${like}
+          OR COALESCE(range_name, '') ILIKE ${like}
+          OR COALESCE(prefix, '') ILIKE ${like})
       ORDER BY updated_at DESC NULLS LAST, created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
     const [summary] = await sql`
       SELECT COUNT(*)::int AS total FROM number_pool
       WHERE (${rangeName} = '' OR range_name = ${rangeName})
+        AND (${search} = '' OR COALESCE(number, '') ILIKE ${like}
+          OR COALESCE(country, '') ILIKE ${like}
+          OR COALESCE(range_name, '') ILIKE ${like}
+          OR COALESCE(prefix, '') ILIKE ${like})
     `;
     return c.json({ rows, total: summary?.total || 0 });
   } catch (err: any) {
