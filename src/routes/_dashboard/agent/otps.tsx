@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 import { cn } from "@/lib/utils";
@@ -27,39 +28,46 @@ type Row = {
 };
 
 function AgentOtpsPage() {
-  // RLS already restricts otp_audit_log to OTPs for numbers where
-  // number_pool.assigned_agent = auth.uid(). No extra filter needed.
-  const { data: rows, isLoading } = useQuery<Row[]>({
-    queryKey: ["agent_otps"],
+  const [params, setParams] = useState({ page: 1, pageSize: 25, search: "" });
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["agent_otps_paged", params],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = (params.page - 1) * params.pageSize;
+      const to = from + params.pageSize - 1;
+
+      let q = supabase
         .from("otp_audit_log")
-        .select("id,phone_number,cli,otp_code,sms_text,outcome,created_at")
+        .select("id,phone_number,cli,otp_code,sms_text,outcome,created_at", { count: "exact" });
+
+      const s = params.search.trim();
+      if (s) {
+        // Search across phone_number, cli, otp_code, sms_text
+        q = q.or(
+          `phone_number.ilike.%${s}%,cli.ilike.%${s}%,otp_code.ilike.%${s}%,sms_text.ilike.%${s}%`,
+        );
+      }
+
+      const { data, error, count } = await q
         .order("created_at", { ascending: false })
-        .limit(500);
+        .range(from, to);
+
       if (error) throw error;
-      return (data || []) as Row[];
+      return { rows: (data || []) as Row[], total: count ?? 0 };
     },
-    refetchInterval: 15000,
+    keepPreviousData: true,
+    refetchInterval: 30000,
   });
 
   const columns: IMSColumn<Row>[] = [
-    {
-      key: "time",
-      header: "Date",
-      value: (r) => formatLocal(r.created_at),
-    },
+    { key: "time", header: "Date", value: (r) => formatLocal(r.created_at) },
     {
       key: "number",
       header: "Number",
       value: (r) => r.phone_number ?? "—",
       cell: (r) => <span className="font-bold text-[#2b3a4a]">{r.phone_number ?? "—"}</span>,
     },
-    {
-      key: "cli",
-      header: "Service / CLI",
-      value: (r) => r.cli ?? "—",
-    },
+    { key: "cli", header: "Service / CLI", value: (r) => r.cli ?? "—" },
     {
       key: "otp",
       header: "OTP",
@@ -103,11 +111,14 @@ function AgentOtpsPage() {
       title="My OTPs"
       subtitle="OTPs delivered only on numbers admin has allocated to you."
       columns={columns}
-      rows={rows || []}
-      loading={isLoading}
+      rows={data?.rows}
+      totalCount={data?.total}
+      onParamsChange={setParams}
+      loading={isLoading || isFetching}
       exportName="AgentOTPs"
       rowKey={(r) => r.id}
       emptyText="No OTPs yet for your allocated numbers."
+      defaultPageSize={25}
     />
   );
 }
