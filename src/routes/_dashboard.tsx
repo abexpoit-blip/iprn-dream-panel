@@ -209,7 +209,7 @@ function DashboardLayout() {
                     </button>
                     {item.isOpen && isSidebarOpen && (
                       <div className="bg-[#f8f9fc] py-1 border-y border-[#e3e6ec]/50">
-                        {item.subItems.map((sub) => (
+                        {item.subItems.map((sub: any) => (
                           <Link
                             key={sub.label}
                             to={sub.href}
