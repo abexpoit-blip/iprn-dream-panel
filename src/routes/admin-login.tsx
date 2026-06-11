@@ -132,7 +132,15 @@ function AdminLogin() {
 
         <div className="mt-8 text-center space-y-4">
           <p className="text-[12px] text-[#69707a] font-medium italic">
-            Copyright © {new Date().getFullYear()} <span className="font-bold text-[#2b3a4a] not-italic tracking-tighter">IMS SMS ADMIN</span>
+            Copyright © {new Date().getFullYear()}{" "}
+            <span className="font-bold text-[#2b3a4a] not-italic tracking-tighter">NEXUS X ADMIN</span>{" "}
+            · Designed with ❤️ by{" "}
+            <span
+              className="not-italic font-extrabold tracking-wide bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 bg-clip-text text-transparent"
+              style={{ textShadow: "0 0 12px rgba(56,189,248,0.6)" }}
+            >
+              SHOVON
+            </span>
           </p>
         </div>
       </div>
