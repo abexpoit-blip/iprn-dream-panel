@@ -53,16 +53,16 @@ function AdminLogin() {
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-xl border-4 border-white mb-6 animate-bounce-slow">
-            <img 
-              src="https://www.imssms.org/assets/images/logo.png" 
-              alt="IMS logo" 
+            <img
+              src="/logo.png"
+              alt="Nexus X"
               className="w-14 h-14 object-contain"
             />
           </div>
           <h1 className="text-3xl font-black text-[#2b3a4a] tracking-tighter uppercase mb-2">
-            IMS <span className="text-[#0061f2]">Admin</span> Central
+            NEXUS <span className="text-[#0061f2]">X</span> Admin
           </h1>
-          <p className="text-[#69707a] font-medium">Secure Administrative Gateway</p>
+          <p className="text-[#69707a] font-medium">Connect Beyond Limits</p>
         </div>
 
         <Card className="border-none shadow-2xl rounded-2xl overflow-hidden bg-white">

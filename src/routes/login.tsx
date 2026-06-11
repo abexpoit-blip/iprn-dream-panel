@@ -96,12 +96,16 @@ function LoginPage() {
               Accounts are free and always will be.
             </h2>
             <div className="mb-8">
-              <Link to="/">
-                <img 
-                  src="https://www.imssms.org/assets/images/logo.png" 
-                  alt="logo" 
-                  className="h-20 object-contain"
+              <Link to="/" className="flex items-center gap-3">
+                <img
+                  src="/logo.png"
+                  alt="Nexus X"
+                  className="h-16 w-16 object-contain"
                 />
+                <div>
+                  <div className="text-2xl font-black tracking-tight text-[#1f2937]">NEXUS <span className="text-[#0061f2]">X</span></div>
+                  <div className="text-xs font-semibold text-[#69707a] tracking-wider uppercase">Connect Beyond Limits</div>
+                </div>
               </Link>
             </div>
             <div className="space-y-1">

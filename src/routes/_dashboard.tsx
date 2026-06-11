@@ -194,15 +194,13 @@ function DashboardLayout() {
         isSidebarOpen ? "w-[240px]" : "w-[70px]"
       )}>
         <div className="h-16 flex items-center justify-center border-b border-[#e3e6ec] px-4">
-          <Link to="/dashboard" className="flex items-center justify-center">
-            {isSidebarOpen ? (
-              <img 
-                src="https://www.imssms.org/assets/images/logo.png" 
-                alt="IMS logo" 
-                className="h-10 object-contain"
-              />
-            ) : (
-              <span className="font-black italic tracking-tighter text-[#2b3a4a] text-xl">iMS</span>
+          <Link to="/dashboard" className="flex items-center justify-center gap-2">
+            <img src="/logo.png" alt="Nexus X" className="h-10 w-10 object-contain" />
+            {isSidebarOpen && (
+              <div className="flex flex-col leading-tight">
+                <span className="font-black tracking-tight text-[#2b3a4a] text-lg">NEXUS <span className="text-[#0061f2]">X</span></span>
+                <span className="text-[9px] font-semibold text-[#69707a] uppercase tracking-wider">Connect Beyond Limits</span>
+              </div>
             )}
           </Link>
         </div>
