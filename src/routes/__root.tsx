@@ -93,6 +93,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "Nexus X — Connect Beyond Limits" },
       { name: "twitter:description", content: "Next-gen messaging & IPN management platform." },
       { name: "twitter:image", content: "/og-image.jpg" },
+    ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
