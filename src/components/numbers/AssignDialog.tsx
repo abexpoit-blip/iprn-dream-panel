@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://X.nexus-x.site/api';
+import { apiUrl } from "@/lib/api-url";
 
 type Target = { id: string; label: string; sub?: string };
 
