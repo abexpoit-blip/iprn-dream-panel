@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { apiUrl } from "@/lib/api-url";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_dashboard/stats/sms")({
@@ -15,137 +14,152 @@ export const Route = createFileRoute("/_dashboard/stats/sms")({
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function formatLocal(iso: string | null | undefined): string {
   if (!iso) return "—";
-  const match = String(iso).match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/);
-  if (match) return `${match[1]} ${match[2]}`;
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  if (Number.isNaN(d.getTime())) return "—";
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 type Row = {
-  date: string;
-  range: string;
-  number: string;
-  cli: string;
-  client: string;
-  sms: string;
-  payout: number;
+  id: string;
+  phone_number: string | null;
+  cli: string | null;
+  otp_code: string | null;
+  sms_text: string | null;
+  outcome: string;
+  source: string | null;
+  created_at: string;
 };
 
 function StatsSmsPage() {
-  const cdr = useQuery({
-    queryKey: ["sms_stats_cdr"],
+  const [params, setParams] = useState({ page: 1, pageSize: 25, search: "" });
+
+  // Paged OTP rows (server-side via Supabase, RLS scopes per role)
+  const paged = useQuery({
+    queryKey: ["sms_otp_paged", params],
     queryFn: async () => {
-      const token = localStorage.getItem("nexus_token");
-      const res = await fetch(apiUrl("/api/reports/sms-summary"), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error || "SMS summary failed");
-      return (payload.latest ?? [])
-        .filter((r: any) => (r.message && String(r.message).trim()) || (r.number && String(r.number).trim()))
-        .map((r: any) => ({
-          date: formatLocal(r.received_at),
-          range: r.prefix ?? "-",
-          number: r.number ?? "-",
-          cli: r.message?.match(/from\s+(\S+)/i)?.[1] ?? "-",
-          client: r.client_name ?? "-",
-          sms: r.message ?? "",
-          payout: Number(r.payout ?? 0),
-        })) as Row[];
+      const from = (params.page - 1) * params.pageSize;
+      const to = from + params.pageSize - 1;
+
+      let q = supabase
+        .from("otp_audit_log")
+        .select("id,phone_number,cli,otp_code,sms_text,outcome,source,created_at", { count: "exact" });
+
+      const s = params.search.trim();
+      if (s) {
+        q = q.or(
+          `phone_number.ilike.%${s}%,cli.ilike.%${s}%,otp_code.ilike.%${s}%,sms_text.ilike.%${s}%`,
+        );
+      }
+
+      const { data, error, count } = await q
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (error) throw error;
+      return { rows: (data || []) as Row[], total: count ?? 0 };
     },
-    staleTime: 15_000,
-    refetchInterval: 30_000,
-    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData,
+    refetchInterval: 30000,
   });
 
-  // Scrape summary from otp_audit_log (last 24h)
-  const audit = useQuery({
-    queryKey: ["sms_stats_audit_24h"],
+  // 24h summary stats
+  const stats = useQuery({
+    queryKey: ["sms_otp_stats_24h"],
     queryFn: async () => {
-      const token = localStorage.getItem("nexus_token");
-      const res = await fetch(apiUrl("/api/reports/sms-summary"), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error || "SMS summary failed");
-      const s = payload.summary || { rows: 0, billed: 0, duplicates: 0, last_scrape: null };
-      const syntheticRows = [
-        ...Array.from({ length: Number(s.billed || 0) }, () => ({ outcome: "billed", created_at: s.last_scrape, source: "ims" })),
-        ...Array.from({ length: Number(s.duplicates || 0) }, () => ({ outcome: "duplicate", created_at: s.last_scrape, source: "ims" })),
-        ...Array.from({ length: Math.max(0, Number(s.rows || 0) - Number(s.billed || 0) - Number(s.duplicates || 0)) }, () => ({ outcome: "other", created_at: s.last_scrape, source: "ims" })),
-      ];
-      return syntheticRows;
+      const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+      const [tot, bil, dup, last] = await Promise.all([
+        supabase.from("otp_audit_log").select("id", { count: "exact", head: true }).gte("created_at", since),
+        supabase.from("otp_audit_log").select("id", { count: "exact", head: true }).gte("created_at", since).eq("outcome", "billed"),
+        supabase.from("otp_audit_log").select("id", { count: "exact", head: true }).gte("created_at", since).eq("outcome", "duplicate"),
+        supabase.from("otp_audit_log").select("created_at").order("created_at", { ascending: false }).limit(1),
+      ]);
+      return {
+        total: tot.count ?? 0,
+        billed: bil.count ?? 0,
+        duplicates: dup.count ?? 0,
+        last: last.data?.[0]?.created_at ?? null,
+      };
     },
-    refetchInterval: 15_000,
-    refetchOnWindowFocus: false,
+    refetchInterval: 30000,
   });
-
-  const rows = audit.data ?? [];
-  const billed = rows.filter((r: any) => r.outcome === "billed").length;
-  const dup = rows.filter((r: any) => r.outcome === "duplicate" || r.outcome === "dup").length;
-  const total = rows.length;
-  const lastEvent = rows.reduce(
-    (acc: string | null, r: any) => (!acc || r.created_at > acc ? r.created_at : acc),
-    null as string | null,
-  );
 
   const columns: IMSColumn<Row>[] = [
-    { key: "date", header: "Date", value: (r) => r.date },
-    { key: "range", header: "Range", value: (r) => r.range },
-    { key: "number", header: "Number", value: (r) => r.number },
-    { key: "cli", header: "CLI", value: (r) => r.cli },
-    { key: "client", header: "Client", value: (r) => r.client },
+    { key: "date", header: "Date", value: (r) => formatLocal(r.created_at) },
+    {
+      key: "number",
+      header: "Number",
+      value: (r) => r.phone_number ?? "—",
+      cell: (r) => <span className="font-bold text-[#2b3a4a]">{r.phone_number ?? "—"}</span>,
+    },
+    { key: "cli", header: "CLI", value: (r) => r.cli ?? "—" },
+    {
+      key: "otp",
+      header: "OTP",
+      value: (r) => r.otp_code ?? "—",
+      cell: (r) =>
+        r.otp_code ? (
+          <span className="font-mono font-bold text-[#0061f2]">{r.otp_code}</span>
+        ) : (
+          <span className="text-gray-400">—</span>
+        ),
+    },
     {
       key: "sms",
-      header: "SMS",
-      value: (r) => r.sms,
+      header: "Message",
+      value: (r) => r.sms_text ?? "",
       cell: (r) => (
         <span className="block min-w-[420px] max-w-[760px] whitespace-pre-wrap break-words text-[14px] leading-snug font-medium text-[#1a2330]">
-          {r.sms || "—"}
+          {r.sms_text || "—"}
         </span>
       ),
     },
-    { key: "currency", header: "Currency", value: () => "USD" },
+    { key: "source", header: "Source", value: (r) => r.source ?? "—" },
     {
-      key: "payout",
-      header: "Payout",
-      value: (r) => r.payout.toFixed(4),
-      cell: (r) => <span className="font-bold text-green-600">${r.payout.toFixed(4)}</span>,
-      className: "text-right",
+      key: "outcome",
+      header: "Status",
+      value: (r) => r.outcome,
+      cell: (r) => (
+        <span
+          className={cn(
+            "px-2 py-0.5 text-white text-[10px] font-bold rounded uppercase",
+            r.outcome === "billed"
+              ? "bg-emerald-500"
+              : r.outcome === "duplicate"
+                ? "bg-amber-500"
+                : "bg-slate-500",
+          )}
+        >
+          {r.outcome}
+        </span>
+      ),
     },
   ];
 
-  const refreshAll = () => { cdr.refetch(); audit.refetch(); };
-  const fetching = cdr.isFetching || audit.isFetching;
+  const s = stats.data;
 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Rows (24h)" value={total} color="text-[#0061f2]" />
-        <StatCard label="Billed (24h)" value={billed} color="text-emerald-600" />
-        <StatCard label="Duplicates (24h)" value={dup} color="text-amber-600" />
+        <StatCard label="Rows (24h)" value={s?.total ?? "—"} color="text-[#0061f2]" />
+        <StatCard label="Billed (24h)" value={s?.billed ?? "—"} color="text-emerald-600" />
+        <StatCard label="Duplicates (24h)" value={s?.duplicates ?? "—"} color="text-amber-600" />
         <StatCard
-          label="Last Scrape"
-          value={lastEvent ? formatDistanceToNow(new Date(lastEvent), { addSuffix: true }) : "—"}
+          label="Last OTP"
+          value={s?.last ? formatDistanceToNow(new Date(s.last), { addSuffix: true }) : "—"}
           color="text-[#2b3a4a]"
           small
         />
       </div>
 
-      <div className="flex justify-end">
-        <Button onClick={refreshAll} variant="outline" className="h-9 text-xs font-bold uppercase">
-          <RefreshCw size={14} className={cn("mr-2", fetching && "animate-spin")} />
-          {fetching ? "Refreshing…" : "Refresh Now"}
-        </Button>
-      </div>
-
-      <IMSDataTable
+      <IMSDataTable<Row>
         title="SMS Stats"
-        subtitle="Latest SMS records (auto-refresh every 30s)"
+        subtitle="All OTP/SMS records — server-side paginated & searchable"
         columns={columns}
-        rows={cdr.data}
-        loading={cdr.isLoading}
+        rows={paged.data?.rows}
+        totalCount={paged.data?.total}
+        onParamsChange={setParams}
+        loading={paged.isLoading || paged.isFetching}
         exportName="SMSStats"
+        rowKey={(r) => r.id}
         defaultPageSize={25}
       />
     </div>
