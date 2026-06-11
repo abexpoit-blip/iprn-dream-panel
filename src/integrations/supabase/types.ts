@@ -789,6 +789,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      agents_overview: {
+        Args: never
+        Returns: {
+          balance: number
+          clients_count: number
+          created_at: string
+          full_name: string
+          id: string
+          numbers_count: number
+          otp_count: number
+          status: string
+          total_payout: number
+          username: string
+        }[]
+      }
       current_client_id: { Args: never; Returns: string }
       notify_scrape_now: { Args: never; Returns: undefined }
     }
