@@ -52,9 +52,9 @@ function SmsNumbersPage() {
         .select("range_name")
         .not("range_name", "is", null)
         .limit(5000);
-      const names = (data || [])
-        .map((r: any) => r.range_name as string)
-        .filter((v): v is string => !!v);
+      const names: string[] = (data || [])
+        .map((r: any) => String(r.range_name || ""))
+        .filter((v: string) => v.length > 0);
       return Array.from(new Set(names)).sort();
     },
   });
