@@ -27,15 +27,6 @@ export const Route = createFileRoute("/_dashboard/dashboard")({
   component: DashboardPage,
 });
 
-const chartData = [
-  { name: '2026-05-31', sms: 400, payout: 15 },
-  { name: '2026-06-01', sms: 300, payout: 12 },
-  { name: '2026-06-02', sms: 200, payout: 8 },
-  { name: '2026-06-03', sms: 100, payout: 5 },
-  { name: '2026-06-04', sms: 500, payout: 22 },
-  { name: '2026-06-05', sms: 450, payout: 19 },
-  { name: '2026-06-06', sms: 431, payout: 18 },
-];
 
 function DashboardPage() {
   const { data: statsData } = useQuery({
