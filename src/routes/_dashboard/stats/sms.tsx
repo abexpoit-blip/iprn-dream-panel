@@ -6,6 +6,7 @@ import { IMSDataTable, type IMSColumn } from "@/components/ims/IMSDataTable";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { fetchSelfHostedJson, isSelfHosted } from "@/lib/self-hosted-api";
 
 export const Route = createFileRoute("/_dashboard/stats/sms")({
   component: StatsSmsPage,
@@ -40,6 +41,15 @@ function StatsSmsPage() {
       const from = (params.page - 1) * params.pageSize;
       const to = from + params.pageSize - 1;
 
+      if (isSelfHosted) {
+        const res = await fetchSelfHostedJson<{ rows: Row[]; total: number }>("/reports/otps", {
+          limit: params.pageSize,
+          offset: from,
+          search: params.search.trim(),
+        });
+        return { rows: res.rows || [], total: res.total || 0 };
+      }
+
       let q = supabase
         .from("otp_audit_log")
         .select("id,phone_number,cli,otp_code,sms_text,outcome,source,created_at", { count: "exact" });
@@ -65,6 +75,11 @@ function StatsSmsPage() {
   const stats = useQuery({
     queryKey: ["sms_otp_stats_24h"],
     queryFn: async () => {
+      if (isSelfHosted) {
+        const res = await fetchSelfHostedJson<{ summary: { total: number; billed: number; duplicates: number; last: string | null } }>("/reports/otps", { limit: 1, offset: 0 });
+        return { total: res.summary?.total ?? 0, billed: res.summary?.billed ?? 0, duplicates: res.summary?.duplicates ?? 0, last: res.summary?.last ?? null };
+      }
+
       const since = new Date(Date.now() - 24 * 3600_000).toISOString();
       const [tot, bil, dup, last] = await Promise.all([
         supabase.from("otp_audit_log").select("id", { count: "exact", head: true }).gte("created_at", since),

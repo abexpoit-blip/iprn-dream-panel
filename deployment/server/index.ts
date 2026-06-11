@@ -436,6 +436,54 @@ app.get('/api/reports/sms-summary', async (c) => {
   }
 });
 
+app.get('/api/reports/otps', async (c) => {
+  const me = caller(c);
+  const { limit, offset } = pageParams(c);
+  const search = String(c.req.query('search') || '').trim();
+  const like = `%${search}%`;
+  const isClient = me.role === 'client';
+  const isAgent = !me.is_admin && (me.role === 'agent' || me.role === 'admin');
+
+  try {
+    const rows = await sql`
+      SELECT id,
+             COALESCE(phone_number, number) AS phone_number,
+             cli,
+             otp_code,
+             message AS sms_text,
+             CASE WHEN status = 'delivered' THEN 'billed' ELSE COALESCE(status, 'unknown') END AS outcome,
+             source,
+             COALESCE(received_at, created_at) AS created_at
+      FROM sms_cdr
+      WHERE (${isClient} = false OR client_id::text = ${me.id || ''})
+        AND (${isAgent} = false OR agent_id::text = ${me.id || ''})
+        AND (${search} = '' OR COALESCE(phone_number, number, '') ILIKE ${like}
+          OR COALESCE(cli, '') ILIKE ${like}
+          OR COALESCE(otp_code, '') ILIKE ${like}
+          OR COALESCE(message, '') ILIKE ${like})
+      ORDER BY COALESCE(received_at, created_at) DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+    const [summary] = await sql`
+      SELECT COUNT(*)::int AS total,
+             COUNT(*) FILTER (WHERE status IN ('delivered','billed'))::int AS billed,
+             COUNT(*) FILTER (WHERE status IN ('duplicate','dup'))::int AS duplicates,
+             MAX(COALESCE(received_at, created_at)) AS last
+      FROM sms_cdr
+      WHERE (${isClient} = false OR client_id::text = ${me.id || ''})
+        AND (${isAgent} = false OR agent_id::text = ${me.id || ''})
+        AND (${search} = '' OR COALESCE(phone_number, number, '') ILIKE ${like}
+          OR COALESCE(cli, '') ILIKE ${like}
+          OR COALESCE(otp_code, '') ILIKE ${like}
+          OR COALESCE(message, '') ILIKE ${like})
+    `;
+    return c.json({ rows, total: summary?.total || 0, summary: summary || { total: 0, billed: 0, duplicates: 0, last: null } });
+  } catch (err: any) {
+    console.error('[reports/otps]', err);
+    return c.json({ error: err.message || 'OTP report failed' }, 500);
+  }
+});
+
 app.get('/api/reports/stats/:group', async (c) => {
   const group = c.req.param('group');
   const limit = Math.min(parseInt(c.req.query('limit') || '200', 10) || 200, 500);
