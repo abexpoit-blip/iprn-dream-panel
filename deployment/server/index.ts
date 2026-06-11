@@ -520,6 +520,21 @@ app.get('/api/reports/stats/:group', async (c) => {
   }
 });
 
+app.get('/api/reports/number-ranges', async (c) => {
+  try {
+    const rows = await sql`
+      SELECT DISTINCT COALESCE(NULLIF(range_name, ''), NULLIF(country, ''), NULLIF(prefix, '')) AS name
+      FROM number_pool
+      WHERE COALESCE(range_name, country, prefix) IS NOT NULL
+      ORDER BY name
+      LIMIT 5000
+    `;
+    return c.json({ ranges: rows.map((r: any) => r.name).filter(Boolean) });
+  } catch (err: any) {
+    return c.json({ error: err.message || 'Ranges failed' }, 500);
+  }
+});
+
 app.get('/api/reports/numbers', async (c) => {
   const { limit, offset } = pageParams(c);
   const rangeName = c.req.query('range_name') || '';
