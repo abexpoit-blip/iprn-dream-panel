@@ -347,6 +347,50 @@ app.post('/api/numbers/auto-pool', async (c) => {
   }
 });
 
+// Dashboard summary: today / yesterday / last-7d counts, month payout, 7-day chart.
+app.get('/api/dashboard/stats', async (c) => {
+  try {
+    const [counts] = await sql`
+      SELECT
+        COUNT(*) FILTER (WHERE received_at >= date_trunc('day', now()))::int AS today,
+        COUNT(*) FILTER (WHERE received_at >= date_trunc('day', now()) - INTERVAL '1 day'
+                          AND received_at <  date_trunc('day', now()))::int AS yesterday,
+        COUNT(*) FILTER (WHERE received_at >= date_trunc('day', now()) - INTERVAL '7 days')::int AS last7,
+        COALESCE(SUM(payout) FILTER (WHERE received_at >= date_trunc('month', now())), 0)::float AS month_payout
+      FROM sms_cdr
+    `;
+    const chart = await sql`
+      SELECT to_char(date_trunc('day', received_at), 'YYYY-MM-DD') AS name,
+             COUNT(*)::int AS sms,
+             COALESCE(SUM(payout), 0)::float AS payout
+      FROM sms_cdr
+      WHERE received_at >= date_trunc('day', now()) - INTERVAL '6 days'
+      GROUP BY 1 ORDER BY 1
+    `;
+    // Backfill missing days with zeroes so chart always has 7 bars
+    const map: Record<string, { sms: number; payout: number }> = {};
+    for (const r of chart) map[r.name] = { sms: r.sms, payout: r.payout };
+    const days: any[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setUTCHours(0, 0, 0, 0);
+      d.setUTCDate(d.getUTCDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      days.push({ name: key, sms: map[key]?.sms || 0, payout: Number((map[key]?.payout || 0).toFixed(2)) });
+    }
+    return c.json({
+      today: counts?.today || 0,
+      yesterday: counts?.yesterday || 0,
+      last7Days: counts?.last7 || 0,
+      monthPayout: (counts?.month_payout || 0).toFixed(2),
+      chart: days,
+    });
+  } catch (err: any) {
+    console.error('[dashboard/stats]', err);
+    return c.json({ error: err.message || 'Dashboard stats failed' }, 500);
+  }
+});
+
 // =========================================================================
 // Fast report endpoints: server-side pagination + aggregation for heavy pages
 // =========================================================================

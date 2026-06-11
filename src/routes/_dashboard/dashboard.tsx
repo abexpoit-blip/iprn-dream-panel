@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchSelfHostedJson, isSelfHosted } from "@/lib/self-hosted-api";
 
 import {
   Table,
@@ -32,6 +33,10 @@ function DashboardPage() {
   const { data: statsData } = useQuery({
     queryKey: ['dashboard_stats'],
     queryFn: async () => {
+      if (isSelfHosted) {
+        return await fetchSelfHostedJson<any>('/dashboard/stats');
+      }
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const yesterday = new Date(today);
@@ -56,7 +61,6 @@ function DashboardPage() {
 
       const monthPayout = monthData.data?.reduce((acc: number, curr: any) => acc + (Number(curr.payout) || 0), 0) || 0;
 
-      // Build per-day chart for last 7 days
       const buckets: Record<string, { sms: number; payout: number }> = {};
       for (let i = 6; i >= 0; i--) {
         const d = new Date(today);
