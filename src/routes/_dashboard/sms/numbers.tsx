@@ -48,6 +48,10 @@ function SmsNumbersPage() {
     queryKey: ["number_pool_ranges"],
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<string[]> => {
+      if (isSelfHosted) {
+        const res = await fetchSelfHostedJson<{ ranges: string[] }>("/reports/number-ranges");
+        return res.ranges || [];
+      }
       const { data } = await supabase
         .from("number_pool")
         .select("range_name")
