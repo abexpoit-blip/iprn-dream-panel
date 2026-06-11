@@ -57,7 +57,11 @@ export function IMSDataTable<T>({
   rightSlot,
   defaultPageSize = 25,
   rowKey,
+  totalCount,
+  onParamsChange,
+  searchDebounceMs = 300,
 }: Props<T>) {
+  const isServer = typeof totalCount === "number" && !!onParamsChange;
   const [pageSize, setPageSize] = useState<number | "all">(defaultPageSize);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -72,9 +76,20 @@ export function IMSDataTable<T>({
       return next;
     });
 
+  // Debounced server-side params emit
+  useEffect(() => {
+    if (!isServer) return;
+    const sz = pageSize === "all" ? 1000 : pageSize;
+    const t = setTimeout(() => {
+      onParamsChange!({ page, pageSize: sz, search });
+    }, search ? searchDebounceMs : 0);
+    return () => clearTimeout(t);
+  }, [isServer, page, pageSize, search, onParamsChange, searchDebounceMs]);
+
   const data = rows ?? [];
 
   const filtered = useMemo(() => {
+    if (isServer) return data;
     if (!search.trim()) return data;
     const q = search.toLowerCase();
     return data.filter((r) =>
@@ -83,15 +98,15 @@ export function IMSDataTable<T>({
         return v != null && String(v).toLowerCase().includes(q);
       }),
     );
-  }, [data, search, columns]);
+  }, [data, search, columns, isServer]);
 
-  const total = filtered.length;
-  const size = pageSize === "all" ? total || 1 : pageSize;
+  const total = isServer ? (totalCount ?? 0) : filtered.length;
+  const size = pageSize === "all" ? Math.max(total, 1) : pageSize;
   const pageCount = Math.max(1, Math.ceil(total / size));
   const safePage = Math.min(page, pageCount);
   const start = (safePage - 1) * size;
-  const end = Math.min(start + size, total);
-  const pageRows = filtered.slice(start, end);
+  const end = isServer ? Math.min(start + data.length, total) : Math.min(start + size, total);
+  const pageRows = isServer ? data : filtered.slice(start, end);
 
   const buildMatrix = (includeHeader = true) => {
     const cols = columns.filter(
