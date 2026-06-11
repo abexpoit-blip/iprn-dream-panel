@@ -146,14 +146,41 @@ function DashboardLayout() {
     { label: "Admin Panel", icon: ShieldCheck, href: "/admin" },
   ];
 
-  // Agents only see their own scoped pages
+  // Agents see their own scoped pages + shared tools (no bot pages)
   const agentMenu = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { label: "My Numbers", icon: MessageSquare, href: "/agent/numbers" },
     { label: "My OTPs", icon: FileText, href: "/agent/otps" },
     { label: "My Clients", icon: Users, href: "/clients" },
+    {
+      label: "SMS Module",
+      icon: MessageSquare,
+      hasSubmenu: true,
+      isOpen: isSmsModuleOpen,
+      toggle: () => setIsSmsModuleOpen(!isSmsModuleOpen),
+      subItems: [
+        { label: "SMS Ranges", href: "/sms/ranges" },
+        { label: "SMS Numbers", href: "/agent/numbers" },
+        { label: "SMS RateCard", href: "/sms/ratecard" },
+      ],
+    },
+    {
+      label: "Stats & Reports",
+      icon: BarChart3,
+      hasSubmenu: true,
+      isOpen: isStatsOpen,
+      toggle: () => setIsStatsOpen(!isStatsOpen),
+      subItems: [
+        { label: "SMS CDR", href: "/stats/cdr" },
+        { label: "SMS Stats", href: "/stats/sms" },
+        { label: "Client Stats", href: "/stats/client" },
+        { label: "Range Stats", href: "/stats/range" },
+        { label: "Number Stats", href: "/stats/number" },
+      ],
+    },
     { label: "Credit Notes", icon: FileText, href: "/credits" },
     { label: "News", icon: Newspaper, href: "/news" },
+    { label: "SMS Test Panel", icon: Settings, href: "/test-panel" },
   ];
 
   const menuItems: any[] = isAdminView ? adminMenu : agentMenu;
