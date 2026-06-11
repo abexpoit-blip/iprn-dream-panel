@@ -456,9 +456,6 @@ async function scrapeNumbers() {
       const removed = await sql`
         DELETE FROM number_pool
         WHERE bot_id = ${BOT_ID}
-          AND assigned_agent IS NULL
-          AND assigned_client IS NULL
-          AND status = 'available'
           AND number <> ALL(${seen})
         RETURNING number
       `;
