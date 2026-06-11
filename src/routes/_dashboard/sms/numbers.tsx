@@ -238,6 +238,13 @@ function SmsNumbersPage() {
         loading={isLoading}
         exportName="SMSNumbers"
         rowKey={(r) => r.id}
+        totalCount={data?.total ?? 0}
+        defaultPageSize={pageSize}
+        onParamsChange={(p) => {
+          setPage(p.page);
+          setPageSize(p.pageSize);
+          setSearch(p.search);
+        }}
         rightSlot={
           <div className="flex gap-2">
             {selectedIds.length > 0 && (
