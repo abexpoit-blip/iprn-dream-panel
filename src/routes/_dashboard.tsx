@@ -61,22 +61,32 @@ function DashboardLayout() {
     }
     
     const user = session.user;
-    if (user.role === 'client') {
+    // Load real profile (role + is_admin) from DB — auth user object doesn't carry these
+    const { data: dbProfile } = await supabase
+      .from('profiles')
+      .select('id, username, role, is_admin')
+      .eq('id', user.id)
+      .single();
+
+    const merged: any = { ...user, ...(dbProfile || {}) };
+
+    if (merged.role === 'client') {
       if (!location.pathname.startsWith("/client")) {
         navigate({ to: "/client/dashboard" });
         return;
       }
     }
-    setProfile(user);
+    setProfile(merged);
 
     // Impersonation check (Only for admins)
     const impersonatedId = sessionStorage.getItem('impersonated_agent_id');
-    if (impersonatedId && user.is_admin) {
+    if (impersonatedId && merged.is_admin) {
        setImpersonatedAgent({ id: impersonatedId, username: 'Agent' });
     } else {
       setImpersonatedAgent(null);
     }
   };
+
 
   useEffect(() => {
     checkUser();
@@ -96,34 +106,30 @@ function DashboardLayout() {
     navigate({ to: "/admin" });
   };
 
-  const menuItems = [
+  const isAdminView = !!(profile?.is_admin && !impersonatedAgent);
+
+  const adminMenu = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { label: "Bot Dashboard", icon: Bot, href: "/bot-dashboard" },
-    ...(profile?.is_admin && !impersonatedAgent
-      ? [
-          { label: "Bot Health", icon: Activity, href: "/bot-health" },
-          { label: "Bot Control", icon: Bot, href: "/bot-control" },
-        ]
-      : []),
-    { 
-      label: "SMS Module", 
-      icon: MessageSquare, 
-      hasSubmenu: true, 
+    { label: "Bot Health", icon: Activity, href: "/bot-health" },
+    { label: "Bot Control", icon: Bot, href: "/bot-control" },
+    {
+      label: "SMS Module",
+      icon: MessageSquare,
+      hasSubmenu: true,
       isOpen: isSmsModuleOpen,
       toggle: () => setIsSmsModuleOpen(!isSmsModuleOpen),
       subItems: [
         { label: "SMS Ranges", href: "/sms/ranges" },
         { label: "SMS Numbers", href: "/sms/numbers" },
         { label: "SMS RateCard", href: "/sms/ratecard" },
-      ]
+      ],
     },
-    profile?.is_admin && !impersonatedAgent
-      ? { label: "Agents", icon: Users, href: "/agents" }
-      : { label: "Clients", icon: Users, href: "/clients" },
-    { 
-      label: "Stats & Reports", 
-      icon: BarChart3, 
-      hasSubmenu: true, 
+    { label: "Agents", icon: Users, href: "/agents" },
+    {
+      label: "Stats & Reports",
+      icon: BarChart3,
+      hasSubmenu: true,
       isOpen: isStatsOpen,
       toggle: () => setIsStatsOpen(!isStatsOpen),
       subItems: [
@@ -132,13 +138,26 @@ function DashboardLayout() {
         { label: "Client Stats", href: "/stats/client" },
         { label: "Range Stats", href: "/stats/range" },
         { label: "Number Stats", href: "/stats/number" },
-      ]
+      ],
     },
     { label: "Credit Notes", icon: FileText, href: "/credits" },
     { label: "News", icon: Newspaper, href: "/news" },
     { label: "SMS Test Panel", icon: Settings, href: "/test-panel" },
-    ...(profile?.is_admin && !impersonatedAgent ? [{ label: "Admin Panel", icon: ShieldCheck, href: "/admin" }] : []),
+    { label: "Admin Panel", icon: ShieldCheck, href: "/admin" },
   ];
+
+  // Agents only see their own scoped pages
+  const agentMenu = [
+    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "My Numbers", icon: MessageSquare, href: "/agent/numbers" },
+    { label: "My OTPs", icon: FileText, href: "/agent/otps" },
+    { label: "My Clients", icon: Users, href: "/clients" },
+    { label: "Credit Notes", icon: FileText, href: "/credits" },
+    { label: "News", icon: Newspaper, href: "/news" },
+  ];
+
+  const menuItems: any[] = isAdminView ? adminMenu : agentMenu;
+
 
   return (
     <div className="min-h-screen bg-[#f2f4f8] flex font-sans">
@@ -190,7 +209,7 @@ function DashboardLayout() {
                     </button>
                     {item.isOpen && isSidebarOpen && (
                       <div className="bg-[#f8f9fc] py-1 border-y border-[#e3e6ec]/50">
-                        {item.subItems.map((sub) => (
+                        {item.subItems.map((sub: any) => (
                           <Link
                             key={sub.label}
                             to={sub.href}
