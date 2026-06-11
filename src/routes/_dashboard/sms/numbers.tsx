@@ -105,12 +105,22 @@ function SmsNumbersPage() {
     setAutoPooling(true);
     try {
       const token = localStorage.getItem("nexus_token");
-      const res = await fetch(`${API_URL}/numbers/auto-pool`, {
+      const { apiUrl } = await import("@/lib/api-url");
+      const res = await fetch(apiUrl("/numbers/auto-pool"), {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Auto Pool failed");
+      const text = await res.text();
+      let data: any = {};
+      try {
+        // Some proxies prepend status tokens; isolate the first JSON object
+        const start = text.search(/[{[]/);
+        const end = text.lastIndexOf(text[start] === "[" ? "]" : "}");
+        data = start >= 0 && end > start ? JSON.parse(text.slice(start, end + 1)) : {};
+      } catch {
+        data = { error: text.slice(0, 200) || "Invalid response" };
+      }
+      if (!res.ok) throw new Error(data.error || `Auto Pool failed (${res.status})`);
       toast.success(data.message || "Auto Pool started — scraping number panels...");
       setTimeout(() => queryClient.invalidateQueries({ queryKey: ["number_pool_view"] }), 4000);
       setTimeout(() => queryClient.invalidateQueries({ queryKey: ["number_pool_view"] }), 12000);
