@@ -156,7 +156,7 @@ function DashboardLayout() {
     { label: "News", icon: Newspaper, href: "/news" },
   ];
 
-  const menuItems = isAdminView ? adminMenu : agentMenu;
+  const menuItems: any[] = isAdminView ? adminMenu : agentMenu;
 
 
   return (
