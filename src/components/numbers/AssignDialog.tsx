@@ -25,8 +25,8 @@ export function AssignDialog({ open, onClose, mode, numberIds, onDone }: Props) 
     if (!open) return;
     const token = localStorage.getItem('nexus_token');
     const url = mode === 'agent'
-      ? `${API_URL}/allocations/agents`
-      : `${API_URL}/allocations/my-clients`;
+      ? apiUrl('/allocations/agents')
+      : apiUrl('/allocations/my-clients');
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then((rows: any[]) => {
